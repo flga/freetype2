@@ -1,3 +1,4 @@
+// Package freetype2 provides Go bindings to the FreeType project
 package freetype2
 
 // #cgo windows LDFLAGS: -lfreetype2
