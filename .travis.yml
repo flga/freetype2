@@ -1,20 +1,37 @@
-os:
-- linux
-dist: xenial
 language: go
-go:
-- "1.12.7"
 addons:
   apt:
     packages:
-    - g++-multilib
-    - gcc-multilib
-    - libc6-dev
-    - libc6-dev-i386
+      - g++-multilib
+      - gcc-multilib
+      - libc6-dev
+      - libc6-dev-i386
 env:
   matrix:
-  - ARCH=386 VERSION=2.10.1
-  - ARCH=amd64 VERSION=2.10.1
+    - ARCH=386 VERSION=2.10.1
+    - ARCH=amd64 VERSION=2.10.1
 matrix:
   fast_finish: true
-script: ./test.sh
+  include:
+    - os: linux
+      dist: xenial
+      go: 1.10.x
+      script:
+      - ./test.sh
+
+    - os: linux
+      dist: xenial
+      go: 1.11.x
+      script:
+      - ./test.sh
+
+    - os: linux
+      dist: xenial
+      go: 1.12.x
+      script:
+        - ./test.sh
+
+    - os: osx
+      go: 1.12.x
+      script:
+        - ./test.sh
