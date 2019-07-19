@@ -7,18 +7,10 @@ go:
 addons:
   apt:
     packages:
-    - bzr
-    - procps
-    - g++
     - g++-multilib
-    - gcc
     - gcc-multilib
     - libc6-dev
     - libc6-dev-i386
-    - make
-    - pkg-config
-    - binutils
-    - binutils-dev
 env:
   matrix:
   - ARCH=386 VERSION=2.10.1
