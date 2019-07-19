@@ -15,12 +15,15 @@ addons:
     - make
     - pkg-config
     - binutils
+    - binutils-dev
 env:
   matrix:
   - ARCH=386 VERSION=2.10.1
   - ARCH=amd64 VERSION=2.10.1
 matrix:
   fast_finish: true
+before_script:
+  - rm -rf $(go env GOCACHE)
 script:
 - CGO_ENABLED=1 GOOS=$(go env GOHOSTOS) GOARCH=$ARCH go test -v -tags static -ldflags "-linkmode external -extldflags -static" github.com/flga/freetype2/$VERSION
 - CGO_ENABLED=1 GOOS=$(go env GOHOSTOS) GOARCH=$ARCH go test -v -tags 'static harfbuzz' -ldflags "-linkmode external -extldflags -static" github.com/flga/freetype2/$VERSION
