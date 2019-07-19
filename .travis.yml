@@ -22,6 +22,6 @@ env:
 matrix:
   fast_finish: true
 script:
-- CGO_ENABLED=1 GOOS=$(go env GOHOSTOS) GOARCH=$ARCH go test -v -tags static github.com/flga/freetype2/$VERSION
-- CGO_ENABLED=1 GOOS=$(go env GOHOSTOS) GOARCH=$ARCH go test -v -tags 'static harfbuzz' github.com/flga/freetype2/$VERSION
-- CGO_ENABLED=1 GOOS=$(go env GOHOSTOS) GOARCH=$ARCH go test -v -tags 'static harfbuzz subset' github.com/flga/freetype2/$VERSION
+- CGO_ENABLED=1 GOOS=$(go env GOHOSTOS) GOARCH=$ARCH go test -v -tags static -ldflags "-linkmode external -extldflags -static" github.com/flga/freetype2/$VERSION
+- CGO_ENABLED=1 GOOS=$(go env GOHOSTOS) GOARCH=$ARCH go test -v -tags 'static harfbuzz' -ldflags "-linkmode external -extldflags -static" github.com/flga/freetype2/$VERSION
+- CGO_ENABLED=1 GOOS=$(go env GOHOSTOS) GOARCH=$ARCH go test -v -tags 'static harfbuzz subset' -ldflags "-linkmode external -extldflags -static" github.com/flga/freetype2/$VERSION
