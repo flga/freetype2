@@ -3,7 +3,7 @@ os:
 dist: xenial
 language: go
 go:
-- 1.12.X
+- "1.12.7"
 addons:
   apt:
     packages:
