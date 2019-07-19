@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 OS=$(go env GOHOSTOS)
@@ -8,6 +8,6 @@ fi
 
 cd $VERSION
 
-CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static' "${goLDFlags[@]}" -coverprofile ./...
-CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static harfbuzz' "${goLDFlags[@]}" -coverprofile ./...
-CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static harfbuzz subset' "${goLDFlags[@]}" -coverprofile ./...
+CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static' "${goLDFlags[@]}" -cover
+CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static harfbuzz' "${goLDFlags[@]}" -cover
+CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static harfbuzz subset' "${goLDFlags[@]}" -cover
