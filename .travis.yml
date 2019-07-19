@@ -25,5 +25,4 @@ env:
   - ARCH=amd64 VERSION=2.10.1
 matrix:
   fast_finish: true
-script:
-- make test
+script: test.sh
