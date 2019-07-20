@@ -2,7 +2,11 @@ package freetype2
 
 // #include <ft2build.h>
 // #include FT_FREETYPE_H
+// #include FT_TRUETYPE_TABLES_H
 import "C"
+import (
+	"unsafe"
+)
 
 // FaceFlags is a list of bit flags of a given face.
 // They inform client applications of properties of the corresponding face.
@@ -230,8 +234,8 @@ func (f *Face) Index() FaceIndex {
 	return FaceIndex(f.ptr.face_index)
 }
 
-// FaceFlags returns the set of bit flags that give important information about the face.
-func (f *Face) FaceFlags() FaceFlags {
+// Flags returns the set of bit flags that give important information about the face.
+func (f *Face) Flags() FaceFlags {
 	if f == nil || f.ptr == nil {
 		return 0
 	}
@@ -239,7 +243,10 @@ func (f *Face) FaceFlags() FaceFlags {
 }
 
 // HasFlag reports whether the face has the given flag.
-func (f *Face) HasFlag(flag FaceFlags) bool { return f.FaceFlags()&flag > 0 }
+func (f *Face) HasFlag(flag FaceFlags) bool { return f.Flags()&flag > 0 }
+
+// HasStyleFlag reports whether the face has the given style flag.
+func (f *Face) HasStyleFlag(flag StyleFlags) bool { return f.StyleFlags()&flag > 0 }
 
 // StyleFlags returns the set of bit flags indicating the style of the face; see StyleFlags for details.
 //
@@ -289,4 +296,218 @@ func (f *Face) StyleName() string {
 		return ""
 	}
 	return C.GoString(f.ptr.style_name)
+}
+
+// NumFixedSizes reports the number of bitmap strikes in the face. Even if the face is scalable, there might still be
+// bitmap strikes, which are called ‘sbits’ in that case.
+func (f *Face) NumFixedSizes() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.num_fixed_sizes)
+}
+
+// AvailableSizes returns a copy of the list of BitmapSize for all bitmap strikes in the face.
+// It returns nil if there is no bitmap strike.
+//
+// Note that FreeType tries to sanitize the strike data since they are sometimes sloppy or incorrect, but this can
+// easily fail.
+func (f *Face) AvailableSizes() []BitmapSize {
+	if f == nil || f.ptr == nil {
+		return nil
+	}
+
+	n := int(f.ptr.num_fixed_sizes)
+	if n == 0 {
+		return nil
+	}
+
+	ret := make([]BitmapSize, n)
+	ptr := (*[1<<31 - 1]C.FT_Bitmap_Size)(unsafe.Pointer(f.ptr.available_sizes))[:n:n]
+	for i := range ret {
+		ret[i] = BitmapSize{
+			Height: int(ptr[i].height),
+			Width:  int(ptr[i].width),
+			Size:   Int26_6(ptr[i].size),
+			XPpem:  Int26_6(ptr[i].x_ppem),
+			YPpem:  Int26_6(ptr[i].y_ppem),
+		}
+	}
+	return ret
+}
+
+// NumCharMaps reports the number of charmaps in the face.
+func (f *Face) NumCharMaps() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.num_charmaps)
+}
+
+// CharMaps returns a copy of the charmaps of the face.
+func (f *Face) CharMaps() []CharMap {
+	if f == nil || f.ptr == nil {
+		return nil
+	}
+
+	n := int(f.ptr.num_charmaps)
+	if n == 0 {
+		return nil
+	}
+
+	ret := make([]CharMap, n)
+	ptr := (*[1<<31 - 1]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
+	for i := range ret {
+		ret[i] = CharMap{
+			ours:       true,
+			index:      i,
+			Format:     int(C.FT_Get_CMap_Format(ptr[i])),
+			Language:   LanguageID(C.FT_Get_CMap_Language_ID(ptr[i])),
+			Encoding:   Encoding(ptr[i].encoding),
+			PlatformID: PlatformID(ptr[i].platform_id),
+			EncodingID: EncodingID(ptr[i].encoding_id),
+		}
+	}
+	return ret
+}
+
+// ActiveCharMap returns a copy of the active charmap.
+// If there is no active charmap, it returns the zero value and false.
+func (f *Face) ActiveCharMap() (CharMap, bool) {
+	if f == nil || f.ptr == nil {
+		return CharMap{}, false
+	}
+
+	active := f.ptr.charmap
+	if active == nil {
+		return CharMap{}, false
+	}
+
+	return CharMap{
+		ours:       true,
+		index:      int(C.FT_Get_Charmap_Index(active)),
+		Format:     int(C.FT_Get_CMap_Format(active)),
+		Language:   LanguageID(C.FT_Get_CMap_Language_ID(active)),
+		Encoding:   Encoding(active.encoding),
+		PlatformID: PlatformID(active.platform_id),
+		EncodingID: EncodingID(active.encoding_id),
+	}, true
+}
+
+func (f *Face) getCCharMap(idx int) C.FT_CharMap {
+	if f == nil || f.ptr == nil {
+		return nil
+	}
+
+	n := int(f.ptr.num_charmaps)
+	if n == 0 {
+		return nil
+	}
+
+	if idx >= n {
+		return nil
+	}
+
+	ptr := (*[1<<31 - 1]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
+	return ptr[idx]
+}
+
+// BBox returns a copy of the font bounding box. Coordinates are expressed in font units (see UnitsPerEM).
+// The box is large enough to contain any glyph from the font. Thus, bbox.YMax can be seen as the ‘maximum ascender’,
+// and bbox.YMin as the ‘minimum descender’. Only relevant for scalable formats.
+//
+// Note that the bounding box might be off by (at least) one pixel for hinted fonts.
+// See SizeMetrics for further discussion.
+func (f *Face) BBox() BBox {
+	if f == nil || f.ptr == nil {
+		return BBox{}
+	}
+	bbox := f.ptr.bbox
+	return BBox{
+		XMin: Pos(bbox.xMin),
+		YMin: Pos(bbox.yMin),
+		XMax: Pos(bbox.xMax),
+		YMax: Pos(bbox.yMax),
+	}
+}
+
+// UnitsPerEM reports the number of font units per EM square for this face. This is typically 2048 for TrueType fonts,
+// and 1000 for Type 1 fonts.
+// Only relevant for scalable formats.
+func (f *Face) UnitsPerEM() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.units_per_EM)
+}
+
+// Ascender reports the typographic ascender of the face, expressed in font units. For font formats not having this
+// information, it is set to bbox.yMax.
+// Only relevant for scalable formats.
+func (f *Face) Ascender() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.ascender)
+}
+
+// Descender reports the typographic descender of the face, expressed in font units. For font formats not having this
+// information, it is set to bbox.yMin. Note that this field is negative for values below the baseline.
+// Only relevant for scalable formats.
+func (f *Face) Descender() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.descender)
+}
+
+// Height reports the vertical distance between two consecutive baselines, expressed in font units.
+// It is always positive.
+// Only relevant for scalable formats.
+//
+// If you want the global glyph height, use  ascender - descender.
+func (f *Face) Height() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.height)
+}
+
+// MaxAdvanceWidth reports the maximum advance width, in font units, for all glyphs in this face. This can be used to
+// make word wrapping computations faster.
+// Only relevant for scalable formats.
+func (f *Face) MaxAdvanceWidth() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.max_advance_width)
+}
+
+// MaxAdvanceHeight reports the maximum advance height, in font units, for all glyphs in this face. This is only
+// relevant for vertical layouts, and is set to height for fonts that do not provide vertical metrics.
+// Only relevant for scalable formats.
+func (f *Face) MaxAdvanceHeight() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.max_advance_height)
+}
+
+// UnderlinePosition reports the position, in font units, of the underline line for this face. It is the center of the
+// underlining stem.
+// Only relevant for scalable formats.
+func (f *Face) UnderlinePosition() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.underline_position)
+}
+
+// UnderlineThickness reports the thickness, in font units, of the underline for this face.
+// Only relevant for scalable formats.
+func (f *Face) UnderlineThickness() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.underline_thickness)
 }
