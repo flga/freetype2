@@ -23,7 +23,7 @@ func testErrCannotOpenResource() error {
 }
 
 func testUnmappedErr() error {
-	return getErr(C.int(981298371)) //error code that *hopefully* does not existqgit 
+	return getErr(C.int(981298371)) //error code that *hopefully* does not exist
 }
 
 // generic errors
