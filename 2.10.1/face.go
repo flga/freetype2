@@ -323,7 +323,7 @@ func (f *Face) AvailableSizes() []BitmapSize {
 	}
 
 	ret := make([]BitmapSize, n)
-	ptr := (*[1<<31 - 1]C.FT_Bitmap_Size)(unsafe.Pointer(f.ptr.available_sizes))[:n:n]
+	ptr := (*[(1<<31 - 1) / C.sizeof_FT_Bitmap_Size]C.FT_Bitmap_Size)(unsafe.Pointer(f.ptr.available_sizes))[:n:n]
 	for i := range ret {
 		ret[i] = BitmapSize{
 			Height: int(ptr[i].height),
@@ -356,7 +356,7 @@ func (f *Face) CharMaps() []CharMap {
 	}
 
 	ret := make([]CharMap, n)
-	ptr := (*[1<<31 - 1]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
+	ptr := (*[(1<<31 - 1) / C.sizeof_FT_CharMap]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
 	for i := range ret {
 		ret[i] = CharMap{
 			ours:       true,
@@ -408,7 +408,7 @@ func (f *Face) getCCharMap(idx int) C.FT_CharMap {
 		return nil
 	}
 
-	ptr := (*[1<<31 - 1]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
+	ptr := (*[(1<<31 - 1) / C.sizeof_FT_CharMap]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
 	return ptr[idx]
 }
 
