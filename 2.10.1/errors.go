@@ -26,7 +26,7 @@ func testUnmappedErr() error {
 	return getErr(C.int(981298371)) //error code that *hopefully* does not exist
 }
 
-// generic errors
+// Generic errors
 var (
 	ErrUnknownError         = errors.New(magicStringUnknownError)
 	ErrCannotOpenResource   = errors.New("cannot open resource")
@@ -43,7 +43,7 @@ var (
 	ErrMissingProperty      = errors.New("missing property")
 )
 
-// glyph/character errors
+// Glyph/character errors
 var (
 	ErrInvalidGlyphIndex    = errors.New("invalid glyph index")
 	ErrInvalidCharacterCode = errors.New("invalid character code")
@@ -55,7 +55,7 @@ var (
 	ErrInvalidPixelSize     = errors.New("invalid pixel size")
 )
 
-// handle errors
+// Handle errors
 var (
 	ErrInvalidHandle        = errors.New("invalid object handle")
 	ErrInvalidLibraryHandle = errors.New("invalid library handle")
@@ -68,19 +68,19 @@ var (
 	ErrInvalidStreamHandle  = errors.New("invalid stream handle")
 )
 
-// driver errors
+// Driver errors
 var (
 	ErrTooManyDrivers    = errors.New("too many modules")
 	ErrTooManyExtensions = errors.New("too many extensions")
 )
 
-// memory errors
+// Memory errors
 var (
 	ErrOutOfMemory    = errors.New("out of memory")
 	ErrUnlistedObject = errors.New("unlisted object")
 )
 
-// stream errors
+// Stream errors
 var (
 	ErrCannotOpenStream       = errors.New("cannot open stream")
 	ErrInvalidStreamSeek      = errors.New("invalid stream seek")
@@ -92,7 +92,7 @@ var (
 	ErrInvalidFrameRead       = errors.New("invalid frame read")
 )
 
-// raster errors
+// Raster errors
 var (
 	ErrRasterUninitialized  = errors.New("raster uninitialized")
 	ErrRasterCorrupted      = errors.New("raster corrupted")
@@ -100,7 +100,7 @@ var (
 	ErrRasterNegativeHeight = errors.New("negative height while rastering")
 )
 
-// cache errors
+// Cache errors
 var (
 	ErrTooManyCaches = errors.New("too many registered caches")
 )
@@ -274,4 +274,14 @@ var getErr = func(code C.int) error {
 	}
 
 	return errors.New(str)
+}
+
+func mockGetErr(fn func(c int) error) (restore func()) {
+	orig := getErr
+	getErr = func(c C.int) error {
+		return fn(int(c))
+	}
+	return func() {
+		getErr = orig
+	}
 }

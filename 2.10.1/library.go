@@ -1,19 +1,13 @@
 package freetype2
 
-// #include <stdlib.h>
 // #include <ft2build.h>
 // #include FT_FREETYPE_H
 import "C"
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"unsafe"
-)
-
-var (
-	errInvalidLib = errors.New("library must not be nil")
 )
 
 // Version contains version information
@@ -95,9 +89,9 @@ func (l *Library) Version() Version {
 // Beware, the data will be read, all at once, into memory.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_new_memory_face
-func (l *Library) NewFace(r io.Reader, idx FaceIndex) (*Face, error) {
+func (l *Library) NewFace(r io.Reader, index, namedInstanceIndex int) (*Face, error) {
 	if l == nil || l.ptr == nil {
-		return nil, errInvalidLib
+		return nil, ErrInvalidLibraryHandle
 	}
 
 	data, err := ioutil.ReadAll(r)
@@ -110,10 +104,16 @@ func (l *Library) NewFace(r io.Reader, idx FaceIndex) (*Face, error) {
 	}
 
 	cdata := C.CBytes(data)
-	free := func() { C.free(cdata) }
+	free := func() { free(cdata) }
 
 	var face C.FT_Face
-	if err := getErr(C.FT_New_Memory_Face(l.ptr, (*C.uchar)(cdata), C.long(len(data)), C.FT_Long(idx), &face)); err != nil {
+	if err := getErr(C.FT_New_Memory_Face(
+		l.ptr,
+		(*C.uchar)(cdata),
+		C.long(len(data)),
+		C.FT_Long(index&0xFFFF|namedInstanceIndex<<16),
+		&face,
+	)); err != nil {
 		free()
 		return nil, err
 	}
@@ -126,16 +126,21 @@ func (l *Library) NewFace(r io.Reader, idx FaceIndex) (*Face, error) {
 // NewFaceFromPath creates a new face from the given path.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_new_face
-func (l *Library) NewFaceFromPath(path string, idx FaceIndex) (*Face, error) {
+func (l *Library) NewFaceFromPath(path string, index, namedInstanceIndex int) (*Face, error) {
 	if l == nil || l.ptr == nil {
-		return nil, errInvalidLib
+		return nil, ErrInvalidLibraryHandle
 	}
 
 	var face C.FT_Face
 	cpath := C.CString(path)
 	defer C.free(unsafe.Pointer(cpath))
 
-	if err := getErr(C.FT_New_Face(l.ptr, cpath, C.FT_Long(idx), &face)); err != nil {
+	if err := getErr(C.FT_New_Face(
+		l.ptr,
+		cpath,
+		C.FT_Long(index&0xFFFF|namedInstanceIndex<<16),
+		&face,
+	)); err != nil {
 		return nil, err
 	}
 

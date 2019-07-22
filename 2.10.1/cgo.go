@@ -24,6 +24,30 @@ package freetype2
 // #cgo darwin,amd64,static,harfbuzz LDFLAGS: -L${SRCDIR}/darwin_amd64/lib -lfreetypehb -lharfbuzz -lfreetypehb -lbz2 -lpng16 -lz -lm
 // #cgo darwin,amd64,static,harfbuzz,subset LDFLAGS: -L${SRCDIR}/darwin_amd64/lib -lfreetypehb -lharfbuzz -lharfbuzz-subset -lbz2 -lpng16 -lz -lm
 //
+// #include <stdlib.h>
 // #include <ft2build.h>
 // #include FT_FREETYPE_H
 import "C"
+
+import "unsafe"
+
+var free = func(v unsafe.Pointer) {
+	C.free(v)
+}
+
+const actuallyFreeItAfter = true
+const iWannaFreeItMyself = false
+
+func mockFree(fn func(v unsafe.Pointer), actuallyFreeIt bool) (restore func()) {
+	orig := free
+	free = func(v unsafe.Pointer) {
+		fn(v)
+		if actuallyFreeIt {
+			orig(v)
+		}
+	}
+
+	return func() {
+		free = orig
+	}
+}
