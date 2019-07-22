@@ -3,6 +3,7 @@ package freetype2
 import (
 	"os"
 	"testing"
+	"unsafe"
 )
 
 func TestNewLibrary(t *testing.T) {
@@ -59,11 +60,11 @@ func TestLibraryFree(t *testing.T) {
 		t.Fatalf("unable to init lib: %s", err)
 	}
 
-	face1, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0)
+	face1, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
 	if err != nil {
 		t.Fatalf("unable to create face: %s", err)
 	}
-	face2, err := l.NewFaceFromPath(testdata("go", "Go-Bold.ttf"), 0)
+	face2, err := l.NewFaceFromPath(testdata("go", "Go-Bold.ttf"), 0, 0)
 	if err != nil {
 		t.Fatalf("unable to create face: %s", err)
 	}
@@ -85,20 +86,20 @@ func TestLibraryFree(t *testing.T) {
 }
 
 func TestNewFace(t *testing.T) {
-	type testCase struct{ filename, family, style string }
+	type testCase struct{ path, family, style string }
 	tests := []testCase{
-		{filename: "Go-Bold-Italic.ttf", family: "Go", style: "Bold Italic"},
-		{filename: "Go-Bold.ttf", family: "Go", style: "Bold"},
-		{filename: "Go-Italic.ttf", family: "Go", style: "Italic"},
-		{filename: "Go-Medium-Italic.ttf", family: "Go Medium", style: "Italic"},
-		{filename: "Go-Medium.ttf", family: "Go Medium", style: "Regular"},
-		{filename: "Go-Mono-Bold-Italic.ttf", family: "Go Mono", style: "Bold Italic"},
-		{filename: "Go-Mono-Bold.ttf", family: "Go Mono", style: "Bold"},
-		{filename: "Go-Mono-Italic.ttf", family: "Go Mono", style: "Italic"},
-		{filename: "Go-Mono.ttf", family: "Go Mono", style: "Regular"},
-		{filename: "Go-Regular.ttf", family: "Go", style: "Regular"},
-		{filename: "Go-Smallcaps-Italic.ttf", family: "Go Smallcaps", style: "Italic"},
-		{filename: "Go-Smallcaps.ttf", family: "Go Smallcaps", style: "Regular"},
+		{path: testdata("go", "Go-Bold-Italic.ttf"), family: "Go", style: "Bold Italic"},
+		{path: testdata("go", "Go-Bold.ttf"), family: "Go", style: "Bold"},
+		{path: testdata("go", "Go-Italic.ttf"), family: "Go", style: "Italic"},
+		{path: testdata("go", "Go-Medium-Italic.ttf"), family: "Go Medium", style: "Italic"},
+		{path: testdata("go", "Go-Medium.ttf"), family: "Go Medium", style: "Regular"},
+		{path: testdata("go", "Go-Mono-Bold-Italic.ttf"), family: "Go Mono", style: "Bold Italic"},
+		{path: testdata("go", "Go-Mono-Bold.ttf"), family: "Go Mono", style: "Bold"},
+		{path: testdata("go", "Go-Mono-Italic.ttf"), family: "Go Mono", style: "Italic"},
+		{path: testdata("go", "Go-Mono.ttf"), family: "Go Mono", style: "Regular"},
+		{path: testdata("go", "Go-Regular.ttf"), family: "Go", style: "Regular"},
+		{path: testdata("go", "Go-Smallcaps-Italic.ttf"), family: "Go Smallcaps", style: "Italic"},
+		{path: testdata("go", "Go-Smallcaps.ttf"), family: "Go Smallcaps", style: "Regular"},
 	}
 
 	test := func(t *testing.T, tc testCase, constructor func(l *Library, path string) (*Face, error)) {
@@ -108,7 +109,7 @@ func TestNewFace(t *testing.T) {
 		}
 		defer l.Free()
 
-		f, err := constructor(l, testdata("go", tc.filename))
+		f, err := constructor(l, tc.path)
 		if err != nil {
 			t.Fatalf("unable to open face: %s", err)
 		}
@@ -126,63 +127,10 @@ func TestNewFace(t *testing.T) {
 		}
 	}
 
-	t.Run("NewFace(nilLib)", func(t *testing.T) {
-		var l *Library
-		want := errInvalidLib
-		if _, err := l.NewFace(nil, 0); err != want {
-			t.Errorf("want err: %v, got %v", want, err)
-		}
-	})
-
-	t.Run("NewFaceFromPath(nilLib)", func(t *testing.T) {
-		var l *Library
-		want := errInvalidLib
-		if _, err := l.NewFaceFromPath("", 0); err != want {
-			t.Errorf("want err: %v, got %v", want, err)
-		}
-	})
-
-	t.Run("NewFace(noData)", func(t *testing.T) {
-		l, err := NewLibrary()
-		if err != nil {
-			t.Fatalf("unable to init lib: %s", err)
-		}
-		defer l.Free()
-
-		want := ErrUnknownFileFormat
-		if _, err := l.NewFace(zeroReader{}, 0); err != want {
-			t.Errorf("want err: %v, got %v", want, err)
-		}
-	})
-
-	t.Run("NewFaceFromPath(fileNotExists)", func(t *testing.T) {
-		l, err := NewLibrary()
-		if err != nil {
-			t.Fatalf("unable to init lib: %s", err)
-		}
-		defer l.Free()
-		want := ErrCannotOpenResource
-		if _, err := l.NewFaceFromPath("idontexist.ttf", 0); err != want {
-			t.Errorf("want err: %v, got %v", want, err)
-		}
-	})
-
-	t.Run("NewFaceFromPath(fileEmpty)", func(t *testing.T) {
-		l, err := NewLibrary()
-		if err != nil {
-			t.Fatalf("unable to init lib: %s", err)
-		}
-		defer l.Free()
-		want := ErrUnknownFileFormat
-		if _, err := l.NewFaceFromPath(testdata("emptyfile"), 0); err != want {
-			t.Errorf("want err: %v, got %v", want, err)
-		}
-	})
-
 	t.Run("NewFaceFromPath()", func(t *testing.T) {
 		for _, tc := range tests {
 			test(t, tc, func(l *Library, path string) (*Face, error) {
-				return l.NewFaceFromPath(path, 0)
+				return l.NewFaceFromPath(path, 0, 0)
 			})
 		}
 	})
@@ -195,8 +143,92 @@ func TestNewFace(t *testing.T) {
 					return nil, err
 				}
 				defer r.Close()
-				return l.NewFace(r, 0)
+				return l.NewFace(r, 0, 0)
 			})
 		}
 	})
+}
+
+func TestNewFaceOnNilLib(t *testing.T) {
+	var l *Library
+	want := ErrInvalidLibraryHandle
+	if _, err := l.NewFace(nil, 0, 0); err != want {
+		t.Errorf("want err: %v, got %v", want, err)
+	}
+}
+
+func TestNewFaceWithNoData(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to init lib: %s", err)
+	}
+	defer l.Free()
+
+	want := ErrUnknownFileFormat
+	if _, err := l.NewFace(zeroReader{}, 0, 0); err != want {
+		t.Errorf("want err: %v, got %v", want, err)
+	}
+}
+
+func TestNewFaceFreesReadDataOnError(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to init lib: %s", err)
+	}
+	defer l.Free()
+
+	r, err := os.Open(testdata("go", "Go-Bold-Italic.ttf"))
+	if err != nil {
+		t.Fatalf("unable to open file: %s", err)
+	}
+	defer r.Close()
+
+	var freed bool
+	wantErr := ErrBadArgument
+	defer mockGetErr(func(_ int) error {
+		return wantErr
+	})()
+	defer mockFree(func(_ unsafe.Pointer) {
+		freed = true
+	}, actuallyFreeItAfter)()
+
+	_, err = l.NewFace(r, 0, 0)
+	if err != wantErr {
+		t.Errorf("want err: %v, got %v", wantErr, err)
+	}
+	if !freed {
+		t.Errorf("expected data to have been freed on error!")
+	}
+}
+
+func TestNewFaceFromPathOnNilLib(t *testing.T) {
+	var l *Library
+	want := ErrInvalidLibraryHandle
+	if _, err := l.NewFaceFromPath("", 0, 0); err != want {
+		t.Errorf("want err: %v, got %v", want, err)
+	}
+}
+
+func TestNewFaceFromPathWithMissingFile(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to init lib: %s", err)
+	}
+	defer l.Free()
+	want := ErrCannotOpenResource
+	if _, err := l.NewFaceFromPath("idontexist.ttf", 0, 0); err != want {
+		t.Errorf("want err: %v, got %v", want, err)
+	}
+}
+
+func TestNewFaceFromPathWithEmptyFile(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to init lib: %s", err)
+	}
+	defer l.Free()
+	want := ErrUnknownFileFormat
+	if _, err := l.NewFaceFromPath(testdata("emptyfile"), 0, 0); err != want {
+		t.Errorf("want err: %v, got %v", want, err)
+	}
 }

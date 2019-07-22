@@ -2,164 +2,14 @@ package freetype2
 
 // #include <ft2build.h>
 // #include FT_FREETYPE_H
-import "C"
+// #include FT_TRUETYPE_TABLES_H
 import (
-	"fmt"
-
-	"golang.org/x/image/math/fixed"
+	"C"
 )
-
-// Encoding is an enumeration to specify character sets supported by charmaps.
-// Used in the SelectCharmap API function.
-//
-// Despite the name, this enumeration lists specific character repertories (i.e., charsets), and not text encoding
-// methods (e.g., UTF-8, UTF-16, etc.).
-//
-// Other encodings might be defined in the future.
-//
-// By default, FreeType enables a Unicode charmap and tags it with EncodingUnicode when it is either provided or can be
-// generated from PostScript glyph name dictionaries in the font file. All other encodings are considered legacy and
-// tagged only if explicitly defined in the font file. Otherwise, EncodingNone is used.
-//
-// EncodingNone is set by the BDF and PCF drivers if the charmap is neither Unicode nor ISO-8859-1 (otherwise it is set
-// to EncodingUnicode).
-// Use TODO: FT_Get_BDF_Charset_ID to find out which encoding is really present. If, for example, the TODO: cs_registry
-// field is ‘KOI8’ and the  TODO: cs_encoding field is ‘R’, the font is encoded in KOI8-R.
-//
-// EncodingNone is always set (with a single exception) by the winfonts driver.
-// Use TODO: FT_Get_WinFNT_Header and examine the charset field of the TODO: FT_WinFNT_HeaderRec structure to find out
-// which encoding is really present. For example, TODO: FT_WinFNT_ID_CP1251 (204) means Windows code page 1251
-// (for Russian).
-//
-// EncodingNone is set if TODO: platform_id is TODO: TT_PLATFORM_MACINTOSH and TODO: encoding_id is not
-// TODO: TT_MAC_ID_ROMAN (otherwise it is set to EncodingAppleRoman).
-//
-// If TODO: platform_id is TODO: TT_PLATFORM_MACINTOSH, use the function TODO: FT_Get_CMap_Language_ID to query the Mac
-// language ID that may be needed to be able to distinguish Apple encoding variants.
-// See https://www.unicode.org/Public/MAPPINGS/VENDORS/APPLE/Readme.txt to get an idea how to do that. Basically, if the
-// language ID is 0, don't use it, otherwise subtract 1 from the language ID. Then examine TODO: encoding_id.
-// If, for example, TODO: encoding_id is TODO: TT_MAC_ID_ROMAN and the language ID (minus 1) is TODO: TT_MAC_LANGID_GREEK,
-// it is the Greek encoding, not Roman.
-// TODO: TT_MAC_ID_ARABIC with TODO: TT_MAC_LANGID_FARSI means the Farsi variant
-// the Arabic encoding.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_encoding
-type Encoding int
-
-const (
-	// EncodingNone is reserved for all formats except BDF, PCF, and Windows FNT
-	EncodingNone Encoding = C.FT_ENCODING_NONE
-
-	// EncodingMsSymbol is the Microsoft Symbol encoding, used to encode mathematical symbols and wingdings. This
-	// encoding uses character codes from the PUA (Private Unicode Area) in the range U+F020-U+F0FF.
-	//
-	// For more information, see https://www.microsoft.com/typography/otspec/recom.htm#non-standard-symbol-fonts,
-	// http://www.kostis.net/charsets/symbol.htm, and http://www.kostis.net/charsets/wingding.htm
-	EncodingMsSymbol Encoding = C.FT_ENCODING_MS_SYMBOL
-
-	// EncodingUnicode is the Unicode character set. This value covers all versions of the Unicode repertoire, including
-	// ASCII and Latin-1. Most fonts include a Unicode charmap, but not all of them.
-	//
-	// For example, if you want to access Unicode value U+1F028 (and the font contains it), use value 0x1F028 as the
-	// input value for GetCharIndex.
-	EncodingUnicode Encoding = C.FT_ENCODING_UNICODE
-
-	// EncodingSJIS is the Shift JIS encoding for Japanese.
-	//
-	// More info at https://en.wikipedia.org/wiki/Shift_JIS.
-	EncodingSJIS Encoding = C.FT_ENCODING_SJIS
-
-	// EncodingPRC corresponds to encoding systems mainly for Simplified Chinese as used in People's Republic of China
-	// (PRC). The encoding layout is based on GB 2312 and its supersets GBK and GB 18030.
-	EncodingPRC Encoding = C.FT_ENCODING_PRC
-
-	// EncodingBig5 corresponds to an encoding system for Traditional Chinese as used in Taiwan and Hong Kong.
-	EncodingBig5 Encoding = C.FT_ENCODING_BIG5
-
-	// EncodingWansung corresponds to the Korean encoding system known as Extended Wansung (MS Windows code page 949).
-	//
-	// For more information see‘https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WindowsBestFit/bestfit949.txt
-	EncodingWansung Encoding = C.FT_ENCODING_WANSUNG
-
-	// EncodingJohab is the Korean standard character set (KS C 5601-1992), which corresponds to MS Windows code page
-	// 1361. This character set includes all possible Hangul character combinations.
-	EncodingJohab Encoding = C.FT_ENCODING_JOHAB
-
-	// EncodingAdobeStandard is the Adobe Standard encoding, as found in Type 1, CFF, and OpenType/CFF fonts.
-	// It is limited to 256 character codes.
-	EncodingAdobeStandard Encoding = C.FT_ENCODING_ADOBE_STANDARD
-
-	// EncodingAdobeExpert is the Adobe Expert encoding, as found in Type 1, CFF, and OpenType/CFF fonts.
-	// It is limited to 256 character codes.
-	EncodingAdobeExpert Encoding = C.FT_ENCODING_ADOBE_EXPERT
-
-	// EncodingAdobeCustom corresponds to a custom encoding, as found in Type 1, CFF, and OpenType/CFF fonts.
-	// It is limited to 256 character codes.
-	EncodingAdobeCustom Encoding = C.FT_ENCODING_ADOBE_CUSTOM
-
-	// EncodingAdobeLatin1 corresponds to a Latin-1 encoding as defined in a Type 1 PostScript font.
-	// It is limited to 256 character codes.
-	EncodingAdobeLatin1 Encoding = C.FT_ENCODING_ADOBE_LATIN_1
-
-	// EncodingAppleRoman is the Apple roman encoding. Many TrueType and OpenType fonts contain a charmap for this 8-bit
-	// encoding, since older versions of Mac OS are able to use it.
-	EncodingAppleRoman Encoding = C.FT_ENCODING_APPLE_ROMAN
+import (
+	"github.com/flga/freetype2/2.10.1/fixed"
+	"github.com/flga/freetype2/2.10.1/truetype"
 )
-
-// Int26_6 is a signed 26.6 fixed-point type used for vectorial pixel coordinates.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_f26dot6
-type Int26_6 = fixed.Int26_6
-
-// Int16_16 is a signed 16.16 fixed-point number.
-//
-// The integer part ranges from -32768 to 32767, inclusive. The fractional part has 16 bits of precision.
-// For example, the number one-and-a-quarter is Int16_16(1<<6 + 1<<14).
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_fixed
-type Int16_16 int32
-
-func (x Int16_16) String() string {
-	const shift, mask = 16, 1<<16 - 1
-	if x >= 0 {
-		return fmt.Sprintf("%d:%d", int32(x>>shift), int32(x&mask))
-	}
-	x = -x
-	if x >= 0 {
-		return fmt.Sprintf("-%d:%d", int32(x>>shift), int32(x&mask))
-	}
-	return "-32768:0" // The minimum value is -(1<<15).
-}
-
-// Floor returns the greatest integer value less than or equal to x.
-//
-// Its return type is int, not Int16_16.
-func (x Int16_16) Floor() int { return int((x) >> 16) }
-
-// Round returns the nearest integer value to x. Ties are rounded up.
-//
-// Its return type is int, not Int16_16.
-func (x Int16_16) Round() int { return int((x + 1<<15) >> 16) }
-
-// Ceil returns the least integer value greater than or equal to x.
-//
-// Its return type is int, not Int16_16.
-func (x Int16_16) Ceil() int { return int((x + 1<<16 - 1) >> 16) }
-
-// Mul returns x*y in 16.16 fixed-point arithmetic.
-func (x Int16_16) Mul(y Int16_16) Int16_16 {
-	return Int16_16((int64(x)*int64(y) + 1<<15) >> 16)
-}
-
-// F32 converts the underlying value to float32.
-func (x Int16_16) F32() float32 {
-	return float32(x) / float32(1<<16)
-}
-
-// F64 converts the underlying value to float64.
-func (x Int16_16) F64() float64 {
-	return float64(x) / float64(1<<16)
-}
 
 // Pos is used to store vectorial coordinates. Depending on the context, these can represent distances in integer
 // font units, or 16.16, or 26.6 fixed-point pixel coordinates.
@@ -167,68 +17,11 @@ func (x Int16_16) F64() float64 {
 // See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_pos
 type Pos int32
 
-// BitmapSize models the metrics of a bitmap strike (i.e., a set of glyphs for a given point size and resolution) in a
-// bitmap font.
+// Vector models a 2D vector
 //
-// NOTE:
-// Windows FNT: The nominal size given in a FNT font is not reliable. If the driver finds it incorrect, it sets Size to
-// some calculated values, and XPpem and YPpem to the pixel width and height given in the font, respectively.
-//
-// NOTE:
-// TrueType embedded bitmaps: size, width, and height values are not contained in the bitmap strike itself. They are
-// computed from the global font parameters.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_bitmap_size
-type BitmapSize struct {
-	// The vertical distance, in pixels, between two consecutive baselines.
-	// It is always positive.
-	Height int
-	// The average width, in pixels, of all glyphs in the strike.
-	Width int
-	// The nominal size of the strike. This field is not very useful.
-	Size Int26_6
-	// The horizontal ppem (nominal width).
-	XPpem Int26_6
-	// The vertical ppem (nominal height).
-	YPpem Int26_6
-}
-
-// CharMap is used to translate character codes in a given encoding into glyph indexes for its parent's face.
-// Some font formats may provide several charmaps per font.
-//
-// Each face object owns zero or more charmaps, but only one of them can be ‘active’, providing the data used by
-// GetCharIndex or LoadChar.
-//
-// NOTE:
-// When a new face is created (either through NewFace or OpenFace), the library looks for a Unicode
-// charmap within the list and automatically activates it. If there is no Unicode charmap, FreeType doesn't set an
-// ‘active’ charmap.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_charmap
-type CharMap struct {
-	// Format of the CharMap
-	Format int
-
-	// Language id
-	Language LanguageID
-
-	// An Encoding tag identifying the charmap. Use this with SelectCharmap.
-	Encoding Encoding
-
-	// An ID number describing the platform for the following encoding ID.
-	// This comes directly from the TrueType specification and gets emulated for
-	// other formats.
-	PlatformID PlatformID
-
-	// A platform-specific encoding number. This also comes from the TrueType
-	// specification and gets emulated similarly.
-	EncodingID EncodingID
-
-	// The index into Face.CharMaps
-	index int
-
-	// not user created
-	ours bool
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_vector
+type Vector struct {
+	X, Y Pos
 }
 
 // BBox holds an outline's bounding box, i.e., the coordinates of its extrema in the horizontal and vertical directions.
@@ -252,4 +45,285 @@ type BBox struct {
 	XMax Pos
 	// The vertical maximum (top-most).
 	YMax Pos
+}
+
+func newBBox(b C.FT_BBox) BBox {
+	return BBox{
+		XMin: Pos(b.xMin),
+		YMin: Pos(b.yMin),
+		XMax: Pos(b.xMax),
+		YMax: Pos(b.yMax),
+	}
+}
+
+// Matrix stores a 2x2 matrix. Coefficients are in 16.16 fixed-point format.
+//
+// The computation performed is:
+// x' = x*xx + y*xy
+// y' = x*yx + y*yy
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_matrix
+type Matrix struct {
+	Xx, Xy fixed.Int16_16
+	Yx, Yy fixed.Int16_16
+}
+
+// FWord is a distance in original font units.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_fword
+type FWord int16
+
+// UFWord is an unsigned distance in original font units.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_ufword
+type UFWord uint16
+
+// UnitVector stores a 2D vector unit vector.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_unitvector
+type UnitVector struct {
+	X, Y fixed.Int2_14
+}
+
+// Bitmap represents a bitmap or pixmap to the raster.
+// Note that we now manage pixmaps of various depths through the PixelMode field.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_bitmap
+type Bitmap struct {
+	// The number of bitmap rows.
+	Rows int
+
+	// The number of pixels in bitmap row.
+	Width int
+
+	// The pitch's absolute value is the number of bytes taken by one bitmap row,
+	// including padding. However, the pitch is positive when the bitmap has a
+	// ‘down’ flow, and negative when it has an ‘up’ flow. In all cases, the
+	// pitch is an offset to add to a bitmap pointer in order to go down one row.
+	//
+	// Note that ‘padding’ means the alignment of a bitmap to a byte border,
+	// and FreeType functions normally align to the smallest possible integer
+	// value.
+	//
+	// For the B/W rasterizer, pitch is always an even number.
+	//
+	// To change the pitch of a bitmap (say, to make it a multiple of 4), use
+	// Convert().
+	Pitch int
+
+	// Pixel data
+	Buffer []byte
+
+	// This field is only used with PixelModeGray; it gives the number of gray
+	// levels used in the bitmap.
+	NumGrays int
+
+	// The pixel mode, i.e., how pixel bits are stored. See PixelMode for
+	// possible values.
+	PixelMode PixelMode
+}
+
+// BitmapSize models the metrics of a bitmap strike (i.e., a set of glyphs for a given point size and resolution) in a
+// bitmap font.
+//
+// NOTE:
+// Windows FNT: The nominal size given in a FNT font is not reliable. If the driver finds it incorrect, it sets Size to
+// some calculated values, and XPpem and YPpem to the pixel width and height given in the font, respectively.
+//
+// NOTE:
+// TrueType embedded bitmaps: size, width, and height values are not contained in the bitmap strike itself. They are
+// computed from the global font parameters.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_bitmap_size
+type BitmapSize struct {
+	// The vertical distance, in pixels, between two consecutive baselines.
+	// It is always positive.
+	Height int
+	// The average width, in pixels, of all glyphs in the strike.
+	Width int
+	// The nominal size of the strike. This field is not very useful.
+	Size fixed.Int26_6
+	// The horizontal ppem (nominal width).
+	XPpem fixed.Int26_6
+	// The vertical ppem (nominal height).
+	YPpem fixed.Int26_6
+}
+
+func newBitmapSize(b C.FT_Bitmap_Size) BitmapSize {
+	return BitmapSize{
+		Height: int(b.height),
+		Width:  int(b.width),
+		Size:   fixed.Int26_6(b.size),
+		XPpem:  fixed.Int26_6(b.x_ppem),
+		YPpem:  fixed.Int26_6(b.y_ppem),
+	}
+}
+
+// CharMap is used to translate character codes in a given encoding into glyph indexes for its parent's face.
+// Some font formats may provide several charmaps per font.
+//
+// Each face object owns zero or more charmaps, but only one of them can be ‘active’, providing the data used by
+// GetCharIndex or LoadChar.
+//
+// NOTE:
+// When a new face is created (either through NewFace or OpenFace), the library looks for a Unicode
+// charmap within the list and automatically activates it. If there is no Unicode charmap, FreeType doesn't set an
+// ‘active’ charmap.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_charmap
+type CharMap struct {
+	// Format of the CharMap
+	Format int
+
+	// Language id
+	Language truetype.LanguageID
+
+	// An Encoding tag identifying the charmap. Use this with SelectCharmap.
+	Encoding Encoding
+
+	// An ID number describing the platform for the following encoding ID.
+	// This comes directly from the TrueType specification and gets emulated for
+	// other formats.
+	PlatformID truetype.PlatformID
+
+	// A platform-specific encoding number. This also comes from the TrueType
+	// specification and gets emulated similarly.
+	EncodingID truetype.EncodingID
+
+	// The index into Face.CharMaps
+	index int
+
+	// not user created
+	ours bool //TODO: remove if there are no methods that accept a CharMap as an argument
+}
+
+func newCharMap(c C.FT_CharMap) CharMap {
+	if c == nil {
+		return CharMap{}
+	}
+
+	return CharMap{
+		Format:     int(C.FT_Get_CMap_Format(c)),
+		Language:   truetype.LanguageID(C.FT_Get_CMap_Language_ID(c)),
+		Encoding:   Encoding(c.encoding),
+		PlatformID: truetype.PlatformID(c.platform_id),
+		EncodingID: truetype.EncodingID(c.encoding_id),
+		index:      int(C.FT_Get_Charmap_Index(c)),
+		ours:       true,
+	}
+}
+
+// Size models a face scaled to a given character size.
+//
+// A Face has one active Size object that is used by functions like LoadGlyph to determine the scaling transformation
+// that in turn is used to load and hint glyphs and metrics.
+//
+// You can use SetCharSize, SetPixelSizes, RequestSize or even SelectSize to change the content (i.e., the scaling
+// values) of the active Size.
+//
+// You can use NewSize to create additional size objects for a given Face, but they won't be used by other functions
+// until you activate it through ActivateSize. Only one size can be activated at any given time per face.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size
+type Size struct {
+	SizeMetrics
+}
+
+func newSize(s C.FT_Size) Size {
+	if s == nil {
+		return Size{}
+	}
+
+	return Size{
+		SizeMetrics{
+			XPpem:      int(s.metrics.x_ppem),
+			YPpem:      int(s.metrics.y_ppem),
+			XScale:     fixed.Int16_16(s.metrics.x_scale),
+			YScale:     fixed.Int16_16(s.metrics.y_scale),
+			Ascender:   fixed.Int26_6(s.metrics.ascender),
+			Descender:  fixed.Int26_6(s.metrics.descender),
+			Height:     fixed.Int26_6(s.metrics.height),
+			MaxAdvance: fixed.Int26_6(s.metrics.max_advance),
+		},
+	}
+}
+
+// SizeMetrics contains the metrics of a size object.
+//
+// The scaling values, if relevant, are determined first during a size changing operation. The remaining fields are then
+// set by the driver. For scalable formats, they are usually set to scaled values of the corresponding fields in Face.
+// Some values like ascender or descender are rounded for historical reasons; more precise values (for outline fonts)
+// can be derived by scaling the corresponding Face values manually, with code similar to the following.
+//	TODO: scaled_ascender = FT_MulFix( face->ascender, size_metrics->y_scale );
+//
+// Note that due to glyph hinting and the selected rendering mode these values are usually not exact; consequently, they
+// must be treated as unreliable with an error margin of at least one pixel!
+//
+// Indeed, the only way to get the exact metrics is to render all glyphs. As this would be a definite performance hit,
+// it is up to client applications to perform such computations.
+//
+// SizeMetrics is valid for bitmap fonts also.
+//
+// TrueType fonts with native bytecode hinting
+//
+// All applications that handle TrueType fonts with native hinting must be aware that TTFs expect different rounding of
+// vertical font dimensions. The application has to cater for this, especially if it wants to rely on a TTF's vertical
+// data (for example, to properly align box characters vertically).
+//
+// Only the application knows in advance that it is going to use native hinting for TTFs! FreeType, on the other hand,
+// selects the hinting mode not at the time of creating a Size object but much later, namely while calling LoadGlyph.
+//
+// Here is some pseudo code that illustrates a possible solution. (TODO)
+//	font_format = FT_Get_Font_Format( face );
+//
+//	if ( !strcmp( font_format, "TrueType" ) &&
+//		do_native_bytecode_hinting         )
+//	{
+//	ascender  = ROUND( FT_MulFix( face->ascender,
+//									size_metrics->y_scale ) );
+//	descender = ROUND( FT_MulFix( face->descender,
+//									size_metrics->y_scale ) );
+//	}
+//	else
+//	{
+//	ascender  = size_metrics->ascender;
+//	descender = size_metrics->descender;
+//	}
+//
+//	height      = size_metrics->height;
+//	max_advance = size_metrics->max_advance;
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_metrics
+type SizeMetrics struct {
+	// The width of the scaled EM square in pixels, hence the term ‘ppem’
+	// (pixels per EM). It is also referred to as ‘nominal width’.
+	XPpem int
+
+	// The height of the scaled EM square in pixels, hence the term ‘ppem’
+	// (pixels per EM). It is also referred to as ‘nominal height’.
+	YPpem int
+
+	// A 16.16 fractional scaling value to convert horizontal metrics from font
+	// units to 26.6 fractional pixels. Only relevant for scalable font formats.
+	XScale fixed.Int16_16
+
+	// A 16.16 fractional scaling value to convert vertical metrics from font
+	// units to 26.6 fractional pixels. Only relevant for scalable font formats.
+	YScale fixed.Int16_16
+
+	// The ascender in 26.6 fractional pixels, rounded up to an integer value.
+	// See Face for the details.
+	Ascender fixed.Int26_6
+
+	// The descender in 26.6 fractional pixels, rounded down to an integer value.
+	// See Face for the details.
+	Descender fixed.Int26_6
+
+	// The height in 26.6 fractional pixels, rounded to an integer value.
+	// See Face for the details.
+	Height fixed.Int26_6
+
+	// The maximum advance width in 26.6 fractional pixels, rounded to an
+	// integer value. See Face for the details.
+	MaxAdvance fixed.Int26_6
 }

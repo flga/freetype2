@@ -8,52 +8,52 @@ import (
 	"unsafe"
 )
 
-// FaceFlags is a list of bit flags of a given face.
+// FaceFlag is a list of bit flags of a given face.
 // They inform client applications of properties of the corresponding face.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_face_flag_xxx
-type FaceFlags int
+type FaceFlag int
 
 const (
 	// FaceFlagScalable the face contains outline glyphs. Note that a face can contain bitmap strikes also, i.e., a
 	// face can have both this flag and FaceFlagFixedSizes set.
-	FaceFlagScalable FaceFlags = C.FT_FACE_FLAG_SCALABLE
+	FaceFlagScalable FaceFlag = C.FT_FACE_FLAG_SCALABLE
 
 	// FaceFlagFixedSizes the face contains bitmap strikes. See also the Face.NumFixedSizes() and Face.AvailableSizes().
-	FaceFlagFixedSizes FaceFlags = C.FT_FACE_FLAG_FIXED_SIZES
+	FaceFlagFixedSizes FaceFlag = C.FT_FACE_FLAG_FIXED_SIZES
 
 	// FaceFlagFixedWidth the face contains fixed-width characters (like Courier, Lucida, MonoType, etc.).
-	FaceFlagFixedWidth FaceFlags = C.FT_FACE_FLAG_FIXED_WIDTH
+	FaceFlagFixedWidth FaceFlag = C.FT_FACE_FLAG_FIXED_WIDTH
 
 	// FaceFlagSfnt the face uses the SFNT storage scheme. For now, this means TrueType and OpenType.
-	FaceFlagSfnt FaceFlags = C.FT_FACE_FLAG_SFNT
+	FaceFlagSfnt FaceFlag = C.FT_FACE_FLAG_SFNT
 
 	// FaceFlagHorizontal the face contains horizontal glyph metrics. This should be set for all common formats.
-	FaceFlagHorizontal FaceFlags = C.FT_FACE_FLAG_HORIZONTAL
+	FaceFlagHorizontal FaceFlag = C.FT_FACE_FLAG_HORIZONTAL
 
 	// FaceFlagVertical the face contains vertical glyph metrics. This is only available in some formats, not all of them.
-	FaceFlagVertical FaceFlags = C.FT_FACE_FLAG_VERTICAL
+	FaceFlagVertical FaceFlag = C.FT_FACE_FLAG_VERTICAL
 
 	// FaceFlagKerning the face contains kerning information. If set, the kerning distance can be retrieved using the
 	// GetKerning() method.
 	// Otherwise the function always returnS the vector (0,0). Note that FreeType doesn't handle kerning data from the
 	// SFNT ‘GPOS’ table (as present in many OpenType fonts).
-	FaceFlagKerning FaceFlags = C.FT_FACE_FLAG_KERNING
+	FaceFlagKerning FaceFlag = C.FT_FACE_FLAG_KERNING
 
 	// FaceFlagMultipleMasters the face contains multiple masters and is capable of interpolating between them.
 	// Supported formats are Adobe MM, TrueType GX, and OpenType variation fonts.
 	//
 	// See https://www.freetype.org/freetype2/docs/reference/ft2-multiple_masters.html
-	FaceFlagMultipleMasters FaceFlags = C.FT_FACE_FLAG_MULTIPLE_MASTERS
+	FaceFlagMultipleMasters FaceFlag = C.FT_FACE_FLAG_MULTIPLE_MASTERS
 
 	// FaceFlagGlyphNames the face contains glyph names, which can be retrieved using GetGlyphName().
 	// Note that some TrueType fonts contain broken glyph name tables. Use HasPSGlyphNames() when needed.
-	FaceFlagGlyphNames FaceFlags = C.FT_FACE_FLAG_GLYPH_NAMES
+	FaceFlagGlyphNames FaceFlag = C.FT_FACE_FLAG_GLYPH_NAMES
 
 	// FaceFlagHinter the font driver has a hinting machine of its own. For example, with TrueType fonts, it makes sense
 	// to use data from the SFNT ‘gasp’ table only if the native TrueType hinting engine (with the bytecode interpreter)
 	// is available and active.
-	FaceFlagHinter FaceFlags = C.FT_FACE_FLAG_HINTER
+	FaceFlagHinter FaceFlag = C.FT_FACE_FLAG_HINTER
 
 	// FaceFlagCidKeyed The face is CID-keyed. In that case, the face is not accessed by glyph indices but by CID values.
 	// For subsetted CID-keyed fonts this has the consequence that not all index values are a valid argument to
@@ -63,7 +63,7 @@ const (
 	// Note that CID-keyed fonts that are in an SFNT wrapper (this is, all OpenType/CFF fonts) don't have this flag set
 	// since the glyphs are accessed in the normal way (using contiguous indices); the ‘CID-ness’ isn't visible to the
 	// application.
-	FaceFlagCidKeyed FaceFlags = C.FT_FACE_FLAG_CID_KEYED
+	FaceFlagCidKeyed FaceFlag = C.FT_FACE_FLAG_CID_KEYED
 
 	// FaceFlagTricky the face is ‘tricky’, this is, it always needs the font format's native hinting engine to get a
 	// reasonable result.
@@ -75,19 +75,19 @@ const (
 	// except for demonstration purposes.
 	//
 	// Currently, there are about a dozen TrueType fonts in the list of tricky fonts; they are hard-coded in file ttobjs.c.
-	FaceFlagTricky FaceFlags = C.FT_FACE_FLAG_TRICKY
+	FaceFlagTricky FaceFlag = C.FT_FACE_FLAG_TRICKY
 
 	// FaceFlagColor the face has color glyph tables. See LoadColor for more information.
 	// [Since 2.5.1].
-	FaceFlagColor FaceFlags = C.FT_FACE_FLAG_COLOR
+	FaceFlagColor FaceFlag = C.FT_FACE_FLAG_COLOR
 
 	// FaceFlagVariation [Since 2.9] set if the current face (or named instance) has been altered with
 	// SetMMDesignCoordinates, SetVarDesignCoordinates, or SetVarBlend_Coordinates.
 	// This flag is unset by a call to SetNamedInstance.
-	FaceFlagVariation FaceFlags = C.FT_FACE_FLAG_VARIATION
+	FaceFlagVariation FaceFlag = C.FT_FACE_FLAG_VARIATION
 )
 
-func (x FaceFlags) String() string {
+func (x FaceFlag) String() string {
 	s := make([]byte, 0, 130) // len = sum of all the strings below.
 
 	if x&FaceFlagScalable > 0 {
@@ -139,19 +139,19 @@ func (x FaceFlags) String() string {
 	return string(s[:len(s)-1]) // trim the leading |
 }
 
-// StyleFlags is a list of bit flags to indicate the style of a given face.
+// StyleFlag is a list of bit flags to indicate the style of a given face.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_style_flag_xxx
-type StyleFlags int
+type StyleFlag int
 
 const (
 	// StyleFlagItalic the face style is italic or oblique
-	StyleFlagItalic StyleFlags = C.FT_STYLE_FLAG_ITALIC
+	StyleFlagItalic StyleFlag = C.FT_STYLE_FLAG_ITALIC
 	// StyleFlagBold the face is bold
-	StyleFlagBold StyleFlags = C.FT_STYLE_FLAG_BOLD
+	StyleFlagBold StyleFlag = C.FT_STYLE_FLAG_BOLD
 )
 
-func (x StyleFlags) String() string {
+func (x StyleFlag) String() string {
 	s := make([]byte, 0, 12) // len = sum of all the strings below.
 
 	if x&StyleFlagItalic > 0 {
@@ -177,7 +177,7 @@ func (x StyleFlags) String() string {
 // the value should be set to 0x00030004. If you want to access face 4 without variation handling, simply set it to 4.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_open_face (face_index argument)
-type FaceIndex int
+// type FaceIndex int // TODO: remove
 
 // Face models a given typeface, in a given style.
 //
@@ -226,38 +226,56 @@ func (f *Face) NumFaces() int {
 	return int(f.ptr.num_faces)
 }
 
-// Index returns the index of the given face.
-func (f *Face) Index() FaceIndex {
+// Index returns the index of the given face in the font file.
+func (f *Face) Index() int {
 	if f == nil || f.ptr == nil {
 		return 0
 	}
-	return FaceIndex(f.ptr.face_index)
+	return int(f.ptr.face_index) & 0xFFFF
+}
+
+// NamedIndex returns the named instance index for the current face index
+// (starting with value 1; value 0 makes FreeType ignore named instances).
+func (f *Face) NamedIndex() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.face_index) >> 16
 }
 
 // Flags returns the set of bit flags that give important information about the face.
-func (f *Face) Flags() FaceFlags {
+func (f *Face) Flags() FaceFlag {
 	if f == nil || f.ptr == nil {
 		return 0
 	}
-	return FaceFlags(f.ptr.face_flags)
+	return FaceFlag(f.ptr.face_flags)
 }
 
 // HasFlag reports whether the face has the given flag.
-func (f *Face) HasFlag(flag FaceFlags) bool { return f.Flags()&flag > 0 }
+func (f *Face) HasFlag(flag FaceFlag) bool { return f.Flags()&flag > 0 }
 
-// HasStyleFlag reports whether the face has the given style flag.
-func (f *Face) HasStyleFlag(flag StyleFlags) bool { return f.StyleFlags()&flag > 0 }
-
-// StyleFlags returns the set of bit flags indicating the style of the face; see StyleFlags for details.
+// Style returns the set of bit flags indicating the style of the face; see StyleFlag for details.
 //
 // [Since 2.6.1] Bits 16-30 hold the number of named instances available for the current face if we have a GX or
 // OpenType variation (sub)font. Bit 31 is always zero (this is, it is always a positive value). Note that a variation
 // font has always at least one named instance, namely the default instance.
-func (f *Face) StyleFlags() StyleFlags {
+func (f *Face) Style() StyleFlag {
 	if f == nil || f.ptr == nil {
 		return 0
 	}
-	return StyleFlags(f.ptr.style_flags)
+	return StyleFlag(f.ptr.style_flags)
+}
+
+// HasStyle reports whether the face has the given style flag.
+func (f *Face) HasStyle(flag StyleFlag) bool { return f.Style()&flag > 0 }
+
+// NumNamedInstances reports the number of available named instances available
+// for the current face if we have a GX or OpenType variation (sub)font.
+func (f *Face) NumNamedInstances() int {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+	return int(f.ptr.style_flags) >> 16
 }
 
 // NumGlyphs returns the number of glyphs in the face. If the face is scalable and has sbits (see NumFixedSizes), it is
@@ -325,13 +343,7 @@ func (f *Face) AvailableSizes() []BitmapSize {
 	ret := make([]BitmapSize, n)
 	ptr := (*[(1<<31 - 1) / C.sizeof_FT_Bitmap_Size]C.FT_Bitmap_Size)(unsafe.Pointer(f.ptr.available_sizes))[:n:n]
 	for i := range ret {
-		ret[i] = BitmapSize{
-			Height: int(ptr[i].height),
-			Width:  int(ptr[i].width),
-			Size:   Int26_6(ptr[i].size),
-			XPpem:  Int26_6(ptr[i].x_ppem),
-			YPpem:  Int26_6(ptr[i].y_ppem),
-		}
+		ret[i] = newBitmapSize(ptr[i])
 	}
 	return ret
 }
@@ -358,58 +370,9 @@ func (f *Face) CharMaps() []CharMap {
 	ret := make([]CharMap, n)
 	ptr := (*[(1<<31 - 1) / C.sizeof_FT_CharMap]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
 	for i := range ret {
-		ret[i] = CharMap{
-			ours:       true,
-			index:      i,
-			Format:     int(C.FT_Get_CMap_Format(ptr[i])),
-			Language:   LanguageID(C.FT_Get_CMap_Language_ID(ptr[i])),
-			Encoding:   Encoding(ptr[i].encoding),
-			PlatformID: PlatformID(ptr[i].platform_id),
-			EncodingID: EncodingID(ptr[i].encoding_id),
-		}
+		ret[i] = newCharMap(ptr[i])
 	}
 	return ret
-}
-
-// ActiveCharMap returns a copy of the active charmap.
-// If there is no active charmap, it returns the zero value and false.
-func (f *Face) ActiveCharMap() (CharMap, bool) {
-	if f == nil || f.ptr == nil {
-		return CharMap{}, false
-	}
-
-	active := f.ptr.charmap
-	if active == nil {
-		return CharMap{}, false
-	}
-
-	return CharMap{
-		ours:       true,
-		index:      int(C.FT_Get_Charmap_Index(active)),
-		Format:     int(C.FT_Get_CMap_Format(active)),
-		Language:   LanguageID(C.FT_Get_CMap_Language_ID(active)),
-		Encoding:   Encoding(active.encoding),
-		PlatformID: PlatformID(active.platform_id),
-		EncodingID: EncodingID(active.encoding_id),
-	}, true
-}
-
-func (f *Face) getCCharMap(idx int) C.FT_CharMap {
-	if f == nil || f.ptr == nil {
-		return nil
-	}
-
-	n := int(f.ptr.num_charmaps)
-	if n == 0 {
-		return nil
-	}
-
-	if idx >= n {
-		return nil
-	}
-
-	ptr := (*[(1<<31 - 1) / C.sizeof_FT_CharMap]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
-	return ptr[idx]
 }
 
 // BBox returns a copy of the font bounding box. Coordinates are expressed in font units (see UnitsPerEM).
@@ -422,13 +385,8 @@ func (f *Face) BBox() BBox {
 	if f == nil || f.ptr == nil {
 		return BBox{}
 	}
-	bbox := f.ptr.bbox
-	return BBox{
-		XMin: Pos(bbox.xMin),
-		YMin: Pos(bbox.yMin),
-		XMax: Pos(bbox.xMax),
-		YMax: Pos(bbox.yMax),
-	}
+
+	return newBBox(f.ptr.bbox)
 }
 
 // UnitsPerEM reports the number of font units per EM square for this face. This is typically 2048 for TrueType fonts,
@@ -510,4 +468,46 @@ func (f *Face) UnderlineThickness() int {
 		return 0
 	}
 	return int(f.ptr.underline_thickness)
+}
+
+// TODO: GLYPH
+
+// Size returns a copy of the current active size for this face.
+func (f *Face) Size() Size {
+	if f == nil || f.ptr == nil {
+		return Size{}
+	}
+
+	return newSize(f.ptr.size)
+}
+
+// ActiveCharMap returns a copy of the active charmap.
+// If there is no active charmap, it returns the zero value and false.
+func (f *Face) ActiveCharMap() (CharMap, bool) {
+	if f == nil || f.ptr == nil {
+		return CharMap{}, false
+	}
+
+	active := f.ptr.charmap
+	if active == nil {
+		return CharMap{}, false
+	}
+
+	return newCharMap(active), true
+}
+
+// SelectCharMap selects a given charmap by its encoding tag.
+// It returns an error if no charmap in the face corresponds to the encoding queried.
+//
+// Because many fonts contain more than a single cmap for Unicode encoding, this function has some special code to
+// select the one that covers Unicode best (‘best’ in the sense that a UCS-4 cmap is preferred to a UCS-2 cmap).
+// It is thus preferable to  SetCharMap in this case.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_select_charmap
+func (f *Face) SelectCharMap(enc Encoding) error {
+	if f == nil || f.ptr == nil {
+		return ErrInvalidFaceHandle
+	}
+
+	return getErr(C.FT_Select_Charmap(f.ptr, C.FT_Encoding(enc)))
 }
