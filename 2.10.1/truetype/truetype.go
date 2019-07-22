@@ -28,10 +28,13 @@ package truetype
 // #include FT_FREETYPE_H
 // #include FT_TRUETYPE_TABLES_H
 // #include FT_TRUETYPE_IDS_H
+//
+// #define my_explicit_uint32_TT_UCR_GENERAL_PUNCTUATION (unsigned long) TT_UCR_GENERAL_PUNCTUATION
+// #define my_explicit_uint32_TT_UCR_ARABIC_PRESENTATION_FORMS_A (unsigned long) TT_UCR_ARABIC_PRESENTATION_FORMS_A
+// #define my_explicit_uint32_TT_UCR_NEW_TAI_LUE (unsigned long) TT_UCR_NEW_TAI_LUE
 import (
 	"C"
 )
-
 import (
 	"time"
 
@@ -868,314 +871,314 @@ type UCRMask uint32
 
 // UlUnicodeRange1
 const (
-	// Bit 0   Basic Latin                                           U+0020-U+007E
+	// Bit 0   Basic Latin                                     U+0020-U+007E
 	UCRBasicLatin UCRMask = C.TT_UCR_BASIC_LATIN
-	// Bit 1   C1 Controls and Latin-1 Supplement                    U+0080-U+00FF
+	// Bit 1   C1 Controls and Latin-1 Supplement              U+0080-U+00FF
 	UCRLatin1Supplement UCRMask = C.TT_UCR_LATIN1_SUPPLEMENT
-	// Bit 2   Latin Extended-A                                      U+0100-U+017F
+	// Bit 2   Latin Extended-A                                U+0100-U+017F
 	UCRLatinExtendedA UCRMask = C.TT_UCR_LATIN_EXTENDED_A
-	// Bit 3   Latin Extended-B                                      U+0180-U+024F
+	// Bit 3   Latin Extended-B                                U+0180-U+024F
 	UCRLatinExtendedB UCRMask = C.TT_UCR_LATIN_EXTENDED_B
-	// Bit 4   IPA Extensions                                        U+0250-U+02AF
-	//          Phonetic Extensions                                  U+1D00-U+1D7F
-	//          Phonetic Extensions Supplement                       U+1D80-U+1DBF
+	// Bit 4   IPA Extensions                                  U+0250-U+02AF
+	//         Phonetic Extensions                             U+1D00-U+1D7F
+	//         Phonetic Extensions Supplement                  U+1D80-U+1DBF
 	UCRIpaExtensions UCRMask = C.TT_UCR_IPA_EXTENSIONS
-	// Bit 5   Spacing Modifier Letters                              U+02B0-U+02FF
-	//          Modifier Tone Letters                                U+A700-U+A71F
+	// Bit 5   Spacing Modifier Letters                        U+02B0-U+02FF
+	//         Modifier Tone Letters                           U+A700-U+A71F
 	UCRSpacingModifier UCRMask = C.TT_UCR_SPACING_MODIFIER
-	// Bit 6   Combining Diacritical Marks                           U+0300-U+036F
-	//          Combining Diacritical Marks Supplement               U+1DC0-U+1DFF
+	// Bit 6   Combining Diacritical Marks                     U+0300-U+036F
+	//         Combining Diacritical Marks Supplement          U+1DC0-U+1DFF
 	UCRCombiningDiacriticalMarks UCRMask = C.TT_UCR_COMBINING_DIACRITICAL_MARKS
-	// Bit 7   Greek and Coptic                                      U+0370-U+03FF
+	// Bit 7   Greek and Coptic                                U+0370-U+03FF
 	UCRGreek UCRMask = C.TT_UCR_GREEK
-	// Bit 8   Coptic                                                U+2C80-U+2CFF
+	// Bit 8   Coptic                                          U+2C80-U+2CFF
 	UCRCoptic UCRMask = C.TT_UCR_COPTIC
-	// Bit 9   Cyrillic                                              U+0400-U+04FF
-	//          Cyrillic Supplement                                  U+0500-U+052F
-	//          Cyrillic Extended-A                                  U+2DE0-U+2DFF
-	//          Cyrillic Extended-B                                  U+A640-U+A69F
+	// Bit 9   Cyrillic                                        U+0400-U+04FF
+	//         Cyrillic Supplement                             U+0500-U+052F
+	//         Cyrillic Extended-A                             U+2DE0-U+2DFF
+	//         Cyrillic Extended-B                             U+A640-U+A69F
 	UCRCyrillic UCRMask = C.TT_UCR_CYRILLIC
-	// Bit 10  Armenian                                              U+0530-U+058F
+	// Bit 10  Armenian                                        U+0530-U+058F
 	UCRArmenian UCRMask = C.TT_UCR_ARMENIAN
-	// Bit 11  Hebrew                                                U+0590-U+05FF
+	// Bit 11  Hebrew                                          U+0590-U+05FF
 	UCRHebrew UCRMask = C.TT_UCR_HEBREW
-	// Bit 12  Vai                                                   U+A500-U+A63F
+	// Bit 12  Vai                                             U+A500-U+A63F
 	UCRVai UCRMask = C.TT_UCR_VAI
-	// Bit 13  Arabic                                                U+0600-U+06FF
-	//          Arabic Supplement                                    U+0750-U+077F
+	// Bit 13  Arabic                                          U+0600-U+06FF
+	//         Arabic Supplement                               U+0750-U+077F
 	UCRArabic UCRMask = C.TT_UCR_ARABIC
-	// Bit 14  NKo                                                   U+07C0-U+07FF
+	// Bit 14  NKo                                             U+07C0-U+07FF
 	UCRNko UCRMask = C.TT_UCR_NKO
-	// Bit 15  Devanagari                                            U+0900-U+097F
+	// Bit 15  Devanagari                                      U+0900-U+097F
 	UCRDevanagari UCRMask = C.TT_UCR_DEVANAGARI
-	// Bit 16  Bengali                                               U+0980-U+09FF
+	// Bit 16  Bengali                                         U+0980-U+09FF
 	UCRBengali UCRMask = C.TT_UCR_BENGALI
-	// Bit 17  Gurmukhi                                              U+0A00-U+0A7F
+	// Bit 17  Gurmukhi                                        U+0A00-U+0A7F
 	UCRGurmukhi UCRMask = C.TT_UCR_GURMUKHI
-	// Bit 18  Gujarati                                              U+0A80-U+0AFF
+	// Bit 18  Gujarati                                        U+0A80-U+0AFF
 	UCRGujarati UCRMask = C.TT_UCR_GUJARATI
-	// Bit 19  Oriya                                                 U+0B00-U+0B7F
+	// Bit 19  Oriya                                           U+0B00-U+0B7F
 	UCROriya UCRMask = C.TT_UCR_ORIYA
-	// Bit 20  Tamil                                                 U+0B80-U+0BFF
+	// Bit 20  Tamil                                           U+0B80-U+0BFF
 	UCRTamil UCRMask = C.TT_UCR_TAMIL
-	// Bit 21  Telugu                                                U+0C00-U+0C7F
+	// Bit 21  Telugu                                          U+0C00-U+0C7F
 	UCRTelugu UCRMask = C.TT_UCR_TELUGU
-	// Bit 22  Kannada                                               U+0C80-U+0CFF
+	// Bit 22  Kannada                                         U+0C80-U+0CFF
 	UCRKannada UCRMask = C.TT_UCR_KANNADA
-	// Bit 23  Malayalam                                             U+0D00-U+0D7F
+	// Bit 23  Malayalam                                       U+0D00-U+0D7F
 	UCRMalayalam UCRMask = C.TT_UCR_MALAYALAM
-	// Bit 24  Thai                                                  U+0E00-U+0E7F
+	// Bit 24  Thai                                            U+0E00-U+0E7F
 	UCRThai UCRMask = C.TT_UCR_THAI
-	// Bit 25  Lao                                                   U+0E80-U+0EFF
+	// Bit 25  Lao                                             U+0E80-U+0EFF
 	UCRLao UCRMask = C.TT_UCR_LAO
-	// Bit 26  Georgian                                              U+10A0-U+10FF
-	//          Georgian Supplement                                  U+2D00-U+2D2F
+	// Bit 26  Georgian                                        U+10A0-U+10FF
+	//         Georgian Supplement                             U+2D00-U+2D2F
 	UCRGeorgian UCRMask = C.TT_UCR_GEORGIAN
-	// Bit 27  Balinese                                              U+1B00-U+1B7F
+	// Bit 27  Balinese                                        U+1B00-U+1B7F
 	UCRBalinese UCRMask = C.TT_UCR_BALINESE
-	// Bit 28  Hangul Jamo                                           U+1100-U+11FF
+	// Bit 28  Hangul Jamo                                     U+1100-U+11FF
 	UCRHangulJamo UCRMask = C.TT_UCR_HANGUL_JAMO
-	// Bit 29  Latin Extended Additional                             U+1E00-U+1EFF
-	//          Latin Extended-C                                     U+2C60-U+2C7F
-	//          Latin Extended-D                                     U+A720-U+A7FF
+	// Bit 29  Latin Extended Additional                       U+1E00-U+1EFF
+	//         Latin Extended-C                                U+2C60-U+2C7F
+	//         Latin Extended-D                                U+A720-U+A7FF
 	UCRLatinExtendedAdditional UCRMask = C.TT_UCR_LATIN_EXTENDED_ADDITIONAL
-	// Bit 30  Greek Extended                                        U+1F00-U+1FFF
+	// Bit 30  Greek Extended                                  U+1F00-U+1FFF
 	UCRGreekExtended UCRMask = C.TT_UCR_GREEK_EXTENDED
-	// Bit 31  General Punctuation                                   U+2000-U+206F
-	//          Supplemental Punctuation                             U+2E00-U+2E7F
-	UCRGeneralPunctuation UCRMask = C.TT_UCR_GENERAL_PUNCTUATION
+	// Bit 31  General Punctuation                             U+2000-U+206F
+	//         Supplemental Punctuation                        U+2E00-U+2E7F
+	UCRGeneralPunctuation UCRMask = C.my_explicit_uint32_TT_UCR_GENERAL_PUNCTUATION
 )
 
 // UlUnicodeRange2
 const (
-	// Bit 32  Superscripts And Subscripts                           U+2070-U+209F
+	// Bit 32  Superscripts And Subscripts                     U+2070-U+209F
 	UCRSuperscriptsSubscripts UCRMask = C.TT_UCR_SUPERSCRIPTS_SUBSCRIPTS
-	// Bit 33  Currency Symbols                                      U+20A0-U+20CF
+	// Bit 33  Currency Symbols                                U+20A0-U+20CF
 	UCRCurrencySymbols UCRMask = C.TT_UCR_CURRENCY_SYMBOLS
-	// Bit 34  Combining Diacritical Marks For Symbols               U+20D0-U+20FF
+	// Bit 34  Combining Diacritical Marks For Symbols         U+20D0-U+20FF
 	UCRCombiningDiacriticalMarksSymb UCRMask = C.TT_UCR_COMBINING_DIACRITICAL_MARKS_SYMB
-	// Bit 35  Letterlike Symbols                                    U+2100-U+214F
+	// Bit 35  Letterlike Symbols                              U+2100-U+214F
 	UCRLetterlikeSymbols UCRMask = C.TT_UCR_LETTERLIKE_SYMBOLS
-	// Bit 36  Number Forms                                          U+2150-U+218F
+	// Bit 36  Number Forms                                    U+2150-U+218F
 	UCRNumberForms UCRMask = C.TT_UCR_NUMBER_FORMS
-	// Bit 37  Arrows                                                U+2190-U+21FF
-	//         Supplemental Arrows-A                                 U+27F0-U+27FF
-	//         Supplemental Arrows-B                                 U+2900-U+297F
-	//         Miscellaneous Symbols and Arrows                      U+2B00-U+2BFF
+	// Bit 37  Arrows                                          U+2190-U+21FF
+	//         Supplemental Arrows-A                           U+27F0-U+27FF
+	//         Supplemental Arrows-B                           U+2900-U+297F
+	//         Miscellaneous Symbols and Arrows                U+2B00-U+2BFF
 	UCRArrows UCRMask = C.TT_UCR_ARROWS
-	// Bit 38  Mathematical Operators                                U+2200-U+22FF
-	//         Supplemental Mathematical Operators                   U+2A00-U+2AFF
-	//         Miscellaneous Mathematical Symbols-A                  U+27C0-U+27EF
-	//         Miscellaneous Mathematical Symbols-B                  U+2980-U+29FF
+	// Bit 38  Mathematical Operators                          U+2200-U+22FF
+	//         Supplemental Mathematical Operators             U+2A00-U+2AFF
+	//         Miscellaneous Mathematical Symbols-A            U+27C0-U+27EF
+	//         Miscellaneous Mathematical Symbols-B            U+2980-U+29FF
 	UCRMathematicalOperators UCRMask = C.TT_UCR_MATHEMATICAL_OPERATORS
-	// Bit 39  Miscellaneous Technical                               U+2300-U+23FF
+	// Bit 39  Miscellaneous Technical                         U+2300-U+23FF
 	UCRMiscellaneousTechnical UCRMask = C.TT_UCR_MISCELLANEOUS_TECHNICAL
-	// Bit 40  Control Pictures                                      U+2400-U+243F
+	// Bit 40  Control Pictures                                U+2400-U+243F
 	UCRControlPictures UCRMask = C.TT_UCR_CONTROL_PICTURES
-	// Bit 41  Optical Character Recognition                         U+2440-U+245F
+	// Bit 41  Optical Character Recognition                   U+2440-U+245F
 	UCROcr UCRMask = C.TT_UCR_OCR
-	// Bit 42  Enclosed Alphanumerics                                U+2460-U+24FF
+	// Bit 42  Enclosed Alphanumerics                          U+2460-U+24FF
 	UCREnclosedAlphanumerics UCRMask = C.TT_UCR_ENCLOSED_ALPHANUMERICS
-	// Bit 43  Box Drawing                                           U+2500-U+257F
+	// Bit 43  Box Drawing                                     U+2500-U+257F
 	UCRBoxDrawing UCRMask = C.TT_UCR_BOX_DRAWING
-	// Bit 44  Block Elements                                        U+2580-U+259F
+	// Bit 44  Block Elements                                  U+2580-U+259F
 	UCRBlockElements UCRMask = C.TT_UCR_BLOCK_ELEMENTS
-	// Bit 45  Geometric Shapes                                      U+25A0-U+25FF
+	// Bit 45  Geometric Shapes                                U+25A0-U+25FF
 	UCRGeometricShapes UCRMask = C.TT_UCR_GEOMETRIC_SHAPES
-	// Bit 46  Miscellaneous Symbols                                 U+2600-U+26FF
+	// Bit 46  Miscellaneous Symbols                           U+2600-U+26FF
 	UCRMiscellaneousSymbols UCRMask = C.TT_UCR_MISCELLANEOUS_SYMBOLS
-	// Bit 47  Dingbats                                              U+2700-U+27BF
+	// Bit 47  Dingbats                                        U+2700-U+27BF
 	UCRDingbats UCRMask = C.TT_UCR_DINGBATS
-	// Bit 48  CJK Symbols and Punctuation                           U+3000-U+303F
+	// Bit 48  CJK Symbols and Punctuation                     U+3000-U+303F
 	UCRCjkSymbols UCRMask = C.TT_UCR_CJK_SYMBOLS
-	// Bit 49  Hiragana                                              U+3040-U+309F
+	// Bit 49  Hiragana                                        U+3040-U+309F
 	UCRHiragana UCRMask = C.TT_UCR_HIRAGANA
-	// Bit 50  Katakana                                              U+30A0-U+30FF
-	//         Katakana Phonetic Extensions                          U+31F0-U+31FF
+	// Bit 50  Katakana                                        U+30A0-U+30FF
+	//         Katakana Phonetic Extensions                    U+31F0-U+31FF
 	UCRKatakana UCRMask = C.TT_UCR_KATAKANA
-	// Bit 51  Bopomofo                                              U+3100-U+312F
-	//         Bopomofo Extended                                     U+31A0-U+31BF
+	// Bit 51  Bopomofo                                        U+3100-U+312F
+	//         Bopomofo Extended                               U+31A0-U+31BF
 	UCRBopomofo UCRMask = C.TT_UCR_BOPOMOFO
-	// Bit 52  Hangul Compatibility Jamo                             U+3130-U+318F
+	// Bit 52  Hangul Compatibility Jamo                       U+3130-U+318F
 	UCRHangulCompatibilityJamo UCRMask = C.TT_UCR_HANGUL_COMPATIBILITY_JAMO
-	// Bit 53  Phags-Pa                                              U+A840-U+A87F
+	// Bit 53  Phags-Pa                                        U+A840-U+A87F
 	UCRCjkMisc UCRMask = C.TT_UCR_CJK_MISC
-	// Bit 54  Enclosed CJK Letters and Months                       U+3200-U+32FF
+	// Bit 54  Enclosed CJK Letters and Months                 U+3200-U+32FF
 	UCREnclosedCjkLettersMonths UCRMask = C.TT_UCR_ENCLOSED_CJK_LETTERS_MONTHS
-	// Bit 55  CJK Compatibility                                     U+3300-U+33FF
+	// Bit 55  CJK Compatibility                               U+3300-U+33FF
 	UCRCjkCompatibility UCRMask = C.TT_UCR_CJK_COMPATIBILITY
-	// Bit 56  Hangul Syllables                                      U+AC00-U+D7A3
+	// Bit 56  Hangul Syllables                                U+AC00-U+D7A3
 	UCRHangul UCRMask = C.TT_UCR_HANGUL
-	// Bit 57  High Surrogates                                       U+D800-U+DB7F
-	//         High Private Use Surrogates                           U+DB80-U+DBFF
-	//         Low Surrogates                                        U+DC00-U+DFFF
+	// Bit 57  High Surrogates                                 U+D800-U+DB7F
+	//         High Private Use Surrogates                     U+DB80-U+DBFF
+	//         Low Surrogates                                  U+DC00-U+DFFF
 	// According to OpenType specs v.1.3+, setting bit 57 implies that there is
 	// at least one codepoint beyond the Basic Multilingual Plane that is
-	// supported by this font. So it really means >=                 U+10000.
+	// supported by this font. So it really means >=           U+10000.
 	UCRSurrogates UCRMask = C.TT_UCR_SURROGATES
 	UCRNonPlane0  UCRMask = C.TT_UCR_NON_PLANE_0
-	// Bit 58  Phoenician                                            U+10900-U+1091F
+	// Bit 58  Phoenician                                      U+10900-U+1091F
 	UCRPhoenician UCRMask = C.TT_UCR_PHOENICIAN
-	// Bit 59  CJK Unified Ideographs                                U+4E00-U+9FFF
-	//         CJK Radicals Supplement                               U+2E80-U+2EFF
-	//         Kangxi Radicals                                       U+2F00-U+2FDF
-	//         Ideographic Description Characters                    U+2FF0-U+2FFF
-	//         CJK Unified Ideographs Extension A                    U+3400-U+4DB5
-	//         CJK Unified Ideographs Extension B                    U+20000-U+2A6DF
-	//         Kanbun                                                U+3190-U+319F
+	// Bit 59  CJK Unified Ideographs                          U+4E00-U+9FFF
+	//         CJK Radicals Supplement                         U+2E80-U+2EFF
+	//         Kangxi Radicals                                 U+2F00-U+2FDF
+	//         Ideographic Description Characters              U+2FF0-U+2FFF
+	//         CJK Unified Ideographs Extension A              U+3400-U+4DB5
+	//         CJK Unified Ideographs Extension B              U+20000-U+2A6DF
+	//         Kanbun                                          U+3190-U+319F
 	UCRCjkUnifiedIdeographs UCRMask = C.TT_UCR_CJK_UNIFIED_IDEOGRAPHS
-	// Bit 60  Private Use                                           U+E000-U+F8FF
+	// Bit 60  Private Use                                     U+E000-U+F8FF
 	UCRPrivateUse UCRMask = C.TT_UCR_PRIVATE_USE
-	// Bit 61  CJK Strokes                                           U+31C0-U+31EF
-	//         CJK Compatibility Ideographs                          U+F900-U+FAFF
-	//         CJK Compatibility Ideographs Supplement               U+2F800-U+2FA1F
+	// Bit 61  CJK Strokes                                     U+31C0-U+31EF
+	//         CJK Compatibility Ideographs                    U+F900-U+FAFF
+	//         CJK Compatibility Ideographs Supplement         U+2F800-U+2FA1F
 	UCRCjkCompatibilityIdeographs UCRMask = C.TT_UCR_CJK_COMPATIBILITY_IDEOGRAPHS
-	// Bit 62  Alphabetic Presentation Forms                         U+FB00-U+FB4F
+	// Bit 62  Alphabetic Presentation Forms                   U+FB00-U+FB4F
 	UCRAlphabeticPresentationForms UCRMask = C.TT_UCR_ALPHABETIC_PRESENTATION_FORMS
-	// Bit 63  Arabic Presentation Forms-A                           U+FB50-U+FDFF
-	UCRArabicPresentationFormsA UCRMask = C.TT_UCR_ARABIC_PRESENTATION_FORMS_A
+	// Bit 63  Arabic Presentation Forms-A                     U+FB50-U+FDFF
+	UCRArabicPresentationFormsA UCRMask = C.my_explicit_uint32_TT_UCR_ARABIC_PRESENTATION_FORMS_A
 )
 
 // UlUnicodeRange3
 const (
-	// Bit 64  Combining Half Marks                                  U+FE20-U+FE2F
+	// Bit 64  Combining Half Marks                            U+FE20-U+FE2F
 	UCRCombiningHalfMarks UCRMask = C.TT_UCR_COMBINING_HALF_MARKS
-	// Bit 65  Vertical forms                                        U+FE10-U+FE1F
-	//         CJK Compatibility Forms                               U+FE30-U+FE4F
+	// Bit 65  Vertical forms                                  U+FE10-U+FE1F
+	//         CJK Compatibility Forms                         U+FE30-U+FE4F
 	UCRCjkCompatibilityForms UCRMask = C.TT_UCR_CJK_COMPATIBILITY_FORMS
-	// Bit 66  Small Form Variants                                   U+FE50-U+FE6F
+	// Bit 66  Small Form Variants                             U+FE50-U+FE6F
 	UCRSmallFormVariants UCRMask = C.TT_UCR_SMALL_FORM_VARIANTS
-	// Bit 67  Arabic Presentation Forms-B                           U+FE70-U+FEFE
+	// Bit 67  Arabic Presentation Forms-B                     U+FE70-U+FEFE
 	UCRArabicPresentationFormsB UCRMask = C.TT_UCR_ARABIC_PRESENTATION_FORMS_B
-	// Bit 68  Halfwidth and Fullwidth Forms                         U+FF00-U+FFEF
+	// Bit 68  Halfwidth and Fullwidth Forms                   U+FF00-U+FFEF
 	UCRHalfwidthFullwidthForms UCRMask = C.TT_UCR_HALFWIDTH_FULLWIDTH_FORMS
-	// Bit 69  Specials                                              U+FFF0-U+FFFD
+	// Bit 69  Specials                                        U+FFF0-U+FFFD
 	UCRSpecials UCRMask = C.TT_UCR_SPECIALS
-	// Bit 70  Tibetan                                               U+0F00-U+0FFF
+	// Bit 70  Tibetan                                         U+0F00-U+0FFF
 	UCRTibetan UCRMask = C.TT_UCR_TIBETAN
-	// Bit 71  Syriac                                                U+0700-U+074F
+	// Bit 71  Syriac                                          U+0700-U+074F
 	UCRSyriac UCRMask = C.TT_UCR_SYRIAC
-	// Bit 72  Thaana                                                U+0780-U+07BF
+	// Bit 72  Thaana                                          U+0780-U+07BF
 	UCRThaana UCRMask = C.TT_UCR_THAANA
-	// Bit 73  Sinhala                                               U+0D80-U+0DFF
+	// Bit 73  Sinhala                                         U+0D80-U+0DFF
 	UCRSinhala UCRMask = C.TT_UCR_SINHALA
-	// Bit 74  Myanmar                                               U+1000-U+109F
+	// Bit 74  Myanmar                                         U+1000-U+109F
 	UCRMyanmar UCRMask = C.TT_UCR_MYANMAR
-	// Bit 75  Ethiopic                                              U+1200-U+137F
-	//         Ethiopic Supplement                                   U+1380-U+139F
-	//         Ethiopic Extended                                     U+2D80-U+2DDF
+	// Bit 75  Ethiopic                                        U+1200-U+137F
+	//         Ethiopic Supplement                             U+1380-U+139F
+	//         Ethiopic Extended                               U+2D80-U+2DDF
 	UCREthiopic UCRMask = C.TT_UCR_ETHIOPIC
-	// Bit 76  Cherokee                                              U+13A0-U+13FF
+	// Bit 76  Cherokee                                        U+13A0-U+13FF
 	UCRCherokee UCRMask = C.TT_UCR_CHEROKEE
-	// Bit 77  Unified Canadian Aboriginal Syllabics                 U+1400-U+167F
+	// Bit 77  Unified Canadian Aboriginal Syllabics           U+1400-U+167F
 	UCRCanadianAboriginalSyllabics UCRMask = C.TT_UCR_CANADIAN_ABORIGINAL_SYLLABICS
-	// Bit 78  Ogham                                                 U+1680-U+169F
+	// Bit 78  Ogham                                           U+1680-U+169F
 	UCROgham UCRMask = C.TT_UCR_OGHAM
-	// Bit 79  Runic                                                 U+16A0-U+16FF
+	// Bit 79  Runic                                           U+16A0-U+16FF
 	UCRRunic UCRMask = C.TT_UCR_RUNIC
-	// Bit 80  Khmer                                                 U+1780-U+17FF
-	//         Khmer Symbols                                         U+19E0-U+19FF
+	// Bit 80  Khmer                                           U+1780-U+17FF
+	//         Khmer Symbols                                   U+19E0-U+19FF
 	UCRKhmer UCRMask = C.TT_UCR_KHMER
-	// Bit 81  Mongolian                                             U+1800-U+18AF
+	// Bit 81  Mongolian                                       U+1800-U+18AF
 	UCRMongolian UCRMask = C.TT_UCR_MONGOLIAN
-	// Bit 82  Braille Patterns                                      U+2800-U+28FF
+	// Bit 82  Braille Patterns                                U+2800-U+28FF
 	UCRBraille UCRMask = C.TT_UCR_BRAILLE
-	// Bit 83  Yi Syllables                                          U+A000-U+A48F
-	//         Yi Radicals                                           U+A490-U+A4CF
+	// Bit 83  Yi Syllables                                    U+A000-U+A48F
+	//         Yi Radicals                                     U+A490-U+A4CF
 	UCRYi UCRMask = C.TT_UCR_YI
-	// Bit 84  Tagalog                                               U+1700-U+171F
-	//         Hanunoo                                               U+1720-U+173F
-	//         Buhid                                                 U+1740-U+175F
-	//         Tagbanwa                                              U+1760-U+177F
+	// Bit 84  Tagalog                                         U+1700-U+171F
+	//         Hanunoo                                         U+1720-U+173F
+	//         Buhid                                           U+1740-U+175F
+	//         Tagbanwa                                        U+1760-U+177F
 	UCRPhilippine UCRMask = C.TT_UCR_PHILIPPINE
-	// Bit 85  Old Italic                                            U+10300-U+1032F
+	// Bit 85  Old Italic                                      U+10300-U+1032F
 	UCROldItalic UCRMask = C.TT_UCR_OLD_ITALIC
-	// Bit 86  Gothic                                                U+10330-U+1034F
+	// Bit 86  Gothic                                          U+10330-U+1034F
 	UCRGothic UCRMask = C.TT_UCR_GOTHIC
-	// Bit 87  Deseret                                               U+10400-U+1044F
+	// Bit 87  Deseret                                         U+10400-U+1044F
 	UCRDeseret UCRMask = C.TT_UCR_DESERET
-	// Bit 88  Byzantine Musical Symbols                             U+1D000-U+1D0FF
-	//         Musical Symbols                                       U+1D100-U+1D1FF
-	//         Ancient Greek Musical Notation                        U+1D200-U+1D24F
+	// Bit 88  Byzantine Musical Symbols                       U+1D000-U+1D0FF
+	//         Musical Symbols                                 U+1D100-U+1D1FF
+	//         Ancient Greek Musical Notation                  U+1D200-U+1D24F
 	UCRMusicalSymbols UCRMask = C.TT_UCR_MUSICAL_SYMBOLS
-	// Bit 89  Mathematical Alphanumeric Symbols                     U+1D400-U+1D7FF
+	// Bit 89  Mathematical Alphanumeric Symbols               U+1D400-U+1D7FF
 	UCRMathAlphanumericSymbols UCRMask = C.TT_UCR_MATH_ALPHANUMERIC_SYMBOLS
-	// Bit 90  Private Use (plane 15)                                U+F0000-U+FFFFD
-	//         Private Use (plane 16)                                U+100000-U+10FFFD
+	// Bit 90  Private Use (plane 15)                          U+F0000-U+FFFFD
+	//         Private Use (plane 16)                          U+100000-U+10FFFD
 	UCRPrivateUseSupplementary UCRMask = C.TT_UCR_PRIVATE_USE_SUPPLEMENTARY
-	// Bit 91  Variation Selectors                                   U+FE00-U+FE0F
-	//         Variation Selectors Supplement                        U+E0100-U+E01EF
+	// Bit 91  Variation Selectors                             U+FE00-U+FE0F
+	//         Variation Selectors Supplement                  U+E0100-U+E01EF
 	UCRVariationSelectors UCRMask = C.TT_UCR_VARIATION_SELECTORS
-	// Bit 92  Tags                                                  U+E0000-U+E007F
+	// Bit 92  Tags                                            U+E0000-U+E007F
 	UCRTags UCRMask = C.TT_UCR_TAGS
-	// Bit 93  Limbu                                                 U+1900-U+194F
+	// Bit 93  Limbu                                           U+1900-U+194F
 	UCRLimbu UCRMask = C.TT_UCR_LIMBU
-	// Bit 94  Tai Le                                                U+1950-U+197F
+	// Bit 94  Tai Le                                          U+1950-U+197F
 	UCRTaiLe UCRMask = C.TT_UCR_TAI_LE
-	// Bit 95  New Tai Lue                                           U+1980-U+19DF
-	UCRNewTaiLue UCRMask = C.TT_UCR_NEW_TAI_LUE
+	// Bit 95  New Tai Lue                                     U+1980-U+19DF
+	UCRNewTaiLue UCRMask = C.my_explicit_uint32_TT_UCR_NEW_TAI_LUE
 )
 
 // UlUnicodeRange4
 const (
-	// Bit 96  Buginese                                              U+1A00-U+1A1F
+	// Bit 96  Buginese                                        U+1A00-U+1A1F
 	UCRBuginese UCRMask = C.TT_UCR_BUGINESE
-	// Bit 97  Glagolitic                                            U+2C00-U+2C5F
+	// Bit 97  Glagolitic                                      U+2C00-U+2C5F
 	UCRGlagolitic UCRMask = C.TT_UCR_GLAGOLITIC
-	// Bit 98  Tifinagh                                              U+2D30-U+2D7F
+	// Bit 98  Tifinagh                                        U+2D30-U+2D7F
 	UCRTifinagh UCRMask = C.TT_UCR_TIFINAGH
-	// Bit 99  Yijing Hexagram Symbols                               U+4DC0-U+4DFF
+	// Bit 99  Yijing Hexagram Symbols                         U+4DC0-U+4DFF
 	UCRYijing UCRMask = C.TT_UCR_YIJING
-	// Bit 100 Syloti Nagri                                          U+A800-U+A82F
+	// Bit 100 Syloti Nagri                                    U+A800-U+A82F
 	UCRSylotiNagri UCRMask = C.TT_UCR_SYLOTI_NAGRI
-	// Bit 101 Linear B Syllabary                                    U+10000-U+1007F
-	//         Linear B Ideograms                                    U+10080-U+100FF
-	//         Aegean Numbers                                        U+10100-U+1013F
+	// Bit 101 Linear B Syllabary                              U+10000-U+1007F
+	//         Linear B Ideograms                              U+10080-U+100FF
+	//         Aegean Numbers                                  U+10100-U+1013F
 	UCRLinearB UCRMask = C.TT_UCR_LINEAR_B
-	// Bit 102 Ancient Greek Numbers                                 U+10140-U+1018F
+	// Bit 102 Ancient Greek Numbers                           U+10140-U+1018F
 	UCRAncientGreekNumbers UCRMask = C.TT_UCR_ANCIENT_GREEK_NUMBERS
-	// Bit 103 Ugaritic                                              U+10380-U+1039F
+	// Bit 103 Ugaritic                                        U+10380-U+1039F
 	UCRUgaritic UCRMask = C.TT_UCR_UGARITIC
-	// Bit 104 Old Persian                                           U+103A0-U+103DF
+	// Bit 104 Old Persian                                     U+103A0-U+103DF
 	UCROldPersian UCRMask = C.TT_UCR_OLD_PERSIAN
-	// Bit 105 Shavian                                               U+10450-U+1047F
+	// Bit 105 Shavian                                         U+10450-U+1047F
 	UCRShavian UCRMask = C.TT_UCR_SHAVIAN
-	// Bit 106 Osmanya                                               U+10480-U+104AF
+	// Bit 106 Osmanya                                         U+10480-U+104AF
 	UCROsmanya UCRMask = C.TT_UCR_OSMANYA
-	// Bit 107 Cypriot Syllabary                                     U+10800-U+1083F
+	// Bit 107 Cypriot Syllabary                               U+10800-U+1083F
 	UCRCypriotSyllabary UCRMask = C.TT_UCR_CYPRIOT_SYLLABARY
-	// Bit 108 Kharoshthi                                            U+10A00-U+10A5F
+	// Bit 108 Kharoshthi                                      U+10A00-U+10A5F
 	UCRKharoshthi UCRMask = C.TT_UCR_KHAROSHTHI
-	// Bit 109 Tai Xuan Jing Symbols                                 U+1D300-U+1D35F
+	// Bit 109 Tai Xuan Jing Symbols                           U+1D300-U+1D35F
 	UCRTaiXuanJing UCRMask = C.TT_UCR_TAI_XUAN_JING
-	// Bit 110 Cuneiform                                             U+12000-U+123FF
-	//         Cuneiform Numbers and Punctuation                     U+12400-U+1247F
+	// Bit 110 Cuneiform                                       U+12000-U+123FF
+	//         Cuneiform Numbers and Punctuation               U+12400-U+1247F
 	UCRCuneiform UCRMask = C.TT_UCR_CUNEIFORM
-	// Bit 111 Counting Rod Numerals                                 U+1D360-U+1D37F
+	// Bit 111 Counting Rod Numerals                           U+1D360-U+1D37F
 	UCRCountingRodNumerals UCRMask = C.TT_UCR_COUNTING_ROD_NUMERALS
-	// Bit 112 Sundanese                                             U+1B80-U+1BBF
+	// Bit 112 Sundanese                                       U+1B80-U+1BBF
 	UCRSundanese UCRMask = C.TT_UCR_SUNDANESE
-	// Bit 113 Lepcha                                                U+1C00-U+1C4F
+	// Bit 113 Lepcha                                          U+1C00-U+1C4F
 	UCRLepcha UCRMask = C.TT_UCR_LEPCHA
-	// Bit 114 Ol Chiki                                              U+1C50-U+1C7F
+	// Bit 114 Ol Chiki                                        U+1C50-U+1C7F
 	UCROlChiki UCRMask = C.TT_UCR_OL_CHIKI
-	// Bit 115 Saurashtra                                            U+A880-U+A8DF
+	// Bit 115 Saurashtra                                      U+A880-U+A8DF
 	UCRSaurashtra UCRMask = C.TT_UCR_SAURASHTRA
-	// Bit 116 Kayah Li                                              U+A900-U+A92F
+	// Bit 116 Kayah Li                                        U+A900-U+A92F
 	UCRKayahLi UCRMask = C.TT_UCR_KAYAH_LI
-	// Bit 117 Rejang                                                U+A930-U+A95F
+	// Bit 117 Rejang                                          U+A930-U+A95F
 	UCRRejang UCRMask = C.TT_UCR_REJANG
-	// Bit 118 Cham                                                  U+AA00-U+AA5F
+	// Bit 118 Cham                                            U+AA00-U+AA5F
 	UCRCham UCRMask = C.TT_UCR_CHAM
-	// Bit 119 Ancient Symbols                                       U+10190-U+101CF
+	// Bit 119 Ancient Symbols                                 U+10190-U+101CF
 	UCRAncientSymbols UCRMask = C.TT_UCR_ANCIENT_SYMBOLS
-	// Bit 120 Phaistos Disc                                         U+101D0-U+101FF
+	// Bit 120 Phaistos Disc                                   U+101D0-U+101FF
 	UCRPhaistosDisc UCRMask = C.TT_UCR_PHAISTOS_DISC
-	// Bit 121 Carian                                                U+102A0-U+102DF
-	//         Lycian                                                U+10280-U+1029F
-	//         Lydian                                                U+10920-U+1093F
+	// Bit 121 Carian                                          U+102A0-U+102DF
+	//         Lycian                                          U+10280-U+1029F
+	//         Lydian                                          U+10920-U+1093F
 	UCROldAnatolian UCRMask = C.TT_UCR_OLD_ANATOLIAN
-	// Bit 122 Domino Tiles                                          U+1F030-U+1F09F
-	//         Mahjong Tiles                                         U+1F000-U+1F02F
+	// Bit 122 Domino Tiles                                    U+1F030-U+1F09F
+	//         Mahjong Tiles                                   U+1F000-U+1F02F
 	UCRGameTiles UCRMask = C.TT_UCR_GAME_TILES
 )
