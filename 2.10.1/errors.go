@@ -14,6 +14,7 @@ package freetype2
 import "C"
 import (
 	"errors"
+	"sync"
 )
 
 var magicStringUnknownError = "Unknown error" // must be equal to the default case of C.getFreetypeError
@@ -276,12 +277,16 @@ var getErr = func(code C.int) error {
 	return errors.New(str)
 }
 
+var mockGetErrMu sync.Mutex
+
 func mockGetErr(fn func(c int) error) (restore func()) {
+	mockGetErrMu.Lock()
 	orig := getErr
 	getErr = func(c C.int) error {
 		return fn(int(c))
 	}
 	return func() {
 		getErr = orig
+		mockGetErrMu.Unlock()
 	}
 }
