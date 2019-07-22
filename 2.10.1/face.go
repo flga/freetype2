@@ -167,18 +167,6 @@ func (x StyleFlag) String() string {
 	return string(s[:len(s)-1]) // trim the leading |
 }
 
-// FaceIndex is the index of a face in a given font file. It holds two different values.
-// Bits 0-15 are the index of the face in the font file (starting with value 0). Set it to 0 if there is only one face
-// in the font file.
-//
-// [Since 2.6.1] Bits 16-30 are relevant to GX and OpenType variation fonts only, specifying the named instance index
-// for the current face index (starting with value 1; value 0 makes FreeType ignore named instances).
-// For non-variation fonts, bits 16-30 are ignored. Assuming that you want to access the third named instance in face 4,
-// the value should be set to 0x00030004. If you want to access face 4 without variation handling, simply set it to 4.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_open_face (face_index argument)
-// type FaceIndex int // TODO: remove
-
 // Face models a given typeface, in a given style.
 //
 // A Face object can only be safely used from one goroutine at a time. Similarly, creation and destruction of a Face
