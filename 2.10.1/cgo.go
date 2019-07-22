@@ -29,7 +29,10 @@ package freetype2
 // #include FT_FREETYPE_H
 import "C"
 
-import "unsafe"
+import (
+	"sync"
+	"unsafe"
+)
 
 var free = func(v unsafe.Pointer) {
 	C.free(v)
@@ -38,7 +41,10 @@ var free = func(v unsafe.Pointer) {
 const actuallyFreeItAfter = true
 const iWannaFreeItMyself = false
 
+var mockFreeMu sync.Mutex
+
 func mockFree(fn func(v unsafe.Pointer), actuallyFreeIt bool) (restore func()) {
+	mockFreeMu.Lock()
 	orig := free
 	free = func(v unsafe.Pointer) {
 		fn(v)
@@ -49,5 +55,6 @@ func mockFree(fn func(v unsafe.Pointer), actuallyFreeIt bool) (restore func()) {
 
 	return func() {
 		free = orig
+		mockFreeMu.Unlock()
 	}
 }
