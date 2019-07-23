@@ -1083,3 +1083,146 @@ func TestFace_SetCharSize(t *testing.T) {
 		})
 	}
 }
+
+func TestFace_SetPixelSizes(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %s", err)
+	}
+	defer l.Free()
+
+	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer bungeeColorMac.Free()
+
+	type args struct {
+		width  uint
+		height uint
+	}
+	tests := []struct {
+		name     string
+		font     *Face
+		args     args
+		wantSize Size
+		wantErr  error
+	}{
+		{
+			name:     "nil face",
+			font:     nil,
+			args:     args{},
+			wantSize: Size{},
+			wantErr:  ErrInvalidFaceHandle,
+		},
+		{
+			name: "go regular",
+			font: goRegular,
+			args: args{
+				width:  20,
+				height: 20,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      20,
+					YPpem:      20,
+					XScale:     40960,
+					YScale:     40960,
+					Ascender:   1216,
+					Descender:  -320,
+					Height:     1472,
+					MaxAdvance: 1408,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac, first size",
+			font: bungeeColorMac,
+			args: args{
+				width:  20,
+				height: 20,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      20,
+					YPpem:      20,
+					XScale:     83886,
+					YScale:     83886,
+					Ascender:   1101,
+					Descender:  -179,
+					Height:     1536,
+					MaxAdvance: 1814,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac, second size",
+			font: bungeeColorMac,
+			args: args{
+				width:  32,
+				height: 32,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      32,
+					YPpem:      32,
+					XScale:     134218,
+					YScale:     134218,
+					Ascender:   1761,
+					Descender:  -287,
+					Height:     2458,
+					MaxAdvance: 2902,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac, < first size",
+			font: bungeeColorMac,
+			args: args{
+				width:  19,
+				height: 19,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XScale: 1 << 16,
+					YScale: 1 << 16,
+				},
+			},
+			wantErr: ErrInvalidPixelSize,
+		},
+		{
+			name: "bungee color mac, > first size",
+			font: bungeeColorMac,
+			args: args{
+				width:  21,
+				height: 21,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XScale: 1 << 16,
+					YScale: 1 << 16,
+				},
+			},
+			wantErr: ErrInvalidPixelSize,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.font.SetPixelSizes(tt.args.width, tt.args.height); err != tt.wantErr {
+				t.Errorf("Face.SetPixelSizes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got := tt.font.Size(); got != tt.wantSize {
+				t.Errorf("Face.SetPixelSizes() %v, want %v", got, tt.wantSize)
+			}
+		})
+	}
+}

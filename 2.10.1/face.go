@@ -525,6 +525,25 @@ func (f *Face) SetCharSize(nominalWidth, nominalHeight fixed.Int26_6, horzDPI, v
 	))
 }
 
+// SetPixelSizes sets the face pixel size.
+//
+// Don't use this function if you are using the FreeType cache API.
+//
+// NOTE:
+// You should not rely on the resulting glyphs matching or being constrained to this pixel size. Refer to FT_Request_Size to understand how requested sizes relate to actual sizes.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_set_pixel_sizes
+func (f *Face) SetPixelSizes(width, height uint) error {
+	if f == nil || f.ptr == nil {
+		return ErrInvalidFaceHandle
+	}
+
+	return getErr(C.FT_Set_Pixel_Sizes(f.ptr,
+		C.FT_UInt(width),
+		C.FT_UInt(height),
+	))
+}
+
 // SelectCharMap selects a given charmap by its encoding tag.
 // It returns an error if no charmap in the face corresponds to the encoding queried.
 //
