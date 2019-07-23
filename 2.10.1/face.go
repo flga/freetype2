@@ -363,6 +363,19 @@ func (f *Face) CharMaps() []CharMap {
 	return ret
 }
 
+func (f *Face) testCCharMaps() []C.FT_CharMap {
+	if f == nil || f.ptr == nil {
+		return nil
+	}
+
+	n := int(f.ptr.num_charmaps)
+	if n == 0 {
+		return nil
+	}
+
+	return (*[(1<<31 - 1) / C.sizeof_FT_CharMap]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
+}
+
 // BBox returns a copy of the font bounding box. Coordinates are expressed in font units (see UnitsPerEM).
 // The box is large enough to contain any glyph from the font. Thus, bbox.YMax can be seen as the ‘maximum ascender’,
 // and bbox.YMin as the ‘minimum descender’. Only relevant for scalable formats.

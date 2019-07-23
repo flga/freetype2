@@ -396,6 +396,23 @@ const (
 	PlatformAdobe PlatformID = C.TT_PLATFORM_ADOBE
 )
 
+func (p PlatformID) String() string {
+	switch p {
+	case PlatformAppleUnicode:
+		return "AppleUnicode"
+	case PlatformMacintosh:
+		return "Macintosh"
+	case PlatformMicrosoft:
+		return "Microsoft"
+	case PlatformCustom:
+		return "Custom"
+	case PlatformAdobe:
+		return "Adobe"
+	default:
+		return "Unknown"
+	}
+}
+
 // EncodingID is an enum for EncodingID in CharMap and SfntName structs.
 type EncodingID int
 
