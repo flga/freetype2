@@ -6,6 +6,8 @@ package freetype2
 import "C"
 import (
 	"unsafe"
+
+	"github.com/flga/freetype2/2.10.1/fixed"
 )
 
 // FaceFlag is a list of bit flags of a given face.
@@ -495,6 +497,32 @@ func (f *Face) ActiveCharMap() (CharMap, bool) {
 	}
 
 	return newCharMap(active), true
+}
+
+// SetCharSize sets the character size for the face.
+//
+// If either the character width or height is zero, it is set equal to the other value.
+// If either the horizontal or vertical resolution is zero, it is set equal to the other value.
+//
+// Don't use this function if you are using the FreeType cache API.
+//
+// NOTE:
+// While this function allows fractional points as input values, the resulting ppem value for the given resolution
+// is always rounded to the nearest integer.
+// A character width or height smaller than 1pt is set to 1pt; if both resolution values are zero, they are set to 72dpi.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_set_char_size
+func (f *Face) SetCharSize(nominalWidth, nominalHeight fixed.Int26_6, horzDPI, vertDPI uint) error {
+	if f == nil || f.ptr == nil {
+		return ErrInvalidFaceHandle
+	}
+
+	return getErr(C.FT_Set_Char_Size(f.ptr,
+		C.FT_F26Dot6(nominalWidth),
+		C.FT_F26Dot6(nominalHeight),
+		C.FT_UInt(horzDPI),
+		C.FT_UInt(vertDPI),
+	))
 }
 
 // SelectCharMap selects a given charmap by its encoding tag.
