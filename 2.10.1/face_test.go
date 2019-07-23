@@ -702,3 +702,111 @@ func TestFaceZeroVal(t *testing.T) {
 		}
 	}
 }
+
+func TestFace_SelectCharMap(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %s", err)
+	}
+	defer l.Free()
+
+	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	bungeeLayersReg, err := l.NewFaceFromPath(testdata("bungee", "BungeeLayers-Regular.otf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer bungeeLayersReg.Free()
+
+	tests := []struct {
+		name    string
+		face    *Face
+		enc     Encoding
+		want    CharMap
+		wantErr error
+	}{
+		{
+			name: "nil face",
+			face: nil,
+			enc:  EncodingNone,
+			want: CharMap{
+				Format:     0,
+				Language:   0,
+				Encoding:   EncodingNone,
+				PlatformID: 0,
+				EncodingID: 0,
+				index:      0,
+				valid:      false,
+			},
+			wantErr: ErrInvalidFaceHandle,
+		},
+		{
+			name: "go regular, unicode",
+			face: goRegular,
+			enc:  EncodingUnicode,
+			want: CharMap{
+				Format:     4,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: truetype.MicrosoftEncodingUnicodeCs,
+				index:      2,
+				valid:      true,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "go regular, apple roman",
+			face: goRegular,
+			enc:  EncodingAppleRoman,
+			want: CharMap{
+				Format:     6,
+				Language:   truetype.MacLangEnglish,
+				Encoding:   EncodingAppleRoman,
+				PlatformID: truetype.PlatformMacintosh,
+				EncodingID: truetype.MacEncodingRoman,
+				index:      1,
+				valid:      true,
+			},
+			wantErr: nil,
+		},
+		{
+			name:    "go regular, adobe latin1",
+			face:    goRegular,
+			enc:     EncodingAdobeLatin1,
+			want:    CharMap{},
+			wantErr: ErrInvalidArgument,
+		},
+		{
+			name: "bungee layers regular, adobe standard",
+			face: goRegular,
+			enc:  EncodingAdobeStandard,
+			want: CharMap{
+				Format:     0,
+				Language:   0,
+				Encoding:   EncodingNone,
+				PlatformID: 0,
+				EncodingID: 0,
+				index:      0,
+				valid:      false,
+			},
+			wantErr: ErrInvalidArgument,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.face.testClearCharmap()
+			if err := tt.face.SelectCharMap(tt.enc); err != tt.wantErr {
+				t.Errorf("%q.SelectCharMap(%s) error = %v, wantErr %v", tt.face.FamilyName(), tt.enc, err, tt.wantErr)
+			}
+
+			if got, _ := tt.face.ActiveCharMap(); got != tt.want {
+				t.Errorf("%q.SelectCharMap(%s) got charmap = %v, want %v", tt.face.FamilyName(), tt.enc, got, tt.want)
+			}
+		})
+	}
+}

@@ -39,19 +39,19 @@ func Test_newCharMap(t *testing.T) {
 			name: "Go Regular",
 			font: goRegular,
 			want: []CharMap{
-				{Format: 4, Language: truetype.MacLangEnglish, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: truetype.AppleEncodingUnicode2_0, index: 0, ours: true},
-				{Format: 6, Language: truetype.MacLangEnglish, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: truetype.MacEncodingRoman, index: 1, ours: true},
-				{Format: 4, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: truetype.MicrosoftEncodingUnicodeCs, index: 2, ours: true},
+				{Format: 4, Language: truetype.MacLangEnglish, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: truetype.AppleEncodingUnicode2_0, index: 0, valid: true},
+				{Format: 6, Language: truetype.MacLangEnglish, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: truetype.MacEncodingRoman, index: 1, valid: true},
+				{Format: 4, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: truetype.MicrosoftEncodingUnicodeCs, index: 2, valid: true},
 			},
 		},
 		{
 			name: "Bungee Layers Regular",
 			font: bungeeLayersReg,
 			want: []CharMap{
-				{Format: 4, Language: truetype.MacLangEnglish, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: truetype.AppleEncodingUnicode2_0, index: 0, ours: true},
-				{Format: 6, Language: truetype.MacLangEnglish, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: truetype.MacEncodingRoman, index: 1, ours: true},
-				{Format: 4, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: truetype.MicrosoftEncodingUnicodeCs, index: 2, ours: true},
-				{Format: -1, Language: 0, Encoding: EncodingAdobeStandard, PlatformID: truetype.PlatformAdobe, EncodingID: truetype.AdobeEncodingStandard, index: 3, ours: true},
+				{Format: 4, Language: truetype.MacLangEnglish, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: truetype.AppleEncodingUnicode2_0, index: 0, valid: true},
+				{Format: 6, Language: truetype.MacLangEnglish, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: truetype.MacEncodingRoman, index: 1, valid: true},
+				{Format: 4, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: truetype.MicrosoftEncodingUnicodeCs, index: 2, valid: true},
+				{Format: -1, Language: 0, Encoding: EncodingAdobeStandard, PlatformID: truetype.PlatformAdobe, EncodingID: truetype.AdobeEncodingStandard, index: 3, valid: true},
 			},
 		},
 	}

@@ -194,7 +194,7 @@ type CharMap struct {
 	index int
 
 	// not user created
-	ours bool //TODO: remove if there are no methods that accept a CharMap as an argument
+	valid bool //TODO: remove if there are no methods that accept a CharMap as an argument
 }
 
 func newCharMap(c C.FT_CharMap) CharMap {
@@ -209,7 +209,7 @@ func newCharMap(c C.FT_CharMap) CharMap {
 		PlatformID: truetype.PlatformID(c.platform_id),
 		EncodingID: truetype.EncodingID(c.encoding_id),
 		index:      int(C.FT_Get_Charmap_Index(c)),
-		ours:       true,
+		valid:      true,
 	}
 }
 

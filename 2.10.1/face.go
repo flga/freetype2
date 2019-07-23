@@ -502,7 +502,7 @@ func (f *Face) ActiveCharMap() (CharMap, bool) {
 //
 // Because many fonts contain more than a single cmap for Unicode encoding, this function has some special code to
 // select the one that covers Unicode best (‘best’ in the sense that a UCS-4 cmap is preferred to a UCS-2 cmap).
-// It is thus preferable to  SetCharMap in this case.
+// It is thus preferable to use SetCharMap in this case.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_select_charmap
 func (f *Face) SelectCharMap(enc Encoding) error {
@@ -511,4 +511,11 @@ func (f *Face) SelectCharMap(enc Encoding) error {
 	}
 
 	return getErr(C.FT_Select_Charmap(f.ptr, C.FT_Encoding(enc)))
+}
+
+func (f *Face) testClearCharmap() {
+	if f == nil || f.ptr == nil {
+		return
+	}
+	f.ptr.charmap = nil
 }
