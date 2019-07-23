@@ -810,3 +810,120 @@ func TestFace_SelectCharMap(t *testing.T) {
 		})
 	}
 }
+
+func TestFace_SetCharMap(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %s", err)
+	}
+	defer l.Free()
+
+	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	bungeeLayersReg, err := l.NewFaceFromPath(testdata("bungee", "BungeeLayers-Regular.otf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer bungeeLayersReg.Free()
+
+	goRegMaps := goRegular.CharMaps()
+	bungeeLayersRegMaps := bungeeLayersReg.CharMaps()
+
+	tests := []struct {
+		name    string
+		face    *Face
+		cmap    CharMap
+		want    CharMap
+		wantErr error
+	}{
+		{
+			name:    "nil face",
+			face:    nil,
+			cmap:    CharMap{},
+			want:    CharMap{},
+			wantErr: ErrInvalidFaceHandle,
+		},
+		{
+			name:    "invalid charmap",
+			face:    goRegular,
+			cmap:    CharMap{},
+			want:    CharMap{},
+			wantErr: ErrInvalidCharMapHandle,
+		},
+		{
+			name: "out of bounds charmap",
+			face: goRegular,
+			cmap: CharMap{
+				valid: true,
+				index: 999,
+			},
+			want:    CharMap{},
+			wantErr: ErrInvalidCharMapHandle,
+		},
+		{
+			name:    "go regular, cmap 0",
+			face:    goRegular,
+			cmap:    goRegMaps[0],
+			want:    goRegMaps[0],
+			wantErr: nil,
+		},
+		{
+			name:    "go regular, cmap 1",
+			face:    goRegular,
+			cmap:    goRegMaps[1],
+			want:    goRegMaps[1],
+			wantErr: nil,
+		},
+		{
+			name:    "go regular, cmap 2",
+			face:    goRegular,
+			cmap:    goRegMaps[2],
+			want:    goRegMaps[2],
+			wantErr: nil,
+		},
+		{
+			name:    "bungee layers regular, cmap 0",
+			face:    bungeeLayersReg,
+			cmap:    bungeeLayersRegMaps[0],
+			want:    bungeeLayersRegMaps[0],
+			wantErr: nil,
+		},
+		{
+			name:    "bungee layers regular, cmap 1",
+			face:    bungeeLayersReg,
+			cmap:    bungeeLayersRegMaps[1],
+			want:    bungeeLayersRegMaps[1],
+			wantErr: nil,
+		},
+		{
+			name:    "bungee layers regular, cmap 2",
+			face:    bungeeLayersReg,
+			cmap:    bungeeLayersRegMaps[2],
+			want:    bungeeLayersRegMaps[2],
+			wantErr: nil,
+		},
+		{
+			name:    "bungee layers regular, cmap 3",
+			face:    bungeeLayersReg,
+			cmap:    bungeeLayersRegMaps[3],
+			want:    bungeeLayersRegMaps[3],
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.face.testClearCharmap()
+			if err := tt.face.SetCharMap(tt.cmap); err != tt.wantErr {
+				t.Errorf("%q.SetCharMap(%v) error = %v, wantErr %v", tt.face.FamilyName(), tt.cmap, err, tt.wantErr)
+			}
+
+			if got, _ := tt.face.ActiveCharMap(); got != tt.want {
+				t.Errorf("%q.SetCharMap(%v) got charmap = %v, want %v", tt.face.FamilyName(), tt.cmap, got, tt.want)
+			}
+		})
+	}
+}

@@ -58,7 +58,7 @@ func Test_newCharMap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotC := tt.font.testCCharMaps()
+			gotC := tt.font.charmaps()
 			if len(gotC) != len(tt.want) {
 				t.Fatalf("got %d maps, want %d", len(gotC), len(tt.want))
 			}

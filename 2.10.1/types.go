@@ -194,7 +194,7 @@ type CharMap struct {
 	index int
 
 	// not user created
-	valid bool //TODO: remove if there are no methods that accept a CharMap as an argument
+	valid bool
 }
 
 func newCharMap(c C.FT_CharMap) CharMap {

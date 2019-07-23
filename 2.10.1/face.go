@@ -363,7 +363,7 @@ func (f *Face) CharMaps() []CharMap {
 	return ret
 }
 
-func (f *Face) testCCharMaps() []C.FT_CharMap {
+func (f *Face) charmaps() []C.FT_CharMap {
 	if f == nil || f.ptr == nil {
 		return nil
 	}
@@ -518,4 +518,35 @@ func (f *Face) testClearCharmap() {
 		return
 	}
 	f.ptr.charmap = nil
+}
+
+// SetCharMap marks the given charmap as active for character code to glyph index mapping.
+//
+// It returns an error if the charmap is not part of the face (i.e., if it is not listed in the CharMaps() table).
+// It also fails if an OpenType type 14 charmap is selected (which doesn't map character codes to glyph indices at all).
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_set_charmap
+func (f *Face) SetCharMap(c CharMap) error {
+	if f == nil || f.ptr == nil {
+		return ErrInvalidFaceHandle
+	}
+
+	if !c.valid {
+		return ErrInvalidCharMapHandle
+	}
+
+	charmaps := f.charmaps()
+	if c.index >= len(charmaps) {
+		return ErrInvalidCharMapHandle
+	}
+
+	var charmap C.FT_CharMap
+	for i, cmap := range charmaps {
+		if i == c.index {
+			charmap = cmap
+			break
+		}
+	}
+
+	return getErr(C.FT_Set_Charmap(f.ptr, charmap))
 }
