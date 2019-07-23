@@ -73,3 +73,74 @@ func Test_newCharMap(t *testing.T) {
 		})
 	}
 }
+
+func TestCharMap_Index(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %s", err)
+	}
+	defer l.Free()
+
+	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	bungeeLayersReg, err := l.NewFaceFromPath(testdata("bungee", "BungeeLayers-Regular.otf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer bungeeLayersReg.Free()
+
+	charmaps := bungeeLayersReg.CharMaps()
+
+	tests := []struct {
+		name    string
+		cmap    CharMap
+		wantIdx int
+		wantOk  bool
+	}{
+		{
+			name:    "invalid",
+			cmap:    CharMap{},
+			wantIdx: 0,
+			wantOk:  false,
+		},
+		{
+			name:    "bungee 0",
+			cmap:    charmaps[0],
+			wantIdx: 0,
+			wantOk:  true,
+		},
+		{
+			name:    "bungee 1",
+			cmap:    charmaps[1],
+			wantIdx: 1,
+			wantOk:  true,
+		},
+		{
+			name:    "bungee 2",
+			cmap:    charmaps[2],
+			wantIdx: 2,
+			wantOk:  true,
+		},
+		{
+			name:    "bungee 3",
+			cmap:    charmaps[3],
+			wantIdx: 3,
+			wantOk:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotIdx, gotOk := tt.cmap.Index()
+			if gotIdx != tt.wantIdx {
+				t.Errorf("CharMap.Index() gotIdx = %v, want %v", gotIdx, tt.wantIdx)
+			}
+			if gotOk != tt.wantOk {
+				t.Errorf("CharMap.Index() gotOk = %v, want %v", gotOk, tt.wantOk)
+			}
+		})
+	}
+}

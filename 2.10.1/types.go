@@ -197,6 +197,18 @@ type CharMap struct {
 	valid bool
 }
 
+// Index reports the index into the array of character maps within the face to which c belongs.
+// If c is not a valid charmap, it will return 0 and false.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_charmap_index
+func (c CharMap) Index() (idx int, ok bool) {
+	if !c.valid {
+		return 0, false
+	}
+
+	return c.index, true
+}
+
 func newCharMap(c C.FT_CharMap) CharMap {
 	if c == nil {
 		return CharMap{}
