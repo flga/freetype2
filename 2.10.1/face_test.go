@@ -1605,3 +1605,238 @@ func TestFace_RequestSize_Free(t *testing.T) {
 		t.Errorf("free() was not called")
 	}
 }
+
+func TestFace_SelectSize(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %s", err)
+	}
+	defer l.Free()
+
+	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer bungeeColorMac.Free()
+
+	bungeeColorMac2, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer bungeeColorMac2.Free()
+
+	tests := []struct {
+		name     string
+		font     *Face
+		idx      int
+		wantSize Size
+		wantErr  error
+	}{
+		{
+			name:     "nil face",
+			font:     nil,
+			idx:      0,
+			wantSize: Size{},
+			wantErr:  ErrInvalidFaceHandle,
+		},
+		{
+			name:     "go regular 0",
+			font:     goRegular,
+			idx:      0,
+			wantSize: Size{},
+			wantErr:  ErrInvalidFaceHandle,
+		},
+		{
+			name:     "go regular 1",
+			font:     goRegular,
+			idx:      1,
+			wantSize: Size{},
+			wantErr:  ErrInvalidFaceHandle,
+		},
+		{
+			name: "bungee color mac 0",
+			font: bungeeColorMac,
+			idx:  0,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      20,
+					YPpem:      20,
+					XScale:     83886,
+					YScale:     83886,
+					Ascender:   1101,
+					Descender:  -179,
+					Height:     1536,
+					MaxAdvance: 1814,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac 1",
+			font: bungeeColorMac,
+			idx:  1,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      32,
+					YPpem:      32,
+					XScale:     134218,
+					YScale:     134218,
+					Ascender:   1761,
+					Descender:  -287,
+					Height:     2458,
+					MaxAdvance: 2902,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac 2",
+			font: bungeeColorMac,
+			idx:  2,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      40,
+					YPpem:      40,
+					XScale:     167772,
+					YScale:     167772,
+					Ascender:   2202,
+					Descender:  -358,
+					Height:     3072,
+					MaxAdvance: 3628,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac 3",
+			font: bungeeColorMac,
+			idx:  3,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      0x48,
+					YPpem:      0x48,
+					XScale:     301990,
+					YScale:     301990,
+					Ascender:   3963,
+					Descender:  -645,
+					Height:     5530,
+					MaxAdvance: 6530,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac 4",
+			font: bungeeColorMac,
+			idx:  4,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      0x60,
+					YPpem:      0x60,
+					XScale:     402653,
+					YScale:     402653,
+					Ascender:   5284,
+					Descender:  -860,
+					Height:     7373,
+					MaxAdvance: 8706,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac 5",
+			font: bungeeColorMac,
+			idx:  5,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      0x80,
+					YPpem:      0x80,
+					XScale:     536871,
+					YScale:     536871,
+					Ascender:   7045,
+					Descender:  -1147,
+					Height:     9830,
+					MaxAdvance: 11608,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac 6",
+			font: bungeeColorMac,
+			idx:  6,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      0x100,
+					YPpem:      0x100,
+					XScale:     1073742,
+					YScale:     1073742,
+					Ascender:   14090,
+					Descender:  -2294,
+					Height:     19661,
+					MaxAdvance: 23216,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac 7",
+			font: bungeeColorMac,
+			idx:  7,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      0x200,
+					YPpem:      0x200,
+					XScale:     2147484,
+					YScale:     2147484,
+					Ascender:   28180,
+					Descender:  -4588,
+					Height:     39322,
+					MaxAdvance: 46432,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac 8",
+			font: bungeeColorMac,
+			idx:  8,
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      0x400,
+					YPpem:      0x400,
+					XScale:     4294967,
+					YScale:     4294967,
+					Ascender:   56361,
+					Descender:  -9175,
+					Height:     78643,
+					MaxAdvance: 92865,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name:     "bungee color mac 9",
+			font:     bungeeColorMac2,
+			idx:      9,
+			wantSize: Size{},
+			wantErr:  ErrInvalidArgument,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.font.SelectSize(tt.idx); err != tt.wantErr {
+				t.Errorf("Face.SelectSize() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got := tt.font.Size(); got != tt.wantSize {
+				t.Errorf("Face.SelectSize() %v, want %v", got, tt.wantSize)
+			}
+		})
+	}
+}

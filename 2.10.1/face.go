@@ -583,6 +583,29 @@ func (f *Face) RequestSize(req SizeRequest) error {
 	return getErr(C.FT_Request_Size(f.ptr, ptr))
 }
 
+// SelectSize selects a bitmap strike.
+// To be more precise, this function sets the scaling factors of the active Size object in a face so that bitmaps from
+// this particular strike are taken by LoadGlyph and friends.
+//
+// Don't use this function if you are using the FreeType cache API.
+//
+// NOTE:
+// For bitmaps embedded in outline fonts it is common that only a subset of the available glyphs at a given ppem value
+// is available. FreeType silently uses outlines if there is no bitmap for a given glyph index.
+//
+// For GX and OpenType variation fonts, a bitmap strike makes sense only if the default instance is active (this is, no
+// glyph variation takes place); otherwise, FreeType simply ignores bitmap strikes. The same is true for all named
+// instances that are different from the default instance.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_select_size
+func (f *Face) SelectSize(strikeIndex int) error {
+	if f == nil || f.ptr == nil {
+		return ErrInvalidFaceHandle
+	}
+
+	return getErr(C.FT_Select_Size(f.ptr, C.FT_Int(strikeIndex)))
+}
+
 // SelectCharMap selects a given charmap by its encoding tag.
 // It returns an error if no charmap in the face corresponds to the encoding queried.
 //
