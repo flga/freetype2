@@ -339,3 +339,73 @@ type SizeMetrics struct {
 	// integer value. See Face for the details.
 	MaxAdvance fixed.Int26_6
 }
+
+// SizeRequestType is an enumeration of the supported size request types, i.e.,
+// what input size (in font units) maps to the requested output size (in pixels,
+// as computed from the arguments of SizeRequest).
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_request_type
+type SizeRequestType int
+
+const (
+	// SizeRequestTypeNominal the UnitsPerEM method of Face is used to determine both scaling values.
+	//
+	// This is the standard scaling found in most applications. In particular, use this size request type for TrueType
+	// fonts if they provide optical scaling or something similar. Note, however, that UnitsPerEM is a rather abstract
+	// value which bears no relation to the actual size of the glyphs in a font.
+	SizeRequestTypeNominal SizeRequestType = C.FT_SIZE_REQUEST_TYPE_NOMINAL
+	// SizeRequestTypeRealDim the sum of the ascender and (minus of) the descender fields of Face is used to determine
+	// both scaling values.
+	SizeRequestTypeRealDim SizeRequestType = C.FT_SIZE_REQUEST_TYPE_REAL_DIM
+	// SizeRequestTypeBBox the width and height of the BBox field of Face are used to determine the horizontal and
+	// vertical scaling value, respectively.
+	SizeRequestTypeBBox SizeRequestType = C.FT_SIZE_REQUEST_TYPE_BBOX
+	// SizeRequestTypeCell the MaxAdvanceWidth field of Face is used to determine the horizontal scaling value; the
+	// vertical scaling valueis determined the same way as SizeRequestTypeRealDim does. Finally, both scaling values are
+	// set to the smaller one. This type is useful if you want to specify the font size for, say, a window of a given
+	// dimension and 80x24 cells.
+	SizeRequestTypeCell SizeRequestType = C.FT_SIZE_REQUEST_TYPE_CELL
+	// SizeRequestTypeScales specify the scaling values directly.
+	SizeRequestTypeScales SizeRequestType = C.FT_SIZE_REQUEST_TYPE_SCALES
+)
+
+func (s SizeRequestType) String() string {
+	switch s {
+	case SizeRequestTypeNominal:
+		return "Nominal"
+	case SizeRequestTypeRealDim:
+		return "RealDim"
+	case SizeRequestTypeBBox:
+		return "BBox"
+	case SizeRequestTypeCell:
+		return "Cell"
+	case SizeRequestTypeScales:
+		return "Scales"
+	default:
+		return "Unknown"
+	}
+}
+
+// SizeRequest models a size request.
+//
+// If type is SizeRequestTypeScales, width and height are interpreted directly as 16.16 fractional scaling values,
+// without any further modification, and both horiResolution and vertResolution are ignored.
+//
+// NOTE:
+// If width is zero, the horizontal scaling value is set equal to the vertical scaling value, and vice versa.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_requestrec
+type SizeRequest struct {
+	// See SizeRequestType
+	Type SizeRequestType
+	// The desired width, given as a 26.6 fractional point value (with 72pt = 1in).
+	Width fixed.Int26_6
+	// The desired height, given as a 26.6 fractional point value (with 72pt = 1in).
+	Height fixed.Int26_6
+	// The horizontal resolution (dpi, i.e., pixels per inch). If set to zero,
+	// width is treated as a 26.6 fractional pixel value, which gets internally
+	// rounded to an integer.
+	HoriResolution uint
+	// The vertical resolution (dpi, i.e., pixels per inch). If set to zero, height is treated as a 26.6 fractional pixel value, which gets internally rounded to an integer.
+	VertResolution uint
+}

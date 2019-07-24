@@ -2,6 +2,7 @@ package freetype2
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/flga/freetype2/2.10.1/fixed"
 	"github.com/flga/freetype2/2.10.1/truetype"
@@ -1224,5 +1225,383 @@ func TestFace_SetPixelSizes(t *testing.T) {
 				t.Errorf("Face.SetPixelSizes() %v, want %v", got, tt.wantSize)
 			}
 		})
+	}
+}
+
+func TestFace_RequestSize(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %s", err)
+	}
+	defer l.Free()
+
+	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer bungeeColorMac.Free()
+
+	tests := []struct {
+		name     string
+		font     *Face
+		req      SizeRequest
+		wantSize Size
+		wantErr  error
+	}{
+		{
+			name:     "nil face",
+			font:     nil,
+			req:      SizeRequest{},
+			wantSize: Size{},
+			wantErr:  ErrInvalidFaceHandle,
+		},
+		{
+			name: "go regular nominal",
+			font: goRegular,
+			req: SizeRequest{
+				Type:           SizeRequestTypeNominal,
+				Width:          20 << 6,
+				Height:         20 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      20,
+					YPpem:      20,
+					XScale:     40960,
+					YScale:     40960,
+					Ascender:   1216,
+					Descender:  -320,
+					Height:     1472,
+					MaxAdvance: 1408,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "go regular real dim",
+			font: goRegular,
+			req: SizeRequest{
+				Type:           SizeRequestTypeRealDim,
+				Width:          20 << 6,
+				Height:         20 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      17,
+					YPpem:      17,
+					XScale:     35440,
+					YScale:     35440,
+					Ascender:   1088,
+					Descender:  -256,
+					Height:     1280,
+					MaxAdvance: 1216,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "go regular bbox",
+			font: goRegular,
+			req: SizeRequest{
+				Type:           SizeRequestTypeBBox,
+				Width:          20 << 6,
+				Height:         20 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      16,
+					YPpem:      15,
+					XScale:     32264,
+					YScale:     31524,
+					Ascender:   960,
+					Descender:  -256,
+					Height:     1152,
+					MaxAdvance: 1088,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "go regular cell",
+			font: goRegular,
+			req: SizeRequest{
+				Type:           SizeRequestTypeCell,
+				Width:          20 << 6,
+				Height:         20 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      17,
+					YPpem:      17,
+					XScale:     35440,
+					YScale:     35440,
+					Ascender:   1088,
+					Descender:  -256,
+					Height:     1280,
+					MaxAdvance: 1216,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "go regular scales",
+			font: goRegular,
+			req: SizeRequest{
+				Type:           SizeRequestTypeScales,
+				Width:          20 << 6,
+				Height:         20 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      1,
+					YPpem:      1,
+					XScale:     1280,
+					YScale:     1280,
+					Ascender:   64,
+					Descender:  -64,
+					Height:     64,
+					MaxAdvance: 64,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "go regular invalid ppem",
+			font: goRegular,
+			req: SizeRequest{
+				Type:           SizeRequestTypeNominal,
+				Width:          20 << 6,
+				Height:         20 << 6,
+				HoriResolution: 1,
+				VertResolution: 1,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      0,
+					YPpem:      0,
+					XScale:     576,
+					YScale:     576,
+					Ascender:   64,
+					Descender:  -64,
+					Height:     0,
+					MaxAdvance: 0,
+				},
+			},
+			wantErr: ErrInvalidPPem,
+		},
+		{
+			name: "bungee color mac, first size, nominal",
+			font: bungeeColorMac,
+			req: SizeRequest{
+				Type:           SizeRequestTypeNominal,
+				Width:          20 << 6,
+				Height:         20 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      20,
+					YPpem:      20,
+					XScale:     83886,
+					YScale:     83886,
+					Ascender:   1101,
+					Descender:  -179,
+					Height:     1536,
+					MaxAdvance: 1814,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac, second size, nominal",
+			font: bungeeColorMac,
+			req: SizeRequest{
+				Type:           SizeRequestTypeNominal,
+				Width:          32 << 6,
+				Height:         32 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XPpem:      32,
+					YPpem:      32,
+					XScale:     134218,
+					YScale:     134218,
+					Ascender:   1761,
+					Descender:  -287,
+					Height:     2458,
+					MaxAdvance: 2902,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "bungee color mac, real dim",
+			font: bungeeColorMac,
+			req: SizeRequest{
+				Type:           SizeRequestTypeRealDim,
+				Width:          32 << 6,
+				Height:         32 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XScale: 1 << 16,
+					YScale: 1 << 16,
+				},
+			},
+			wantErr: ErrUnimplementedFeature,
+		},
+		{
+			name: "bungee color mac, bbox",
+			font: bungeeColorMac,
+			req: SizeRequest{
+				Type:           SizeRequestTypeBBox,
+				Width:          32 << 6,
+				Height:         32 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XScale: 1 << 16,
+					YScale: 1 << 16,
+				},
+			},
+			wantErr: ErrUnimplementedFeature,
+		},
+		{
+			name: "bungee color mac, cell",
+			font: bungeeColorMac,
+			req: SizeRequest{
+				Type:           SizeRequestTypeCell,
+				Width:          32 << 6,
+				Height:         32 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XScale: 1 << 16,
+					YScale: 1 << 16,
+				},
+			},
+			wantErr: ErrUnimplementedFeature,
+		},
+		{
+			name: "bungee color mac, scales",
+			font: bungeeColorMac,
+			req: SizeRequest{
+				Type:           SizeRequestTypeScales,
+				Width:          32 << 6,
+				Height:         32 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XScale: 1 << 16,
+					YScale: 1 << 16,
+				},
+			},
+			wantErr: ErrUnimplementedFeature,
+		},
+		{
+			name: "bungee color mac, < first size",
+			font: bungeeColorMac,
+			req: SizeRequest{
+				Type:           SizeRequestTypeNominal,
+				Width:          19 << 6,
+				Height:         19 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XScale: 1 << 16,
+					YScale: 1 << 16,
+				},
+			},
+			wantErr: ErrInvalidPixelSize,
+		},
+		{
+			name: "bungee color mac, > first size",
+			font: bungeeColorMac,
+			req: SizeRequest{
+				Type:           SizeRequestTypeNominal,
+				Width:          21 << 6,
+				Height:         21 << 6,
+				HoriResolution: 72,
+				VertResolution: 72,
+			},
+			wantSize: Size{
+				SizeMetrics{
+					XScale: 1 << 16,
+					YScale: 1 << 16,
+				},
+			},
+			wantErr: ErrInvalidPixelSize,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.font.RequestSize(tt.req); err != tt.wantErr {
+				t.Errorf("Face.RequestSize() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got := tt.font.Size(); got != tt.wantSize {
+				t.Errorf("Face.RequestSize() %v, want %v", got, tt.wantSize)
+			}
+		})
+	}
+}
+
+func TestFace_RequestSize_Free(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %s", err)
+	}
+	defer l.Free()
+
+	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	var freed bool
+	defer mockFree(func(_ unsafe.Pointer) {
+		freed = true
+	}, actuallyFreeItAfter)()
+	if err := goRegular.RequestSize(SizeRequest{
+		Type:           SizeRequestTypeNominal,
+		Width:          20 << 6,
+		Height:         20 << 6,
+		HoriResolution: 72,
+		VertResolution: 72,
+	}); err != nil {
+		t.Fatalf("unable to request size: %s", err)
+	}
+
+	if !freed {
+		t.Errorf("free() was not called")
 	}
 }

@@ -544,6 +544,45 @@ func (f *Face) SetPixelSizes(width, height uint) error {
 	))
 }
 
+// RequestSize resizes the scale of the active Size object.
+//
+// Don't use this function if you are using the FreeType cache API.
+//
+// Although drivers may select the bitmap strike matching the request, you should not rely on this if you intend to
+// select a particular bitmap strike. Use SelectSize instead in that case.
+//
+// The relation between the requested size and the resulting glyph size is dependent entirely on how the size is defined
+// in the source face. The font designer chooses the final size of each glyph relative to this size. For more
+// information refer to ‘https://www.freetype.org/freetype2/docs/glyphs/glyphs-2.html’.
+//
+// Contrary to SetCharSize, this function doesn't have special code to normalize zero-valued widths, heights, or
+// resolutions (which lead to errors in most cases).
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_request_size
+func (f *Face) RequestSize(req SizeRequest) error {
+	if f == nil || f.ptr == nil {
+		return ErrInvalidFaceHandle
+	}
+
+	ptr := (*C.FT_Size_RequestRec)(C.calloc(1, C.sizeof_struct_FT_Size_RequestRec_))
+	ptr._type = C.FT_Size_Request_Type(req.Type)
+	ptr.width = C.FT_Long(req.Width)
+	ptr.height = C.FT_Long(req.Height)
+	ptr.horiResolution = C.FT_UInt(req.HoriResolution)
+	ptr.vertResolution = C.FT_UInt(req.VertResolution)
+	defer free(unsafe.Pointer(ptr))
+
+	// creq := C.FT_Size_RequestRec{
+	// 	_type:          C.FT_Size_Request_Type(req.Type),
+	// 	width:          C.FT_Long(req.Width),
+	// 	height:         C.FT_Long(req.Height),
+	// 	horiResolution: C.FT_UInt(req.HoriResolution),
+	// 	vertResolution: C.FT_UInt(req.VertResolution),
+	// }
+
+	return getErr(C.FT_Request_Size(f.ptr, ptr))
+}
+
 // SelectCharMap selects a given charmap by its encoding tag.
 // It returns an error if no charmap in the face corresponds to the encoding queried.
 //

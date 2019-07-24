@@ -144,3 +144,24 @@ func TestCharMap_Index(t *testing.T) {
 		})
 	}
 }
+
+func TestSizeRequestType_String(t *testing.T) {
+	if got, want := SizeRequestTypeNominal.String(), "Nominal"; got != want {
+		t.Errorf("SizeRequestTypeNominal.String() = %v, want %v", got, want)
+	}
+	if got, want := SizeRequestTypeRealDim.String(), "RealDim"; got != want {
+		t.Errorf("SizeRequestTypeRealDim.String() = %v, want %v", got, want)
+	}
+	if got, want := SizeRequestTypeBBox.String(), "BBox"; got != want {
+		t.Errorf("SizeRequestTypeBBox.String() = %v, want %v", got, want)
+	}
+	if got, want := SizeRequestTypeCell.String(), "Cell"; got != want {
+		t.Errorf("SizeRequestTypeCell.String() = %v, want %v", got, want)
+	}
+	if got, want := SizeRequestTypeScales.String(), "Scales"; got != want {
+		t.Errorf("SizeRequestTypeScales.String() = %v, want %v", got, want)
+	}
+	if got, want := SizeRequestType(8912387).String(), "Unknown"; got != want {
+		t.Errorf("8912387.String() = %v, want %v", got, want)
+	}
+}
