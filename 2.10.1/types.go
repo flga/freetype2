@@ -7,6 +7,10 @@ import (
 	"C"
 )
 import (
+	"log"
+	"math"
+	"unsafe"
+
 	"github.com/flga/freetype2/2.10.1/fixed"
 	"github.com/flga/freetype2/2.10.1/truetype"
 )
@@ -22,6 +26,13 @@ type Pos int32
 // See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_vector
 type Vector struct {
 	X, Y Pos
+}
+
+// Vector26_6 models a 2D vector
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_vector
+type Vector26_6 struct {
+	X, Y fixed.Int26_6
 }
 
 // BBox holds an outline's bounding box, i.e., the coordinates of its extrema in the horizontal and vertical directions.
@@ -121,6 +132,23 @@ type Bitmap struct {
 	// The pixel mode, i.e., how pixel bits are stored. See PixelMode for
 	// possible values.
 	PixelMode PixelMode
+}
+
+func newBitmap(b C.FT_Bitmap) Bitmap {
+	bitmap := Bitmap{
+		Rows:      int(b.rows),
+		Width:     int(b.width),
+		Pitch:     int(b.pitch),
+		NumGrays:  int(b.num_grays),
+		PixelMode: PixelMode(b.pixel_mode),
+	}
+
+	if b.buffer != nil {
+		pitch := int(math.Abs(float64(bitmap.Pitch)))
+		bitmap.Buffer = C.GoBytes(unsafe.Pointer(b.buffer), C.int(pitch*bitmap.Rows))
+	}
+
+	return bitmap
 }
 
 // BitmapSize models the metrics of a bitmap strike (i.e., a set of glyphs for a given point size and resolution) in a
@@ -406,6 +434,233 @@ type SizeRequest struct {
 	// width is treated as a 26.6 fractional pixel value, which gets internally
 	// rounded to an integer.
 	HoriResolution uint
-	// The vertical resolution (dpi, i.e., pixels per inch). If set to zero, height is treated as a 26.6 fractional pixel value, which gets internally rounded to an integer.
+	// The vertical resolution (dpi, i.e., pixels per inch). If set to zero,
+	// height is treated as a 26.6 fractional pixel value, which gets internally
+	// rounded to an integer.
 	VertResolution uint
+}
+
+// GlyphSlot is a container where individual glyphs can be loaded, be they in
+// outline or bitmap format.
+//
+// If LoadGlyph is called with default flags (see LoadDefault) the glyph image
+// is loaded in the glyph slot in its native format (e.g., an outline glyph for
+// TrueType and Type 1 formats). [Since 2.9] The prospective bitmap metrics are
+// calculated according to LoadTarget and other flags even for the outline
+// glyph, even if LoadRender is not set.
+//
+// This image can later be converted into a bitmap by calling RenderGlyph. This
+// function searches the current renderer for the native image's format,
+// then invokes it.
+//
+// The renderer is in charge of transforming the native image through the slot's
+// face transformation fields, then converting it into a bitmap that is returned
+// in Bitmap().
+//
+// Note that BitmapLeft and BitmapTop are also used to specify the position of
+// the bitmap relative to the current pen position (e.g., coordinates (0,0) on
+// the baseline). Of course, Format is also changed to GlyphFormatBitmap.
+//
+// Here is a small pseudo code fragment that shows how to use LsbDelta and
+// RsbDelta to do fractional positioning of glyphs:
+//
+//	FT_GlyphSlot  slot     = face->glyph;                                <- TODO
+//	FT_Pos        origin_x = 0;
+//
+//
+//	for all glyphs do
+//	<load glyph with `FT_Load_Glyph'>
+//
+//	FT_Outline_Translate( slot->outline, origin_x & 63, 0 );
+//
+//	<save glyph image, or render glyph, or ...>
+//
+//	<compute kern between current and next glyph
+//		and add it to `origin_x'>
+//
+//	origin_x += slot->advance.x;
+//	origin_x += slot->lsb_delta - slot->rsb_delta;
+//	endfor
+//
+// Here is another small pseudo code fragment that shows how to use LsbDelta and
+// RsbDelta to improve integer positioning of glyphs:
+//
+//	FT_GlyphSlot  slot           = face->glyph;                          <- TODO
+//	FT_Pos        origin_x       = 0;
+//	FT_Pos        prev_rsb_delta = 0;
+//
+//
+//	for all glyphs do
+//	<compute kern between current and previous glyph
+//		and add it to `origin_x'>
+//
+//	<load glyph with `FT_Load_Glyph'>
+//
+//	if ( prev_rsb_delta - slot->lsb_delta >  32 )
+//		origin_x -= 64;
+//	else if ( prev_rsb_delta - slot->lsb_delta < -31 )
+//		origin_x += 64;
+//
+//	prev_rsb_delta = slot->rsb_delta;
+//
+//	<save glyph image, or render glyph, or ...>
+//
+//	origin_x += slot->advance.x;
+//	endfor
+//
+// If you use strong auto-hinting, you must apply these delta values! Otherwise
+// you will experience far too large inter-glyph spacing at small rendering
+// sizes in most cases. Note that it doesn't harm to use the above code for
+// other hinting modes also, since the delta values are zero then.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_glyphslot
+type GlyphSlot struct {
+	// [Since 2.10] The glyph index passed as an argument to LoadGlyph while
+	// initializing the glyph slot.
+	GlyphIndex GlyphIndex
+	// The metrics of the last loaded glyph in the slot. The returned values
+	// depend on the last load flags (see the LoadGlyph API function) and can be
+	// expressed either in 26.6 fractional pixels or font units.
+	//
+	// Note that even when the glyph image is transformed, the metrics are not.
+	Metrics GlyphMetrics
+	// The advance width of the unhinted glyph. Its value is expressed in 16.16
+	// fractional pixels, unless LoadLinearDesign is set when loading the glyph.
+	// This field can be important to perform correct WYSIWYG layout.
+	// Only relevant for outline glyphs.
+	LinearHoriAdvance fixed.Int16_16
+	// The advance height of the unhinted glyph. Its value is expressed in 16.16
+	// fractional pixels, unless LoadLinearDesign is set when loading the glyph.
+	// This field can be important to perform correct WYSIWYG layout.
+	// Only relevant for outline glyphs.
+	LinearVertAdvance fixed.Int16_16
+	// This shorthand is, depending on LoadIgnoreTransform, the transformed
+	// (hinted) advance width for the glyph, in 26.6 fractional pixel format.
+	// As specified with LoadVerticalLayout, it uses either the horiAdvance or
+	// the vertAdvance value of metrics field.
+	Advance Vector26_6
+	// This field indicates the format of the image contained in the glyph slot.
+	// Typically GlyphFormatBitmap, GlyphFormatOutline, or GlyphFormatComposite,
+	// but other values are possible.
+	Format GlyphFormat
+	// This field is used as a bitmap descriptor. Note that the address and
+	// content of the bitmap buffer can change between calls of LoadGlyph and a
+	// few other functions. TODO: this isnt true, Bitmap is a copy.
+	Bitmap Bitmap
+	// The bitmap's left bearing expressed in integer pixels.
+	BitmapLeft int
+	// The bitmap's top bearing expressed in integer pixels. This is the
+	// distance from the baseline to the top-most glyph scanline, upwards y
+	// coordinates being positive.
+	BitmapTop int
+	// The outline descriptor for the current glyph image if its format is
+	// GlyphFormatOutline. Once a glyph is loaded, outline can be transformed,
+	// distorted, emboldened, etc. However, it must not be freed. TODO: not true, this is a copy.
+	//
+	// [Since 2.10.1] If LoadNoScale is set, outline coordinates of OpenType
+	// variation fonts for a selected instance are internally handled as 26.6
+	// fractional font units but returned as (rounded) integers, as expected.
+	// To get unrounded font units, don't use LoadNoScale but load the glyph
+	// with LoadNoHinting and scale it, using the font's UnitsPerEM value as the
+	// ppem.
+	Outline Outline
+	// The number of subglyphs in a composite glyph. This field is only valid
+	// for the composite glyph format that should normally only be loaded with
+	// the LoadNoRecurse flag.
+	NumSubglyphs int
+	// The difference between hinted and unhinted left side bearing while
+	// auto-hinting is active. Zero otherwise.
+	LsbDelta Pos
+	// The difference between hinted and unhinted right side bearing while
+	// auto-hinting is active. Zero otherwise.
+	RsbDelta Pos
+}
+
+func newGlyphSlot(s C.FT_GlyphSlot) GlyphSlot {
+	if s == nil {
+		return GlyphSlot{}
+	}
+
+	slot := GlyphSlot{
+		GlyphIndex:        GlyphIndex(s.glyph_index),
+		Metrics:           newGlyphMetrics(s.metrics),
+		LinearHoriAdvance: fixed.Int16_16(s.linearHoriAdvance),
+		LinearVertAdvance: fixed.Int16_16(s.linearVertAdvance),
+		Advance: Vector26_6{
+			X: fixed.Int26_6(s.advance.x),
+			Y: fixed.Int26_6(s.advance.y),
+		},
+		Format:       GlyphFormat(s.format),
+		Bitmap:       newBitmap(s.bitmap),
+		BitmapLeft:   int(s.bitmap_left),
+		BitmapTop:    int(s.bitmap_top),
+		Outline:      newOutline(s.outline),
+		NumSubglyphs: int(s.num_subglyphs),
+		LsbDelta:     Pos(s.lsb_delta),
+		RsbDelta:     Pos(s.rsb_delta),
+	}
+
+	return slot
+}
+
+// GlyphMetrics models the metrics of a single glyph. The values are expressed
+// in 26.6 fractional pixel format; if the flag LoadNoScale has been used while
+// loading the glyph, values are expressed in font units instead.
+//
+// If not disabled with LoadNoHinting, the values represent dimensions of the
+// hinted glyph (in case hinting is applicable).
+//
+// Stroking a glyph with an outside border does not increase HoriAdvance or
+// VertAdvance; you have to manually adjust these values to account for the
+// added width and height.
+//
+// FreeType doesn't use the ‘VORG’ table data for CFF fonts because it doesn't
+// have an interface to quickly retrieve the glyph height. The y coordinate of
+// the vertical origin can be simply computed as vertBearingY + height after
+// loading a glyph.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_glyph_metrics
+type GlyphMetrics struct {
+	// The glyph's width.
+	Width Pos
+	// The glyph's height.
+	Height Pos
+
+	// Left side bearing for horizontal layout.
+	HoriBearingX Pos
+	// Top side bearing for horizontal layout.
+	HoriBearingY Pos
+	// Advance width for horizontal layout.
+	HoriAdvance Pos
+
+	// Left side bearing for vertical layout.
+	VertBearingX Pos
+	// Top side bearing for vertical layout. Larger positive values mean further
+	// below the vertical glyph origin.
+	VertBearingY Pos
+	// Advance height for vertical layout. Positive values mean the glyph has a
+	// positive advance downward.
+	VertAdvance Pos
+}
+
+func newGlyphMetrics(m C.FT_Glyph_Metrics) GlyphMetrics {
+	return GlyphMetrics{
+		Width:        Pos(m.width),
+		Height:       Pos(m.height),
+		HoriBearingX: Pos(m.horiBearingX),
+		HoriBearingY: Pos(m.horiBearingY),
+		HoriAdvance:  Pos(m.horiAdvance),
+		VertBearingX: Pos(m.vertBearingX),
+		VertBearingY: Pos(m.vertBearingY),
+		VertAdvance:  Pos(m.vertAdvance),
+	}
+}
+
+type Outline struct {
+	// TODO: implement
+}
+
+func newOutline(_ C.FT_Outline) Outline {
+	log.Println("NEW OUTLINE NOT IMPLEMENTED")
+	return Outline{}
 }

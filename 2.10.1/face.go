@@ -10,6 +10,169 @@ import (
 	"github.com/flga/freetype2/2.10.1/fixed"
 )
 
+type GlyphIndex uint
+
+// LoadFlag is a list of bit field constants for LoadGlyph to indicate what
+// kind of operations to perform during glyph loading.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_load_xxx
+type LoadFlag int32
+
+const (
+	// LoadDefault is used as the default glyph load operation. In this case, the following happens:
+	//
+	// 1 - FreeType looks for a bitmap for the glyph corresponding to the face's current size. If one is found, the function
+	// returns. The bitmap data can be accessed from the glyph slot (see note below).
+	// 2 - If no embedded bitmap is searched for or found, FreeType looks for a scalable outline. If one is found, it is
+	// loaded from the font file, scaled to device pixels, then ‘hinted’ to the pixel grid in order to optimize it. The
+	// outline data can be accessed from the glyph slot (see note below).
+	//
+	// Note that by default the glyph loader doesn't render outlines into bitmaps. The following flags are used to modify
+	// this default behaviour to more specific and useful cases.
+	LoadDefault LoadFlag = C.FT_LOAD_DEFAULT
+	// LoadNoScale don't scale the loaded outline glyph but keep it in font units.
+	//
+	// This flag implies LoadNoHinting and LoadNoBitmap, and unsets LoadRender.
+	//
+	// If the font is ‘tricky’ (see FaceFlagTricky for more), using LoadNoScale usually yields meaningless outlines
+	// because the subglyphs must be scaled and positioned with hinting instructions. This can be solved by loading the
+	// font without LoadNoScale and setting the character size to face.UnitsPerEM().
+	LoadNoScale LoadFlag = C.FT_LOAD_NO_SCALE
+	// LoadNoHinting disables hinting. This generally generates ‘blurrier’ bitmap glyphs when the glyph are rendered
+	// in any of the anti-aliased modes. See also the note below.
+	//
+	// This flag is implied by LoadNoScale.
+	LoadNoHinting LoadFlag = C.FT_LOAD_NO_HINTING
+	// LoadRender call RenderGlyph after the glyph is loaded. By default, the glyph is rendered in RenderModeNormal mode.
+	// This can be overridden by any LoadTarget or LoadMonochrome.
+	//
+	// This flag is unset by LoadNoScale.
+	LoadRender LoadFlag = C.FT_LOAD_RENDER
+	// LoadNoBitmap ignores bitmap strikes when loading. Bitmap-only fonts ignore this flag.
+	//
+	// LoadNoScale always sets this flag.
+	LoadNoBitmap LoadFlag = C.FT_LOAD_NO_BITMAP
+	// LoadVerticalLayout load the glyph for vertical text layout. In particular, the advance value in the GlyphSlot is
+	// set to the VertAdvance value of the metrics field.
+	//
+	// If the face does not have FaceFlagVertical, you shouldn't use this flag currently. Reason is that in this case
+	// vertical metrics get synthesized, and those values are not always consistent across various font formats.
+	LoadVerticalLayout LoadFlag = C.FT_LOAD_VERTICAL_LAYOUT
+	// LoadForceAutohint prefer the auto-hinter over the font's native hinter. See also the note below.
+	LoadForceAutohint LoadFlag = C.FT_LOAD_FORCE_AUTOHINT
+	// LoadPedantic makes the font driver perform pedantic verifications during glyph loading and hinting. This is
+	// mostly used to detect broken glyphs in fonts. By default, FreeType tries to handle broken fonts also.
+	//
+	// In particular, errors from the TrueType bytecode engine are not passed to the application if this flag is not set;
+	// this might result in partially hinted or distorted glyphs in case a glyph's bytecode is buggy.
+	LoadPedantic LoadFlag = C.FT_LOAD_PEDANTIC
+	// LoadNoRecurse don't load composite glyphs recursively. Instead, the font driver fills the NumSubglyph and
+	// Subglyphs values of the glyph slot; it also sets glyph.Format to GlyphFormatComposite. The description of
+	// subglyphs can then be accessed with GetSubGlyphInfo.
+	//
+	// Don't use this flag for retrieving metrics information since some font drivers only return rudimentary data.
+	//
+	// This flag implies LoadNoScale and LoadIgnoreTransform.
+	LoadNoRecurse LoadFlag = C.FT_LOAD_NO_RECURSE
+	// LoadIgnoreTransform ignore the transform matrix set by SetTransform.
+	LoadIgnoreTransform LoadFlag = C.FT_LOAD_IGNORE_TRANSFORM
+	// LoadMonochrome is used with LoadRender to indicate that you want to render an outline glyph to a 1-bit monochrome
+	// bitmap glyph, with 8 pixels packed into each byte of the bitmap data.
+	//
+	// Note that this has no effect on the hinting algorithm used. You should rather use LoadTargetMono so that the
+	// monochrome-optimized hinting algorithm is used.
+	LoadMonochrome LoadFlag = C.FT_LOAD_MONOCHROME
+	// LoadLinearDesign keep LinearHoriAdvance and LinearVertAdvance fields of GlyphSlot in font units. See GlyphSlot
+	// for details.
+	LoadLinearDesign LoadFlag = C.FT_LOAD_LINEAR_DESIGN
+	// LoadNoAutohint disables the auto-hinter. See also the note below.
+	LoadNoAutohint LoadFlag = C.FT_LOAD_NO_AUTOHINT
+	// LoadColor loads colored glyphs. There are slight differences depending on the font format.
+	//
+	// [Since 2.5] Load embedded color bitmap images. The resulting color bitmaps, if available, will have the
+	// PixelModeBGRA format, with pre-multiplied color channels. If the flag is not set and color bitmaps are found,
+	// they are converted to 256-level gray bitmaps, using the PixelModeGray format.
+	//
+	// [Since 2.10, experimental] If the glyph index contains an entry in the face's ‘COLR’ table with a ‘CPAL’ palette
+	// table (as defined in the OpenType specification), make RenderGlyph provide a default blending of the color glyph
+	// layers associated with the glyph index, using the same bitmap format as embedded color bitmap images. This is
+	// mainly for convenience; for full control of color layers use GetColorGlyphLayer and FreeType's color functions
+	// like PaletteSelect instead of setting LoadColor for rendering so that the client application can handle blending
+	// by itself.
+	LoadColor LoadFlag = C.FT_LOAD_COLOR
+	// LoadComputeMetrics [Since 2.6.1] Compute glyph metrics from the glyph data, without the use of bundled metrics
+	// tables (for example, the ‘hdmx’ table in TrueType fonts). This flag is mainly used by font validating or font
+	// editing applications, which need to ignore, verify, or edit those tables.
+	//
+	// Currently, this flag is only implemented for TrueType fonts.
+	LoadComputeMetrics LoadFlag = C.FT_LOAD_COMPUTE_METRICS
+	// LoadBitmapMetricsOnly [Since 2.7.1] request loading of the metrics and bitmap image information of a (possibly
+	// embedded) bitmap glyph without allocating or copying the bitmap image data itself. No effect if the target glyph
+	// is not a bitmap image.
+	//
+	// This flag unsets LoadRender.
+	LoadBitmapMetricsOnly LoadFlag = C.FT_LOAD_BITMAP_METRICS_ONLY
+)
+
+func (x LoadFlag) String() string {
+	// the maximum concatenated len, at the time of writing, is 180.
+	s := make([]byte, 0, 180)
+
+	if x&LoadDefault > 0 {
+		s = append(s, []byte("Default|")...)
+	}
+	if x&LoadNoScale > 0 {
+		s = append(s, []byte("NoScale|")...)
+	}
+	if x&LoadNoHinting > 0 {
+		s = append(s, []byte("NoHinting|")...)
+	}
+	if x&LoadRender > 0 {
+		s = append(s, []byte("Render|")...)
+	}
+	if x&LoadNoBitmap > 0 {
+		s = append(s, []byte("NoBitmap|")...)
+	}
+	if x&LoadVerticalLayout > 0 {
+		s = append(s, []byte("VerticalLayout|")...)
+	}
+	if x&LoadForceAutohint > 0 {
+		s = append(s, []byte("ForceAutohint|")...)
+	}
+	if x&LoadPedantic > 0 {
+		s = append(s, []byte("Pedantic|")...)
+	}
+	if x&LoadNoRecurse > 0 {
+		s = append(s, []byte("NoRecurse|")...)
+	}
+	if x&LoadIgnoreTransform > 0 {
+		s = append(s, []byte("IgnoreTransform|")...)
+	}
+	if x&LoadMonochrome > 0 {
+		s = append(s, []byte("Monochrome|")...)
+	}
+	if x&LoadLinearDesign > 0 {
+		s = append(s, []byte("LinearDesign|")...)
+	}
+	if x&LoadNoAutohint > 0 {
+		s = append(s, []byte("NoAutohint|")...)
+	}
+	if x&LoadColor > 0 {
+		s = append(s, []byte("Color|")...)
+	}
+	if x&LoadComputeMetrics > 0 {
+		s = append(s, []byte("ComputeMetrics|")...)
+	}
+	if x&LoadBitmapMetricsOnly > 0 {
+		s = append(s, []byte("BitmapMetricsOnly|")...)
+	}
+	if len(s) == 0 {
+		return ""
+	}
+
+	return string(s[:len(s)-1]) // trim the leading |
+}
+
 // FaceFlag is a list of bit flags of a given face.
 // They inform client applications of properties of the corresponding face.
 //
@@ -205,6 +368,7 @@ func (f *Face) freeInternal() {
 	for _, fn := range f.dealloc {
 		fn()
 	}
+
 	f.ptr = nil
 }
 
@@ -473,7 +637,30 @@ func (f *Face) UnderlineThickness() int {
 	return int(f.ptr.underline_thickness)
 }
 
-// TODO: GLYPH
+// Glyph returns a copy of the current contents, if any, of the face's glyph slot.
+func (f *Face) Glyph() GlyphSlot {
+	if f == nil || f.ptr == nil {
+		return GlyphSlot{}
+	}
+
+	return newGlyphSlot(f.ptr.glyph)
+}
+
+// Glyphs returns a copy of the current contents, if any, of the face's glyph
+// slot, following the linked list.
+func (f *Face) Glyphs() []GlyphSlot {
+	if f == nil || f.ptr == nil {
+		return nil
+	}
+
+	var ret []GlyphSlot
+	ptr := f.ptr.glyph
+	for ptr.next != nil {
+		ret = append(ret, newGlyphSlot(ptr))
+		ptr = ptr.next
+	}
+	return ret
+}
 
 // Size returns a copy of the current active size for this face.
 func (f *Face) Size() Size {
@@ -604,6 +791,62 @@ func (f *Face) SelectSize(strikeIndex int) error {
 	}
 
 	return getErr(C.FT_Select_Size(f.ptr, C.FT_Int(strikeIndex)))
+}
+
+// SetTransform sets the transformation that is applied to glyph images when they are loaded into a glyph slot through
+// LoadGlyph.
+//
+// NOTE:
+// The transformation is only applied to scalable image formats after the glyph has been loaded. It means that hinting
+// is unaltered by the transformation and is performed on the character size given in the last call to SetCharSize or
+// SetPixelSizes.
+//
+// Note that this also transforms the face.glyph.advance field, but not the values in face.glyph.metrics.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_set_transform
+func (f *Face) SetTransform(matrix Matrix, delta Vector) {
+	if f == nil || f.ptr == nil {
+		return
+	}
+
+	var cmatrix *C.FT_Matrix
+	if matrix != (Matrix{}) {
+		cmatrix = (*C.FT_Matrix)(C.calloc(1, C.sizeof_struct_FT_Matrix_))
+		cmatrix.xx = C.FT_Fixed(matrix.Xx)
+		cmatrix.xy = C.FT_Fixed(matrix.Xy)
+		cmatrix.yx = C.FT_Fixed(matrix.Yx)
+		cmatrix.yy = C.FT_Fixed(matrix.Yy)
+		defer free(unsafe.Pointer(cmatrix)) // FT_Set_Transform makes a copy
+	}
+
+	var cdelta *C.FT_Vector
+	if delta != (Vector{}) {
+		cdelta = (*C.FT_Vector)(C.calloc(1, C.sizeof_struct_FT_Vector_))
+		cdelta.x = C.FT_Pos(delta.X)
+		cdelta.y = C.FT_Pos(delta.Y)
+		defer free(unsafe.Pointer(cdelta)) // FT_Set_Transform makes a copy
+	}
+
+	C.FT_Set_Transform(f.ptr, cmatrix, cdelta)
+}
+
+// LoadGlyph loads a glyph into the glyph slot of the face.
+//
+// The loaded glyph may be transformed. See SetTransform for the details.
+//
+// For subsetted CID-keyed fonts, ErrInvalidArgument is returned for invalid CID values (this is, for CID values that
+// don't have a corresponding glyph in the font). See the discussion of the FaceFlagCidKeyed flag for more details.
+//
+// If you receive ErrGlyphTooBig, try getting the glyph outline at EM size, then scale it manually and fill it as a
+// graphics operation.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_load_glyph
+func (f *Face) LoadGlyph(idx GlyphIndex, flags LoadFlag) error {
+	if f == nil || f.ptr == nil {
+		return ErrInvalidFaceHandle
+	}
+
+	return getErr(C.FT_Load_Glyph(f.ptr, C.FT_UInt(idx), C.FT_Int32(flags)))
 }
 
 // SelectCharMap selects a given charmap by its encoding tag.

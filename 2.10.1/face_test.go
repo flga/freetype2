@@ -1,11 +1,13 @@
 package freetype2
 
 import (
+	"fmt"
 	"testing"
 	"unsafe"
 
 	"github.com/flga/freetype2/2.10.1/fixed"
 	"github.com/flga/freetype2/2.10.1/truetype"
+	"github.com/go-test/deep"
 )
 
 func TestFaceFlags_String(t *testing.T) {
@@ -1836,6 +1838,114 @@ func TestFace_SelectSize(t *testing.T) {
 			}
 			if got := tt.font.Size(); got != tt.wantSize {
 				t.Errorf("Face.SelectSize() %v, want %v", got, tt.wantSize)
+			}
+		})
+	}
+}
+
+func TestFace_Glyph(t *testing.T) {
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %s", err)
+	}
+	defer l.Free()
+
+	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer bungeeColorMac.Free()
+
+	tests := []struct {
+		name   string
+		before func(f *Face) error
+		face   *Face
+		want   GlyphSlot
+	}{
+		{
+			name: "nill face",
+			face: nil,
+			want: GlyphSlot{},
+		},
+		{
+			name: "go regular",
+			face: goRegular,
+			before: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return f.LoadGlyph(0x24, LoadRender|LoadColor)
+			},
+			want: GlyphSlot{
+				GlyphIndex: 0x24,
+				Metrics: GlyphMetrics{
+					Width:        640,
+					Height:       704,
+					HoriBearingX: 0,
+					HoriBearingY: 704,
+					HoriAdvance:  576,
+					VertBearingX: -320,
+					VertBearingY: 64,
+					VertAdvance:  896,
+				},
+				LinearHoriAdvance: 611968,
+				LinearVertAdvance: 884352,
+				Advance: Vector26_6{
+					X: 576,
+					Y: 0,
+				},
+				Format: GlyphFormatBitmap,
+				Bitmap: Bitmap{
+					Rows:  0xb,
+					Width: 0xa,
+					Pitch: 10,
+					Buffer: []byte{
+						0x00, 0x00, 0x00, 0x35, 0xff, 0x8f, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x8e, 0xff, 0xe5, 0x02, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x02, 0xe5, 0xc4, 0xff, 0x3f, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x41, 0xfe, 0x27, 0xf4, 0x97, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x9b, 0xc5, 0x00, 0xa8, 0xeb, 0x04, 0x00, 0x00,
+						0x00, 0x05, 0xee, 0x6f, 0x00, 0x53, 0xff, 0x47, 0x00, 0x00,
+						0x00, 0x4e, 0xfd, 0x1a, 0x00, 0x09, 0xf3, 0x9f, 0x00, 0x00,
+						0x00, 0xa7, 0xff, 0xfc, 0xfc, 0xfc, 0xff, 0xf0, 0x07, 0x00,
+						0x0b, 0xf5, 0x75, 0x28, 0x28, 0x28, 0x61, 0xff, 0x4f, 0x00,
+						0x5a, 0xf6, 0x0e, 0x00, 0x00, 0x00, 0x04, 0xe9, 0xa7, 0x00,
+						0xb3, 0xa7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8f, 0xf4, 0x0a,
+					},
+					NumGrays:  0x100,
+					PixelMode: PixelModeGray,
+				},
+				BitmapLeft:   0,
+				BitmapTop:    11,
+				Outline:      Outline{},
+				NumSubglyphs: 0,
+				LsbDelta:     0,
+				RsbDelta:     0,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.before != nil {
+				if err := tt.before(tt.face); err != nil {
+					t.Errorf("Face.Glyph() got error on before block: %v", err)
+				}
+			}
+
+			// if  !reflect.DeepEqual(got, tt.want) {
+			// 	t.Errorf("Face.Glyph() = %v, want %v", got, tt.want)
+			// }
+
+			got := tt.face.Glyph()
+			if diff := deep.Equal(got, tt.want); diff != nil {
+				t.Error(diff)
 			}
 		})
 	}
