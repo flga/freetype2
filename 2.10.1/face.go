@@ -881,6 +881,41 @@ func (f *Face) CharIndex(r rune) GlyphIndex {
 	return GlyphIndex(C.FT_Get_Char_Index(f.ptr, C.ulong(r)))
 }
 
+// FirstChar returns the first character code in the current charmap of a given
+// face, together with its corresponding glyph index.
+//
+// NOTE:
+// You should use this function together with NextChar to parse all character
+// codes available in a given charmap. The code should look like this: (TODO)
+//	FT_ULong  charcode;
+//	FT_UInt   gindex;
+//
+//
+//	charcode = FT_Get_First_Char( face, &gindex );
+//	while ( gindex != 0 )
+//	{
+//	... do something with (charcode,gindex) pair ...
+//
+//	charcode = FT_Get_Next_Char( face, charcode, &gindex );
+//	}
+//
+// Be aware that character codes can have values up to 0xFFFFFFFF; this might
+// happen for non-Unicode or malformed cmaps. However, even with regular Unicode
+// encoding, so-called ‘last resort fonts’ (using SFNT cmap format 13, see
+// function CharMap.Format) normally have entries for all Unicode characters up
+// to 0x1FFFFF, which can cause a lot of iterations.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_first_char
+func (f *Face) FirstChar() (rune, GlyphIndex) {
+	if f == nil || f.ptr == nil {
+		return 0, 0
+	}
+
+	var idx C.uint
+	r := C.FT_Get_First_Char(f.ptr, &idx)
+	return rune(r), GlyphIndex(idx)
+}
+
 // SelectCharMap selects a given charmap by its encoding tag.
 // It returns an error if no charmap in the face corresponds to the encoding queried.
 //

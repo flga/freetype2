@@ -2342,3 +2342,56 @@ func TestFace_CharIndex(t *testing.T) {
 		})
 	}
 }
+
+func TestFace_FirstChar(t *testing.T) {
+	tests := []struct {
+		name     string
+		face     func() (testface, error)
+		wantRune rune
+		wantIdx  GlyphIndex
+	}{
+		{
+			name:     "nil face",
+			face:     nilFace,
+			wantRune: 0,
+			wantIdx:  0,
+		},
+		{
+			name:     "goRegular",
+			face:     goRegular,
+			wantRune: 0,
+			wantIdx:  1,
+		},
+		{
+			name:     "bungeeColorWin",
+			face:     bungeeColorWin,
+			wantRune: 32,
+			wantIdx:  10,
+		},
+		{
+			name:     "bungeeColorMac",
+			face:     bungeeColorMac,
+			wantRune: 32,
+			wantIdx:  10,
+		},
+		{
+			name:     "notoSansJpReg",
+			face:     notoSansJpReg,
+			wantRune: 0,
+			wantIdx:  1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if gotRune, gotIdx := face.FirstChar(); gotRune != tt.wantRune || gotIdx != tt.wantIdx {
+				t.Errorf("Face.FirstChar() got = %v, %v, want %v, %v", gotRune, tt.wantRune, gotIdx, tt.wantIdx)
+			}
+		})
+	}
+}
