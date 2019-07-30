@@ -781,6 +781,30 @@ func (f *Face) ActiveCharMap() (CharMap, bool) {
 	return newCharMap(active), true
 }
 
+// PostscriptName returns the ASCII PostScript name of a given face, if
+// available. This only works with PostScript, TrueType, and OpenType fonts.
+//
+// NOTE:
+// For variation fonts, this string changes if you select a different instance,
+// and you have to call PostscriptName again to retrieve it. FreeType follows
+// Adobe TechNote #5902, ‘Generating PostScript Names for Fonts Using OpenType
+// Font Variations’. https://download.macromedia.com/pub/developer/opentype/tech-notes/5902.AdobePSNameGeneration.html
+//
+// [Since 2.9] Special PostScript names for named instances are only returned if
+// the named instance is set with SetNamedInstance (and the font has
+// corresponding entries in its ‘fvar’ table). If face.HasFlag(FaceFlagVariation)
+// returns true, the algorithmically derived PostScript name is provided, not
+// looking up special entries for named instances.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_postscript_name
+func (f *Face) PostscriptName() string {
+	if f == nil || f.ptr == nil {
+		return ""
+	}
+
+	return C.GoString(C.FT_Get_Postscript_Name(f.ptr))
+}
+
 // SetCharSize sets the character size for the face.
 //
 // If either the character width or height is zero, it is set equal to the other value.

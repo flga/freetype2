@@ -139,6 +139,7 @@ func TestFaceProps(t *testing.T) {
 		face               func() (testface, error)
 		family             string
 		style              string
+		postscript         string
 		numFaces           int
 		numNamedInstances  int
 		faceIdx            int
@@ -174,6 +175,7 @@ func TestFaceProps(t *testing.T) {
 			face:               nilFace,
 			family:             "",
 			style:              "",
+			postscript:         "",
 			numFaces:           0,
 			numNamedInstances:  0,
 			faceIdx:            0,
@@ -209,6 +211,7 @@ func TestFaceProps(t *testing.T) {
 			face:              goRegular,
 			family:            "Go",
 			style:             "Regular",
+			postscript:        "GoRegular",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -256,6 +259,7 @@ func TestFaceProps(t *testing.T) {
 			face:              goBold,
 			family:            "Go",
 			style:             "Bold",
+			postscript:        "Go-Bold",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -303,6 +307,7 @@ func TestFaceProps(t *testing.T) {
 			face:              goItalic,
 			family:            "Go",
 			style:             "Italic",
+			postscript:        "Go-Italic",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -350,6 +355,7 @@ func TestFaceProps(t *testing.T) {
 			face:              goBoldItalic,
 			family:            "Go",
 			style:             "Bold Italic",
+			postscript:        "Go-BoldItalic",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -397,6 +403,7 @@ func TestFaceProps(t *testing.T) {
 			face:              goMono,
 			family:            "Go Mono",
 			style:             "Regular",
+			postscript:        "GoMono",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -444,6 +451,7 @@ func TestFaceProps(t *testing.T) {
 			face:              bungeeColorWin,
 			family:            "Bungee Color",
 			style:             "Regular",
+			postscript:        "BungeeColor-Regular",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -491,6 +499,7 @@ func TestFaceProps(t *testing.T) {
 			face:              bungeeColorMac,
 			family:            "Bungee Color",
 			style:             "Regular",
+			postscript:        "BungeeColor-Regular",
 			numNamedInstances: 0,
 			numFaces:          1,
 			faceIdx:           0,
@@ -548,6 +557,7 @@ func TestFaceProps(t *testing.T) {
 			face:              bungeeLayersReg,
 			family:            "Bungee Layers",
 			style:             "Regular",
+			postscript:        "BungeeLayers-Regular",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -596,6 +606,7 @@ func TestFaceProps(t *testing.T) {
 			face:              notoSansJpReg,
 			family:            "Noto Sans JP",
 			style:             "Regular",
+			postscript:        "NotoSansJP-Regular",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -645,6 +656,7 @@ func TestFaceProps(t *testing.T) {
 			face:              notoSansJpBold,
 			family:            "Noto Sans JP",
 			style:             "Bold",
+			postscript:        "NotoSansJP-Bold",
 			numFaces:          1,
 			numNamedInstances: 0,
 			faceIdx:           0,
@@ -688,6 +700,52 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   3000,
 			underlinePosition:  -150,
 			underlineThickness: 50,
+		},
+		{
+			name:              "arimoRegular",
+			face:              arimoRegular,
+			family:            "Arimo",
+			style:             "Regular",
+			postscript:        "Arimo",
+			numFaces:          1,
+			numNamedInstances: 0,
+			faceIdx:           0,
+			namedIdx:          0,
+			bold:              false,
+			italic:            false,
+			sfntWrapped:       true,
+			scalable:          true,
+			fixedSize:         false,
+			horizontal:        true,
+			vertical:          false,
+			fixedWidth:        false,
+			glyphNames:        true,
+			emSize:            2048,
+			globalBBox:        BBox{XMin: -1114, YMin: -621, XMax: 2666, YMax: 2007},
+			ascent:            1854,
+			descent:           -434,
+			textHeight:        2355,
+			glyphCount:        2584,
+			numCharmaps:       1,
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 0, valid: true},
+			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      0,
+				valid:      true,
+			},
+			activeOk:           true,
+			numSizes:           0,
+			avaliableSizes:     nil,
+			maxAdvanceWidth:    2740,
+			maxAdvanceHeight:   2355,
+			underlinePosition:  -292,
+			underlineThickness: 150,
 		},
 	}
 	for _, tt := range tests {
@@ -735,6 +793,7 @@ func TestFaceProps(t *testing.T) {
 
 			testProp("FamilyName", face.FamilyName(), tt.family)
 			testProp("StyleName", face.StyleName(), tt.style)
+			testProp("PostscriptName", face.PostscriptName(), tt.postscript)
 			testProp("NumFaces", face.NumFaces(), tt.numFaces)
 			testProp("NumNamedInstances", face.NumNamedInstances(), tt.numNamedInstances)
 			testProp("Index", face.Index(), tt.faceIdx)
