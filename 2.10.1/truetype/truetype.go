@@ -373,6 +373,44 @@ type MaxProfile struct {
 	MaxComponentDepth uint16
 }
 
+// CmapFormat is an enumeration of the cmap format values
+//
+// See https://docs.microsoft.com/en-us/typography/opentype/spec/cmap
+type CmapFormat int
+
+const (
+	// ByteEncodingTable is the Apple standard character to glyph index mapping table.
+	ByteEncodingTable CmapFormat = 0
+
+	// HighByteMappingThroughTable is useful for the national character code standards used for Japanese, Chinese, and
+	// Korean characters. These code standards use a mixed 8-/16-bit encoding, in which certain byte values signal the
+	// first byte of a 2-byte character (but these values are also legal as the second byte of a 2-byte character).
+	HighByteMappingThroughTable CmapFormat = 2
+	// SegmentMappingToDeltaValues is the standard character-to-glyph-index mapping table for the Windows platform for
+	// fonts that support Unicode BMP characters.
+	SegmentMappingToDeltaValues CmapFormat = 4
+	// TrimmedTableMapping should be used when character codes for a font fall into a single contiguous range. This
+	// results in what is termed a dense mapping. Two-byte fonts that are not densely mapped (due to their multiple
+	// contiguous ranges) should use Format 4.
+	TrimmedTableMapping CmapFormat = 6
+	// Mixed16And32bitCoverage is similar to HighByteMappingThroughTable, in that it provides for mixed-length character
+	// codes. Instead of allowing for 8 and 16-bit character codes, however, it allows for 16 and 32-bit character codes.
+	Mixed16And32bitCoverage CmapFormat = 8
+	//TrimmedArray is similar to format TrimmedTableMapping, in that it defines a trimmed array for a tight range of
+	// character codes. It differs, however, in that is uses 32-bit character codes
+	TrimmedArray CmapFormat = 10
+	// SegmentedCoverage is the standard character-to-glyph-index mapping table for the Windows platform for fonts
+	// supporting Unicode supplementary-plane characters (U+10000 to U+10FFFF).
+	SegmentedCoverage CmapFormat = 12
+	// ManyToOneRangeMappings provides for situations in which the same glyph is used for hundreds or even thousands of
+	// consecutive characters spanning across multiple ranges of the code space.
+	ManyToOneRangeMappings CmapFormat = 13
+	// UnicodeVariationSequences specifies the Unicode Variation Sequences (UVSes) supported by the font. A Variation
+	// Sequence, according to the Unicode Standard, comprises a base character followed by a variation selector.
+	// For example, <U+82A6, U+E0101>.
+	UnicodeVariationSequences CmapFormat = 14
+)
+
 // PlatformID is an enum for the PlatformID in CharMap and SfntName structs.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-truetype_tables.html#tt_platform_xxx

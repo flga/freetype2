@@ -2,6 +2,8 @@ package freetype2
 
 import (
 	"fmt"
+	"math"
+	"reflect"
 	"testing"
 	"unsafe"
 
@@ -13,29 +15,29 @@ import (
 func TestFaceFlags_String(t *testing.T) {
 	var x FaceFlag
 	if got, want := x.String(), ""; got != want {
-		t.Errorf("FaceFlags.String(0) = %v, want %v", got, want)
+		t.Errorf("FaceFlag.String(0) = %v, want %v", got, want)
 	}
 
 	x = FaceFlagColor
 	if got, want := x.String(), "Color"; got != want {
-		t.Errorf("FaceFlags.String(FaceFlagColor) = %v, want %v", got, want)
+		t.Errorf("FaceFlag.String(FaceFlagColor) = %v, want %v", got, want)
 	}
 
 	x = FaceFlagKerning | FaceFlagCidKeyed
 	if got, want := x.String(), "Kerning|CidKeyed"; got != want {
-		t.Errorf("FaceFlags.String(FaceFlagKerning | FaceFlagCidKeyed) = %v, want %v", got, want)
+		t.Errorf("FaceFlag.String(FaceFlagKerning | FaceFlagCidKeyed) = %v, want %v", got, want)
 	}
 
 	x = FaceFlagVertical | FaceFlagMultipleMasters | FaceFlagHinter
 	if got, want := x.String(), "Vertical|MultipleMasters|Hinter"; got != want {
-		t.Errorf("FaceFlags.String(FaceFlagVertical | FaceFlagMultipleMasters | FaceFlagHinter) = %v, want %v", got, want)
+		t.Errorf("FaceFlag.String(FaceFlagVertical | FaceFlagMultipleMasters | FaceFlagHinter) = %v, want %v", got, want)
 	}
 
 	x = FaceFlagScalable | FaceFlagFixedSizes | FaceFlagFixedWidth | FaceFlagSfnt | FaceFlagHorizontal |
 		FaceFlagVertical | FaceFlagKerning | FaceFlagMultipleMasters | FaceFlagGlyphNames | FaceFlagHinter |
 		FaceFlagCidKeyed | FaceFlagTricky | FaceFlagColor | FaceFlagVariation
 	if got, want := x.String(), "Scalable|FixedSizes|FixedWidth|Sfnt|Horizontal|Vertical|Kerning|MultipleMasters|GlyphNames|Hinter|CidKeyed|Tricky|Color|Variation"; got != want {
-		t.Errorf("FaceFlags.String(FaceFlagScalable | FaceFlagFixedSizes | FaceFlagFixedWidth | FaceFlagSfnt | FaceFlagHorizontal | FaceFlagVertical | FaceFlagKerning | FaceFlagMultipleMasters | FaceFlagGlyphNames | FaceFlagHinter | FaceFlagCidKeyed | FaceFlagTricky | FaceFlagColor | FaceFlagVariation) = %v, want %v", got, want)
+		t.Errorf("FaceFlag.String(FaceFlagScalable | FaceFlagFixedSizes | FaceFlagFixedWidth | FaceFlagSfnt | FaceFlagHorizontal | FaceFlagVertical | FaceFlagKerning | FaceFlagMultipleMasters | FaceFlagGlyphNames | FaceFlagHinter | FaceFlagCidKeyed | FaceFlagTricky | FaceFlagColor | FaceFlagVariation) = %v, want %v", got, want)
 	}
 }
 
@@ -43,22 +45,61 @@ func TestStyleFlags_String(t *testing.T) {
 	var x StyleFlag
 
 	if got, want := x.String(), ""; got != want {
-		t.Errorf("StyleFlags.String(0) = %v, want %v", got, want)
+		t.Errorf("StyleFlag.String(0) = %v, want %v", got, want)
 	}
 
 	x = StyleFlagItalic
 	if got, want := x.String(), "Italic"; got != want {
-		t.Errorf("StyleFlags.String(StyleFlagItalic) = %v, want %v", got, want)
+		t.Errorf("StyleFlag.String(StyleFlagItalic) = %v, want %v", got, want)
 	}
 
 	x = StyleFlagBold
 	if got, want := x.String(), "Bold"; got != want {
-		t.Errorf("StyleFlags.String(StyleFlagBold) = %v, want %v", got, want)
+		t.Errorf("StyleFlag.String(StyleFlagBold) = %v, want %v", got, want)
 	}
 
 	x = StyleFlagItalic | StyleFlagBold
 	if got, want := x.String(), "Italic|Bold"; got != want {
-		t.Errorf("StyleFlags.String(StyleFlagItalic | StyleFlagBold) = %v, want %v", got, want)
+		t.Errorf("StyleFlag.String(StyleFlagItalic | StyleFlagBold) = %v, want %v", got, want)
+	}
+}
+
+func TestLoadFlags_String(t *testing.T) {
+	var x LoadFlag
+	if got, want := x.String(), "Default"; got != want {
+		t.Errorf("LoadFlag.String(0) = %v, want %v", got, want)
+	}
+
+	x = 1 << 30
+	if got, want := x.String(), ""; got != want {
+		t.Errorf("LoadFlag.String(1 << 30) = %v, want %v", got, want)
+	}
+
+	x = LoadDefault
+	if got, want := x.String(), "Default"; got != want {
+		t.Errorf("LoadFlag.String(LoadDefault) = %v, want %v", got, want)
+	}
+
+	x = LoadColor
+	if got, want := x.String(), "Color"; got != want {
+		t.Errorf("LoadFlag.String(LoadColor) = %v, want %v", got, want)
+	}
+
+	x = LoadMonochrome | LoadNoAutohint
+	if got, want := x.String(), "Monochrome|NoAutohint"; got != want {
+		t.Errorf("LoadFlag.String(LoadMonochrome | LoadNoAutohint) = %v, want %v", got, want)
+	}
+
+	x = LoadIgnoreTransform | LoadColor | LoadComputeMetrics
+	if got, want := x.String(), "IgnoreTransform|Color|ComputeMetrics"; got != want {
+		t.Errorf("LoadFlag.String(LoadIgnoreTransform | LoadColor | LoadComputeMetrics) = %v, want %v", got, want)
+	}
+
+	x = LoadDefault | LoadNoScale | LoadNoHinting | LoadRender | LoadNoBitmap | LoadVerticalLayout | LoadForceAutohint |
+		LoadPedantic | LoadNoRecurse | LoadIgnoreTransform | LoadMonochrome | LoadLinearDesign | LoadNoAutohint |
+		LoadColor | LoadComputeMetrics | LoadBitmapMetricsOnly
+	if got, want := x.String(), "NoScale|NoHinting|Render|NoBitmap|VerticalLayout|ForceAutohint|Pedantic|NoRecurse|IgnoreTransform|Monochrome|LinearDesign|NoAutohint|Color|ComputeMetrics|BitmapMetricsOnly"; got != want {
+		t.Errorf("LoadFlag.String(LoadDefault | LoadNoScale | LoadNoHinting | LoadRender | LoadNoBitmap | LoadVerticalLayout | LoadForceAutohint | LoadPedantic | LoadNoRecurse | LoadIgnoreTransform | LoadMonochrome | LoadLinearDesign | LoadNoAutohint | LoadColor | LoadComputeMetrics | LoadBitmapMetricsOnly) = %v, want %v", got, want)
 	}
 }
 
@@ -93,71 +134,9 @@ func TestFaceFree(t *testing.T) {
 }
 
 func TestFaceProps(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to init lib: %s", err)
-	}
-	defer l.Free()
-
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
-	goBold, err := l.NewFaceFromPath(testdata("go", "Go-Bold.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goBold.Free()
-
-	goItalic, err := l.NewFaceFromPath(testdata("go", "Go-Italic.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goItalic.Free()
-
-	goBoldItalic, err := l.NewFaceFromPath(testdata("go", "Go-Bold-Italic.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goBoldItalic.Free()
-
-	goMono, err := l.NewFaceFromPath(testdata("go", "Go-Mono.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goMono.Free()
-
-	bungeeColorWin, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_colr_Windows.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeColorWin.Free()
-
-	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeColorMac.Free()
-
-	bungeeLayersReg, err := l.NewFaceFromPath(testdata("bungee", "BungeeLayers-Regular.otf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeLayersReg.Free()
-
-	type charmapdata struct {
-		format   int
-		platform truetype.PlatformID
-		encoding truetype.EncodingID
-		language truetype.LanguageID
-		active   bool
-	}
-
 	tests := []struct {
 		name               string
-		face               *Face
+		face               func() (testface, error)
 		family             string
 		style              string
 		numFaces           int
@@ -180,7 +159,9 @@ func TestFaceProps(t *testing.T) {
 		textHeight         int
 		glyphCount         int
 		numCharmaps        int
-		charmaps           []charmapdata
+		charmaps           []CharMap
+		activeCharmap      CharMap
+		activeOk           bool
 		numSizes           int
 		avaliableSizes     []BitmapSize
 		maxAdvanceWidth    int
@@ -188,6 +169,41 @@ func TestFaceProps(t *testing.T) {
 		underlinePosition  int
 		underlineThickness int
 	}{
+		{
+			name:               "nil face",
+			face:               nilFace,
+			family:             "",
+			style:              "",
+			numFaces:           0,
+			numNamedInstances:  0,
+			faceIdx:            0,
+			namedIdx:           0,
+			bold:               false,
+			italic:             false,
+			sfntWrapped:        false,
+			scalable:           false,
+			fixedSize:          false,
+			horizontal:         false,
+			vertical:           false,
+			fixedWidth:         false,
+			glyphNames:         false,
+			emSize:             0,
+			globalBBox:         BBox{},
+			ascent:             0,
+			descent:            0,
+			textHeight:         0,
+			glyphCount:         0,
+			numCharmaps:        0,
+			charmaps:           nil,
+			activeCharmap:      CharMap{},
+			activeOk:           false,
+			numSizes:           0,
+			avaliableSizes:     nil,
+			maxAdvanceWidth:    0,
+			maxAdvanceHeight:   0,
+			underlinePosition:  0,
+			underlineThickness: 0,
+		},
 		{
 			name:              "goRegular",
 			face:              goRegular,
@@ -213,11 +229,21 @@ func TestFaceProps(t *testing.T) {
 			textHeight:        2367,
 			glyphCount:        666,
 			numCharmaps:       3,
-			charmaps: []charmapdata{
-				{format: 4, platform: 0, encoding: 3, language: 0, active: false},
-				{format: 6, platform: 1, encoding: 0, language: 0, active: false},
-				{format: 4, platform: 3, encoding: 1, language: 0, active: true},
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.TrimmedTableMapping, Language: 0, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: 0, index: 1, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 2, valid: true},
 			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      2,
+				valid:      true,
+			},
+			activeOk:           true,
 			numSizes:           0,
 			avaliableSizes:     nil,
 			maxAdvanceWidth:    2240,
@@ -250,11 +276,21 @@ func TestFaceProps(t *testing.T) {
 			textHeight:        2367,
 			glyphCount:        666,
 			numCharmaps:       3,
-			charmaps: []charmapdata{
-				{format: 4, platform: 0, encoding: 3, language: 0, active: false},
-				{format: 6, platform: 1, encoding: 0, language: 0, active: false},
-				{format: 4, platform: 3, encoding: 1, language: 0, active: true},
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.TrimmedTableMapping, Language: 0, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: 0, index: 1, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 2, valid: true},
 			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      2,
+				valid:      true,
+			},
+			activeOk:           true,
 			numSizes:           0,
 			avaliableSizes:     nil,
 			maxAdvanceWidth:    2283,
@@ -287,11 +323,21 @@ func TestFaceProps(t *testing.T) {
 			textHeight:        2367,
 			glyphCount:        666,
 			numCharmaps:       3,
-			charmaps: []charmapdata{
-				{format: 4, platform: 0, encoding: 3, language: 0, active: false},
-				{format: 6, platform: 1, encoding: 0, language: 0, active: false},
-				{format: 4, platform: 3, encoding: 1, language: 0, active: true},
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.TrimmedTableMapping, Language: 0, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: 0, index: 1, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 2, valid: true},
 			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      2,
+				valid:      true,
+			},
+			activeOk:           true,
 			numSizes:           0,
 			avaliableSizes:     nil,
 			maxAdvanceWidth:    2262,
@@ -324,11 +370,21 @@ func TestFaceProps(t *testing.T) {
 			textHeight:        2367,
 			glyphCount:        666,
 			numCharmaps:       3,
-			charmaps: []charmapdata{
-				{format: 4, platform: 0, encoding: 3, language: 0, active: false},
-				{format: 6, platform: 1, encoding: 0, language: 0, active: false},
-				{format: 4, platform: 3, encoding: 1, language: 0, active: true},
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.TrimmedTableMapping, Language: 0, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: 0, index: 1, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 2, valid: true},
 			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      2,
+				valid:      true,
+			},
+			activeOk:           true,
 			numSizes:           0,
 			avaliableSizes:     nil,
 			maxAdvanceWidth:    2283,
@@ -361,11 +417,21 @@ func TestFaceProps(t *testing.T) {
 			textHeight:        2367,
 			glyphCount:        666,
 			numCharmaps:       3,
-			charmaps: []charmapdata{
-				{format: 4, platform: 0, encoding: 3, language: 0, active: false},
-				{format: 6, platform: 1, encoding: 0, language: 0, active: false},
-				{format: 4, platform: 3, encoding: 1, language: 0, active: true},
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.TrimmedTableMapping, Language: 0, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: 0, index: 1, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 2, valid: true},
 			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      2,
+				valid:      true,
+			},
+			activeOk:           true,
 			numSizes:           0,
 			avaliableSizes:     nil,
 			maxAdvanceWidth:    1229,
@@ -398,11 +464,21 @@ func TestFaceProps(t *testing.T) {
 			textHeight:        1200,
 			glyphCount:        868,
 			numCharmaps:       3,
-			charmaps: []charmapdata{
-				{format: 4, platform: 0, encoding: 3, language: 0, active: false},
-				{format: 6, platform: 1, encoding: 0, language: 0, active: false},
-				{format: 4, platform: 3, encoding: 1, language: 0, active: true},
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.TrimmedTableMapping, Language: 0, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: 0, index: 1, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 2, valid: true},
 			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      2,
+				valid:      true,
+			},
+			activeOk:           true,
 			numSizes:           0,
 			avaliableSizes:     nil,
 			maxAdvanceWidth:    1417,
@@ -435,11 +511,21 @@ func TestFaceProps(t *testing.T) {
 			textHeight:        0,
 			glyphCount:        868,
 			numCharmaps:       3,
-			charmaps: []charmapdata{
-				{format: 4, platform: 0, encoding: 3, language: 0, active: false},
-				{format: 6, platform: 1, encoding: 0, language: 0, active: false},
-				{format: 4, platform: 3, encoding: 1, language: 0, active: true},
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.TrimmedTableMapping, Language: 0, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: 0, index: 1, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 2, valid: true},
 			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      2,
+				valid:      true,
+			},
+			activeOk: true,
 			numSizes: 9,
 			avaliableSizes: []BitmapSize{
 				{Height: 24, Width: 13, Size: 20 << 6, XPpem: 20 << 6, YPpem: 20 << 6},
@@ -482,12 +568,22 @@ func TestFaceProps(t *testing.T) {
 			textHeight:        1200,
 			glyphCount:        1075,
 			numCharmaps:       4,
-			charmaps: []charmapdata{
-				{format: 4, platform: 0, encoding: 3, language: 0, active: false},
-				{format: 6, platform: 1, encoding: 0, language: 0, active: false},
-				{format: 4, platform: 3, encoding: 1, language: 0, active: true},
-				{format: -1, platform: 7, encoding: 0, language: 0, active: false},
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.TrimmedTableMapping, Language: 0, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: 0, index: 1, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 2, valid: true},
+				{Format: -1, Language: 0, Encoding: EncodingAdobeStandard, PlatformID: truetype.PlatformAdobe, EncodingID: 0, index: 3, valid: true},
 			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentMappingToDeltaValues,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 1,
+				index:      2,
+				valid:      true,
+			},
+			activeOk:           true,
 			numSizes:           0,
 			avaliableSizes:     nil,
 			maxAdvanceWidth:    1417,
@@ -495,52 +591,154 @@ func TestFaceProps(t *testing.T) {
 			underlinePosition:  0,
 			underlineThickness: 0,
 		},
+		{
+			name:              "notoSansJpReg",
+			face:              notoSansJpReg,
+			family:            "Noto Sans JP",
+			style:             "Regular",
+			numFaces:          1,
+			numNamedInstances: 0,
+			faceIdx:           0,
+			namedIdx:          0,
+			bold:              false,
+			italic:            false,
+			sfntWrapped:       true,
+			scalable:          true,
+			fixedSize:         false,
+			horizontal:        true,
+			vertical:          true,
+			fixedWidth:        false,
+			glyphNames:        false,
+			emSize:            1000,
+			globalBBox:        BBox{XMin: -1002, YMin: -1048, XMax: 2928, YMax: 1808},
+			ascent:            1160,
+			descent:           -320,
+			textHeight:        1480,
+			glyphCount:        17802,
+			numCharmaps:       5,
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.SegmentedCoverage, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 4, index: 1, valid: true},
+				{Format: truetype.UnicodeVariationSequences, Language: 0xFFFFFFFF, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 5, index: 2, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 3, valid: true},
+				{Format: truetype.SegmentedCoverage, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 10, index: 4, valid: true},
+			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentedCoverage,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 10,
+				index:      4,
+				valid:      true,
+			},
+			numSizes:           0,
+			activeOk:           true,
+			avaliableSizes:     nil,
+			maxAdvanceWidth:    3000,
+			maxAdvanceHeight:   3000,
+			underlinePosition:  -150,
+			underlineThickness: 50,
+		},
+		{
+			name:              "notoSansJpBold",
+			face:              notoSansJpBold,
+			family:            "Noto Sans JP",
+			style:             "Bold",
+			numFaces:          1,
+			numNamedInstances: 0,
+			faceIdx:           0,
+			namedIdx:          0,
+			bold:              true,
+			italic:            false,
+			sfntWrapped:       true,
+			scalable:          true,
+			fixedSize:         false,
+			horizontal:        true,
+			vertical:          true,
+			fixedWidth:        false,
+			glyphNames:        false,
+			emSize:            1000,
+			globalBBox:        BBox{XMin: -1013, YMin: -1046, XMax: 2926, YMax: 1806},
+			ascent:            1160,
+			descent:           -320,
+			textHeight:        1480,
+			glyphCount:        17802,
+			numCharmaps:       5,
+			charmaps: []CharMap{
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 3, index: 0, valid: true},
+				{Format: truetype.SegmentedCoverage, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 4, index: 1, valid: true},
+				{Format: truetype.UnicodeVariationSequences, Language: 0xFFFFFFFF, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: 5, index: 2, valid: true},
+				{Format: truetype.SegmentMappingToDeltaValues, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 1, index: 3, valid: true},
+				{Format: truetype.SegmentedCoverage, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: 10, index: 4, valid: true},
+			},
+			activeCharmap: CharMap{
+				Format:     truetype.SegmentedCoverage,
+				Language:   0,
+				Encoding:   EncodingUnicode,
+				PlatformID: truetype.PlatformMicrosoft,
+				EncodingID: 10,
+				index:      4,
+				valid:      true,
+			},
+			activeOk:           true,
+			numSizes:           0,
+			avaliableSizes:     nil,
+			maxAdvanceWidth:    3000,
+			maxAdvanceHeight:   3000,
+			underlinePosition:  -150,
+			underlineThickness: 50,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			if got := tt.face.FamilyName(); got != tt.family {
-				t.Errorf("FamilyName() want %s, got %s", tt.family, got)
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
 			}
-
-			if got := tt.face.StyleName(); got != tt.style {
-				t.Errorf("StyleName() want %s, got %s", tt.style, got)
-			}
-
-			if got := tt.face.NumFaces(); got != tt.numFaces {
-				t.Errorf("NumFaces() want %v, got %v", tt.numFaces, got)
-			}
-
-			if got := tt.face.NumNamedInstances(); got != tt.numNamedInstances {
-				t.Errorf("NumNamedInstances() want %v, got %v", tt.numNamedInstances, got)
-			}
-
-			if got := tt.face.Index(); got != tt.faceIdx {
-				t.Errorf("Index() want %v, got %v", tt.faceIdx, got)
-			}
-
-			if got := tt.face.NamedIndex(); got != tt.namedIdx {
-				t.Errorf("NamedIndex() want %v, got %v", tt.namedIdx, got)
-			}
+			defer face.Free()
 
 			testFlag := func(v bool, f FaceFlag) {
-				if v && !tt.face.HasFlag(f) {
+				if v && !face.HasFlag(f) {
 					t.Errorf("Flags() face should have flag %s", f)
 				}
-				if !v && tt.face.HasFlag(f) {
+				if !v && face.HasFlag(f) {
 					t.Errorf("Flags() face should not have flag %s", f)
 				}
 			}
 
 			testStyleFlag := func(v bool, f StyleFlag) {
-				if v && !tt.face.HasStyle(f) {
+				if v && !face.HasStyle(f) {
 					t.Errorf("StyleFlags() face should have flag %s", f)
 				}
-				if !v && tt.face.HasStyle(f) {
+				if !v && face.HasStyle(f) {
 					t.Errorf("StyleFlags() face should not have flag %s", f)
 				}
 			}
 
+			testProp := func(name string, got, want interface{}) {
+				switch reflect.TypeOf(got).Kind() {
+				case reflect.Slice,
+					reflect.Struct,
+					reflect.Array,
+					reflect.Interface,
+					reflect.Map:
+					if diff := deep.Equal(got, want); diff != nil {
+						t.Errorf("%s() = %v", name, diff)
+					}
+				default:
+					if !reflect.DeepEqual(got, want) {
+						t.Errorf("%s() = %v, want %v", name, got, want)
+					}
+				}
+			}
+
+			testProp("FamilyName", face.FamilyName(), tt.family)
+			testProp("StyleName", face.StyleName(), tt.style)
+			testProp("NumFaces", face.NumFaces(), tt.numFaces)
+			testProp("NumNamedInstances", face.NumNamedInstances(), tt.numNamedInstances)
+			testProp("Index", face.Index(), tt.faceIdx)
+			testProp("NamedIndex", face.NamedIndex(), tt.namedIdx)
 			testStyleFlag(tt.bold, StyleFlagBold)
 			testStyleFlag(tt.italic, StyleFlagItalic)
 			testFlag(tt.sfntWrapped, FaceFlagSfnt)
@@ -550,195 +748,43 @@ func TestFaceProps(t *testing.T) {
 			testFlag(tt.vertical, FaceFlagVertical)
 			testFlag(tt.fixedWidth, FaceFlagFixedWidth)
 			testFlag(tt.glyphNames, FaceFlagGlyphNames)
-
-			if got := tt.face.UnitsPerEM(); got != tt.emSize {
-				t.Errorf("UnitsPerEM() want %v, got %v", tt.emSize, got)
-			}
-
-			if got := tt.face.BBox(); got != tt.globalBBox {
-				t.Errorf("BBox() want %v, got %v", tt.globalBBox, got)
-			}
-
-			if got := tt.face.Ascender(); got != tt.ascent {
-				t.Errorf("Ascender() want %v, got %v", tt.ascent, got)
-			}
-
-			if got := tt.face.Descender(); got != tt.descent {
-				t.Errorf("Descender() want %v, got %v", tt.descent, got)
-			}
-
-			if got := tt.face.Height(); got != tt.textHeight {
-				t.Errorf("Height() want %v, got %v", tt.textHeight, got)
-			}
-
-			if got := tt.face.NumGlyphs(); got != tt.glyphCount {
-				t.Errorf("GlyphCount() want %v, got %v", tt.glyphCount, got)
-			}
-
-			if got := tt.face.NumCharMaps(); got != tt.numCharmaps {
-				t.Errorf("NumCharMaps() want %v, got %v", tt.numCharmaps, got)
-			}
-
-			faceCharmaps := tt.face.CharMaps()
-			for i, cmap := range tt.charmaps {
-				active, _ := tt.face.ActiveCharMap()
-				got := charmapdata{
-					format:   faceCharmaps[i].Format,
-					platform: faceCharmaps[i].PlatformID,
-					encoding: faceCharmaps[i].EncodingID,
-					language: faceCharmaps[i].Language,
-					active:   active == faceCharmaps[i],
-				}
-
-				if got != cmap {
-					t.Errorf("CharMaps(%d) want %v, got %v", i, cmap, got)
-				}
-			}
-
-			if got := tt.face.NumFixedSizes(); got != tt.numSizes {
-				t.Errorf("NumFixedSizes() want %v, got %v", tt.numSizes, got)
-			}
-
-			faceSizes := tt.face.AvailableSizes()
-			for i, want := range tt.avaliableSizes {
-				if got := faceSizes[i]; want != got {
-					t.Errorf("AvailableSizes(%d) want %v, got %v", i, want, got)
-				}
-			}
-
-			if got := tt.face.MaxAdvanceWidth(); got != tt.maxAdvanceWidth {
-				t.Errorf("MaxAdvanceWidth() want %v, got %v", tt.maxAdvanceWidth, got)
-			}
-			if got := tt.face.MaxAdvanceHeight(); got != tt.maxAdvanceHeight {
-				t.Errorf("MaxAdvanceHeight() want %v, got %v", tt.maxAdvanceHeight, got)
-			}
-			if got := tt.face.UnderlinePosition(); got != tt.underlinePosition {
-				t.Errorf("UnderlinePosition() want %v, got %v", tt.underlinePosition, got)
-			}
-			if got := tt.face.UnderlineThickness(); got != tt.underlineThickness {
-				t.Errorf("UnderlineThickness() want %v, got %v", tt.underlineThickness, got)
-			}
+			testProp("UnitsPerEM", face.UnitsPerEM(), tt.emSize)
+			testProp("BBox", face.BBox(), tt.globalBBox)
+			testProp("Ascender", face.Ascender(), tt.ascent)
+			testProp("Descender", face.Descender(), tt.descent)
+			testProp("Height", face.Height(), tt.textHeight)
+			testProp("NumGlyphs", face.NumGlyphs(), tt.glyphCount)
+			testProp("NumCharMaps", face.NumCharMaps(), tt.numCharmaps)
+			testProp("CharMaps", face.CharMaps(), tt.charmaps)
+			active, activeOk := face.ActiveCharMap()
+			testProp("ActiveCharMap", active, tt.activeCharmap)
+			testProp("ActiveCharMap", activeOk, tt.activeOk)
+			testProp("NumFixedSizes", face.NumFixedSizes(), tt.numSizes)
+			testProp("AvailableSizes", face.AvailableSizes(), tt.avaliableSizes)
+			testProp("Size", face.Size(), Size{})
+			testProp("MaxAdvanceWidth", face.MaxAdvanceWidth(), tt.maxAdvanceWidth)
+			testProp("MaxAdvanceHeight", face.MaxAdvanceHeight(), tt.maxAdvanceHeight)
+			testProp("UnderlinePosition", face.UnderlinePosition(), tt.underlinePosition)
+			testProp("UnderlineThickness", face.UnderlineThickness(), tt.underlineThickness)
+			testProp("Glyph", face.Glyph(), GlyphSlot{})
 		})
 	}
 }
 
-func TestFaceZeroVal(t *testing.T) {
-	var f *Face
-	if got, want := f.NumFaces(), 0; got != want {
-		t.Errorf("NumFaces() = %v, want %v", got, want)
-	}
-	if got, want := f.Index(), 0; got != want {
-		t.Errorf("Index() = %v, want %v", got, want)
-	}
-	if got, want := f.NamedIndex(), 0; got != want {
-		t.Errorf("NamedIndex() = %v, want %v", got, want)
-	}
-	if got, want := f.Flags(), FaceFlag(0); got != want {
-		t.Errorf("Flags() = %v, want %v", got, want)
-	}
-	if got, want := f.HasFlag(FaceFlagHorizontal), false; got != want {
-		t.Errorf("Flags() = %v, want %v", got, want)
-	}
-	if got, want := f.Style(), StyleFlag(0); got != want {
-		t.Errorf("Style() = %v, want %v", got, want)
-	}
-	if got, want := f.HasStyle(StyleFlagBold), false; got != want {
-		t.Errorf("Style() = %v, want %v", got, want)
-	}
-	if got, want := f.NumNamedInstances(), 0; got != want {
-		t.Errorf("NumNamedInstances() = %v, want %v", got, want)
-	}
-	if got, want := f.NumGlyphs(), 0; got != want {
-		t.Errorf("NumGlyphs() = %v, want %v", got, want)
-	}
-	if got, want := f.FamilyName(), ""; got != want {
-		t.Errorf("FamilyName() = %v, want %v", got, want)
-	}
-	if got, want := f.StyleName(), ""; got != want {
-		t.Errorf("StyleName() = %v, want %v", got, want)
-	}
-	if got, want := f.NumFixedSizes(), 0; got != want {
-		t.Errorf("NumFixedSizes() = %v, want %v", got, want)
-	}
-	if got, want := f.AvailableSizes(), 0; len(got) != want {
-		t.Errorf("AvailableSizes() len = %v, want len %v", got, want)
-	}
-	if got, want := f.NumCharMaps(), 0; got != want {
-		t.Errorf("NumCharMaps() = %v, want %v", got, want)
-	}
-	if got, want := f.CharMaps(), 0; len(got) != want {
-		t.Errorf("CharMaps() len = %v, want len %v", got, want)
-	}
-	if got, want := f.BBox(), (BBox{}); got != want {
-		t.Errorf("BBox() = %v, want %v", got, want)
-	}
-	if got, want := f.UnitsPerEM(), 0; got != want {
-		t.Errorf("UnitsPerEM() = %v, want %v", got, want)
-	}
-	if got, want := f.Ascender(), 0; got != want {
-		t.Errorf("Ascender() = %v, want %v", got, want)
-	}
-	if got, want := f.Descender(), 0; got != want {
-		t.Errorf("Descender() = %v, want %v", got, want)
-	}
-	if got, want := f.Height(), 0; got != want {
-		t.Errorf("Height() = %v, want %v", got, want)
-	}
-	if got, want := f.MaxAdvanceWidth(), 0; got != want {
-		t.Errorf("MaxAdvanceWidth() = %v, want %v", got, want)
-	}
-	if got, want := f.MaxAdvanceHeight(), 0; got != want {
-		t.Errorf("MaxAdvanceHeight() = %v, want %v", got, want)
-	}
-	if got, want := f.UnderlinePosition(), 0; got != want {
-		t.Errorf("UnderlinePosition() = %v, want %v", got, want)
-	}
-	if got, want := f.UnderlineThickness(), 0; got != want {
-		t.Errorf("UnderlineThickness() = %v, want %v", got, want)
-	}
-	if got, want := f.Size(), (Size{}); got != want {
-		t.Errorf("Size() = %v, want %v", got, want)
-	}
-	{
-		want, wantOk := CharMap{}, false
-		if got, gotOk := f.ActiveCharMap(); got != want || gotOk != wantOk {
-			t.Errorf("ActiveCharMap() = %v, %v, want %v, %v", got, gotOk, want, wantOk)
-		}
-	}
-}
-
 func TestFace_SelectCharMap(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to create lib: %s", err)
-	}
-	defer l.Free()
-
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
-	bungeeLayersReg, err := l.NewFaceFromPath(testdata("bungee", "BungeeLayers-Regular.otf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeLayersReg.Free()
-
 	tests := []struct {
 		name    string
-		face    *Face
+		face    func() (testface, error)
 		enc     Encoding
 		want    CharMap
 		wantErr error
 	}{
 		{
 			name: "nil face",
-			face: nil,
+			face: nilFace,
 			enc:  EncodingNone,
 			want: CharMap{
-				Format:     0,
+				Format:     truetype.ByteEncodingTable,
 				Language:   0,
 				Encoding:   EncodingNone,
 				PlatformID: 0,
@@ -753,7 +799,7 @@ func TestFace_SelectCharMap(t *testing.T) {
 			face: goRegular,
 			enc:  EncodingUnicode,
 			want: CharMap{
-				Format:     4,
+				Format:     truetype.SegmentMappingToDeltaValues,
 				Language:   0,
 				Encoding:   EncodingUnicode,
 				PlatformID: truetype.PlatformMicrosoft,
@@ -768,7 +814,7 @@ func TestFace_SelectCharMap(t *testing.T) {
 			face: goRegular,
 			enc:  EncodingAppleRoman,
 			want: CharMap{
-				Format:     6,
+				Format:     truetype.TrimmedTableMapping,
 				Language:   truetype.MacLangEnglish,
 				Encoding:   EncodingAppleRoman,
 				PlatformID: truetype.PlatformMacintosh,
@@ -790,7 +836,7 @@ func TestFace_SelectCharMap(t *testing.T) {
 			face: goRegular,
 			enc:  EncodingAdobeStandard,
 			want: CharMap{
-				Format:     0,
+				Format:     truetype.ByteEncodingTable,
 				Language:   0,
 				Encoding:   EncodingNone,
 				PlatformID: 0,
@@ -803,50 +849,54 @@ func TestFace_SelectCharMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.face.testClearCharmap()
-			if err := tt.face.SelectCharMap(tt.enc); err != tt.wantErr {
-				t.Errorf("%q.SelectCharMap(%s) error = %v, wantErr %v", tt.face.FamilyName(), tt.enc, err, tt.wantErr)
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if err := face.SelectCharMap(tt.enc); err != tt.wantErr {
+				t.Errorf("Face.SelectCharMap(%s) error = %v, wantErr %v", tt.enc, err, tt.wantErr)
+			}
+			if tt.wantErr != nil {
+				return
 			}
 
-			if got, _ := tt.face.ActiveCharMap(); got != tt.want {
-				t.Errorf("%q.SelectCharMap(%s) got charmap = %v, want %v", tt.face.FamilyName(), tt.enc, got, tt.want)
+			if got, _ := face.ActiveCharMap(); got != tt.want {
+				t.Errorf("Face.SelectCharMap(%s) got charmap = %v, want %v", tt.enc, got, tt.want)
 			}
 		})
 	}
 }
 
 func TestFace_SetCharMap(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to create lib: %s", err)
-	}
-	defer l.Free()
+	var goRegMaps, bungeeLayersRegMaps []CharMap
+	{
+		goRegularFace, err := goRegular()
+		if err != nil {
+			t.Fatalf("unable to load face: %v", err)
+		}
+		goRegMaps = goRegularFace.CharMaps()
+		goRegularFace.Free()
 
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
+		bungeeLayersRegFace, err := bungeeLayersReg()
+		if err != nil {
+			t.Fatalf("unable to load face: %v", err)
+		}
+		bungeeLayersRegMaps = bungeeLayersRegFace.CharMaps()
+		bungeeLayersRegFace.Free()
 	}
-	defer goRegular.Free()
-
-	bungeeLayersReg, err := l.NewFaceFromPath(testdata("bungee", "BungeeLayers-Regular.otf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeLayersReg.Free()
-
-	goRegMaps := goRegular.CharMaps()
-	bungeeLayersRegMaps := bungeeLayersReg.CharMaps()
 
 	tests := []struct {
 		name    string
-		face    *Face
+		face    func() (testface, error)
 		cmap    CharMap
 		want    CharMap
 		wantErr error
 	}{
 		{
 			name:    "nil face",
-			face:    nil,
+			face:    nilFace,
 			cmap:    CharMap{},
 			want:    CharMap{},
 			wantErr: ErrInvalidFaceHandle,
@@ -864,6 +914,16 @@ func TestFace_SetCharMap(t *testing.T) {
 			cmap: CharMap{
 				valid: true,
 				index: 999,
+			},
+			want:    CharMap{},
+			wantErr: ErrInvalidCharMapHandle,
+		},
+		{
+			name: "negative charmap",
+			face: goRegular,
+			cmap: CharMap{
+				valid: true,
+				index: -1,
 			},
 			want:    CharMap{},
 			wantErr: ErrInvalidCharMapHandle,
@@ -920,37 +980,27 @@ func TestFace_SetCharMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.face.testClearCharmap()
-			if err := tt.face.SetCharMap(tt.cmap); err != tt.wantErr {
-				t.Errorf("%q.SetCharMap(%v) error = %v, wantErr %v", tt.face.FamilyName(), tt.cmap, err, tt.wantErr)
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if err := face.SetCharMap(tt.cmap); err != tt.wantErr {
+				t.Errorf("%q.SetCharMap(%v) error = %v, wantErr %v", face.FamilyName(), tt.cmap, err, tt.wantErr)
+			}
+			if tt.wantErr != nil {
+				return
 			}
 
-			if got, _ := tt.face.ActiveCharMap(); got != tt.want {
-				t.Errorf("%q.SetCharMap(%v) got charmap = %v, want %v", tt.face.FamilyName(), tt.cmap, got, tt.want)
+			if got, _ := face.ActiveCharMap(); got != tt.want {
+				t.Errorf("%q.SetCharMap(%v) got charmap = %v, want %v", face.FamilyName(), tt.cmap, got, tt.want)
 			}
 		})
 	}
 }
 
 func TestFace_SetCharSize(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to create lib: %s", err)
-	}
-	defer l.Free()
-
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
-	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeColorMac.Free()
-
 	type args struct {
 		nominalWidth  fixed.Int26_6
 		nominalHeight fixed.Int26_6
@@ -959,21 +1009,21 @@ func TestFace_SetCharSize(t *testing.T) {
 	}
 	tests := []struct {
 		name     string
-		font     *Face
+		face     func() (testface, error)
 		args     args
 		wantSize Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
-			font:     nil,
+			face:     nilFace,
 			args:     args{},
 			wantSize: Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name: "go regular",
-			font: goRegular,
+			face: goRegular,
 			args: args{
 				nominalWidth:  20 << 6,
 				nominalHeight: 20 << 6,
@@ -996,7 +1046,7 @@ func TestFace_SetCharSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, first size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			args: args{
 				nominalWidth:  20 << 6,
 				nominalHeight: 20 << 6,
@@ -1019,7 +1069,7 @@ func TestFace_SetCharSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, second size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			args: args{
 				nominalWidth:  32 << 6,
 				nominalHeight: 32 << 6,
@@ -1042,7 +1092,7 @@ func TestFace_SetCharSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, < first size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			args: args{
 				nominalWidth:  19 << 6,
 				nominalHeight: 19 << 6,
@@ -1059,7 +1109,7 @@ func TestFace_SetCharSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, > first size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			args: args{
 				nominalWidth:  21 << 6,
 				nominalHeight: 21 << 6,
@@ -1077,10 +1127,16 @@ func TestFace_SetCharSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.font.SetCharSize(tt.args.nominalWidth, tt.args.nominalHeight, tt.args.horzDPI, tt.args.vertDPI); err != tt.wantErr {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if err := face.SetCharSize(tt.args.nominalWidth, tt.args.nominalHeight, tt.args.horzDPI, tt.args.vertDPI); err != tt.wantErr {
 				t.Errorf("Face.SetCharSize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got := tt.font.Size(); got != tt.wantSize {
+			if got := face.Size(); got != tt.wantSize {
 				t.Errorf("Face.SetCharSize() %v, want %v", got, tt.wantSize)
 			}
 		})
@@ -1088,45 +1144,27 @@ func TestFace_SetCharSize(t *testing.T) {
 }
 
 func TestFace_SetPixelSizes(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to create lib: %s", err)
-	}
-	defer l.Free()
-
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
-	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeColorMac.Free()
-
 	type args struct {
 		width  uint
 		height uint
 	}
 	tests := []struct {
 		name     string
-		font     *Face
+		face     func() (testface, error)
 		args     args
 		wantSize Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
-			font:     nil,
+			face:     nilFace,
 			args:     args{},
 			wantSize: Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name: "go regular",
-			font: goRegular,
+			face: goRegular,
 			args: args{
 				width:  20,
 				height: 20,
@@ -1147,7 +1185,7 @@ func TestFace_SetPixelSizes(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, first size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			args: args{
 				width:  20,
 				height: 20,
@@ -1168,7 +1206,7 @@ func TestFace_SetPixelSizes(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, second size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			args: args{
 				width:  32,
 				height: 32,
@@ -1189,7 +1227,7 @@ func TestFace_SetPixelSizes(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, < first size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			args: args{
 				width:  19,
 				height: 19,
@@ -1204,7 +1242,7 @@ func TestFace_SetPixelSizes(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, > first size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			args: args{
 				width:  21,
 				height: 21,
@@ -1220,10 +1258,16 @@ func TestFace_SetPixelSizes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.font.SetPixelSizes(tt.args.width, tt.args.height); err != tt.wantErr {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if err := face.SetPixelSizes(tt.args.width, tt.args.height); err != tt.wantErr {
 				t.Errorf("Face.SetPixelSizes() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got := tt.font.Size(); got != tt.wantSize {
+			if got := face.Size(); got != tt.wantSize {
 				t.Errorf("Face.SetPixelSizes() %v, want %v", got, tt.wantSize)
 			}
 		})
@@ -1231,41 +1275,23 @@ func TestFace_SetPixelSizes(t *testing.T) {
 }
 
 func TestFace_RequestSize(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to create lib: %s", err)
-	}
-	defer l.Free()
-
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
-	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeColorMac.Free()
-
 	tests := []struct {
 		name     string
-		font     *Face
+		face     func() (testface, error)
 		req      SizeRequest
 		wantSize Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
-			font:     nil,
+			face:     nilFace,
 			req:      SizeRequest{},
 			wantSize: Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name: "go regular nominal",
-			font: goRegular,
+			face: goRegular,
 			req: SizeRequest{
 				Type:           SizeRequestTypeNominal,
 				Width:          20 << 6,
@@ -1289,7 +1315,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "go regular real dim",
-			font: goRegular,
+			face: goRegular,
 			req: SizeRequest{
 				Type:           SizeRequestTypeRealDim,
 				Width:          20 << 6,
@@ -1313,7 +1339,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "go regular bbox",
-			font: goRegular,
+			face: goRegular,
 			req: SizeRequest{
 				Type:           SizeRequestTypeBBox,
 				Width:          20 << 6,
@@ -1337,7 +1363,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "go regular cell",
-			font: goRegular,
+			face: goRegular,
 			req: SizeRequest{
 				Type:           SizeRequestTypeCell,
 				Width:          20 << 6,
@@ -1361,7 +1387,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "go regular scales",
-			font: goRegular,
+			face: goRegular,
 			req: SizeRequest{
 				Type:           SizeRequestTypeScales,
 				Width:          20 << 6,
@@ -1385,7 +1411,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "go regular invalid ppem",
-			font: goRegular,
+			face: goRegular,
 			req: SizeRequest{
 				Type:           SizeRequestTypeNominal,
 				Width:          20 << 6,
@@ -1409,7 +1435,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, first size, nominal",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			req: SizeRequest{
 				Type:           SizeRequestTypeNominal,
 				Width:          20 << 6,
@@ -1433,7 +1459,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, second size, nominal",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			req: SizeRequest{
 				Type:           SizeRequestTypeNominal,
 				Width:          32 << 6,
@@ -1457,7 +1483,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, real dim",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			req: SizeRequest{
 				Type:           SizeRequestTypeRealDim,
 				Width:          32 << 6,
@@ -1475,7 +1501,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, bbox",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			req: SizeRequest{
 				Type:           SizeRequestTypeBBox,
 				Width:          32 << 6,
@@ -1493,7 +1519,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, cell",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			req: SizeRequest{
 				Type:           SizeRequestTypeCell,
 				Width:          32 << 6,
@@ -1511,7 +1537,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, scales",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			req: SizeRequest{
 				Type:           SizeRequestTypeScales,
 				Width:          32 << 6,
@@ -1529,7 +1555,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, < first size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			req: SizeRequest{
 				Type:           SizeRequestTypeNominal,
 				Width:          19 << 6,
@@ -1547,7 +1573,7 @@ func TestFace_RequestSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac, > first size",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			req: SizeRequest{
 				Type:           SizeRequestTypeNominal,
 				Width:          21 << 6,
@@ -1566,10 +1592,16 @@ func TestFace_RequestSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.font.RequestSize(tt.req); err != tt.wantErr {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if err := face.RequestSize(tt.req); err != tt.wantErr {
 				t.Errorf("Face.RequestSize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got := tt.font.Size(); got != tt.wantSize {
+			if got := face.Size(); got != tt.wantSize {
 				t.Errorf("Face.RequestSize() %v, want %v", got, tt.wantSize)
 			}
 		})
@@ -1609,61 +1641,37 @@ func TestFace_RequestSize_Free(t *testing.T) {
 }
 
 func TestFace_SelectSize(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to create lib: %s", err)
-	}
-	defer l.Free()
-
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
-	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeColorMac.Free()
-
-	bungeeColorMac2, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeColorMac2.Free()
-
 	tests := []struct {
 		name     string
-		font     *Face
+		face     func() (testface, error)
 		idx      int
 		wantSize Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
-			font:     nil,
+			face:     nilFace,
 			idx:      0,
 			wantSize: Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name:     "go regular 0",
-			font:     goRegular,
+			face:     goRegular,
 			idx:      0,
 			wantSize: Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name:     "go regular 1",
-			font:     goRegular,
+			face:     goRegular,
 			idx:      1,
 			wantSize: Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name: "bungee color mac 0",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  0,
 			wantSize: Size{
 				SizeMetrics{
@@ -1681,7 +1689,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac 1",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  1,
 			wantSize: Size{
 				SizeMetrics{
@@ -1699,7 +1707,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac 2",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  2,
 			wantSize: Size{
 				SizeMetrics{
@@ -1717,7 +1725,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac 3",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  3,
 			wantSize: Size{
 				SizeMetrics{
@@ -1735,7 +1743,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac 4",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  4,
 			wantSize: Size{
 				SizeMetrics{
@@ -1753,7 +1761,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac 5",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  5,
 			wantSize: Size{
 				SizeMetrics{
@@ -1771,7 +1779,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac 6",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  6,
 			wantSize: Size{
 				SizeMetrics{
@@ -1789,7 +1797,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac 7",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  7,
 			wantSize: Size{
 				SizeMetrics{
@@ -1807,7 +1815,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name: "bungee color mac 8",
-			font: bungeeColorMac,
+			face: bungeeColorMac,
 			idx:  8,
 			wantSize: Size{
 				SizeMetrics{
@@ -1825,7 +1833,7 @@ func TestFace_SelectSize(t *testing.T) {
 		},
 		{
 			name:     "bungee color mac 9",
-			font:     bungeeColorMac2,
+			face:     bungeeColorMac,
 			idx:      9,
 			wantSize: Size{},
 			wantErr:  ErrInvalidArgument,
@@ -1833,10 +1841,16 @@ func TestFace_SelectSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.font.SelectSize(tt.idx); err != tt.wantErr {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if err := face.SelectSize(tt.idx); err != tt.wantErr {
 				t.Errorf("Face.SelectSize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got := tt.font.Size(); got != tt.wantSize {
+			if got := face.Size(); got != tt.wantSize {
 				t.Errorf("Face.SelectSize() %v, want %v", got, tt.wantSize)
 			}
 		})
@@ -1844,39 +1858,21 @@ func TestFace_SelectSize(t *testing.T) {
 }
 
 func TestFace_Glyph(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to create lib: %s", err)
-	}
-	defer l.Free()
-
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
-	bungeeColorMac, err := l.NewFaceFromPath(testdata("bungee", "BungeeColor-Regular_sbix_MacOS.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer bungeeColorMac.Free()
-
 	tests := []struct {
-		name   string
-		before func(f *Face) error
-		face   *Face
-		want   GlyphSlot
+		name  string
+		setup func(f *Face) error
+		face  func() (testface, error)
+		want  GlyphSlot
 	}{
 		{
 			name: "nill face",
-			face: nil,
+			face: nilFace,
 			want: GlyphSlot{},
 		},
 		{
 			name: "go regular",
 			face: goRegular,
-			before: func(f *Face) error {
+			setup: func(f *Face) error {
 				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
 					return fmt.Errorf("unable to set char size: %v", err)
 				}
@@ -1891,9 +1887,6 @@ func TestFace_Glyph(t *testing.T) {
 					HoriBearingX: 0,
 					HoriBearingY: 704,
 					HoriAdvance:  576,
-					VertBearingX: -320,
-					VertBearingY: 64,
-					VertAdvance:  896,
 				},
 				LinearHoriAdvance: 611968,
 				LinearVertAdvance: 884352,
@@ -1930,22 +1923,419 @@ func TestFace_Glyph(t *testing.T) {
 				RsbDelta:     0,
 			},
 		},
+		{
+			name: "bungee color mac",
+			face: bungeeColorMac,
+			setup: func(f *Face) error {
+				if err := f.SelectSize(0); err != nil {
+					return fmt.Errorf("unable to select size: %v", err)
+				}
+
+				return f.LoadGlyph(0x2b, LoadRender|LoadColor)
+			},
+			want: GlyphSlot{
+				GlyphIndex: 0x2b,
+				Metrics: GlyphMetrics{
+					Width:        832,
+					Height:       960,
+					HoriBearingX: 0,
+					HoriBearingY: 960,
+					HoriAdvance:  896,
+				},
+				LinearHoriAdvance: 0,
+				LinearVertAdvance: 0,
+				Advance: Vector26_6{
+					X: 896,
+					Y: 0,
+				},
+				Format: GlyphFormatBitmap,
+				Bitmap: Bitmap{
+					Rows:  0xf,
+					Width: 0xd,
+					Pitch: 52,
+					Buffer: []byte{
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2d, 0x2d, 0x38, 0x3b, 0x1a, 0x1c, 0xb5, 0xe0, 0x13, 0x1a, 0xbb, 0xe9, 0x12, 0x1a, 0xbb, 0xe9, 0x12, 0x1a, 0xbb, 0xe9, 0x12, 0x1a, 0xbb, 0xe9, 0x13, 0x1a, 0xbb, 0xe9, 0x19, 0x1c, 0xb5, 0xe0, 0x2d, 0x2d, 0x38, 0x3b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x3b, 0x91, 0xaa, 0x00, 0x00, 0xc4, 0xff, 0x00, 0x09, 0xca, 0xff, 0x0b, 0x16, 0xcf, 0xff, 0x0b, 0x15, 0xce, 0xff, 0x0b, 0x16, 0xcf, 0xff, 0x00, 0x07, 0xc9, 0xff, 0x00, 0x00, 0xc4, 0xff, 0x37, 0x3b, 0x91, 0xaa, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x16, 0x16, 0x18, 0x19, 0x0a, 0x11, 0xc1, 0xf2, 0x02, 0x08, 0xc9, 0xff, 0x1e, 0x2a, 0xd6, 0xff, 0x11, 0x1a, 0xd0, 0xff, 0x0d, 0x16, 0xce, 0xff, 0x13, 0x1d, 0xd1, 0xff, 0x1f, 0x2a, 0xd6, 0xff, 0x01, 0x06, 0xc8, 0xff, 0x0a, 0x11, 0xc1, 0xf2, 0x16, 0x16, 0x18, 0x19, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x3d, 0x3f, 0x63, 0x6d, 0x00, 0x00, 0xc4, 0xff, 0x13, 0x1e, 0xd1, 0xff, 0x0e, 0x18, 0xcf, 0xff, 0x00, 0x02, 0xc7, 0xff, 0x06, 0x0e, 0xc2, 0xf5, 0x00, 0x01, 0xc6, 0xff, 0x13, 0x1e, 0xd1, 0xff, 0x0f, 0x1a, 0xd0, 0xff, 0x00, 0x00, 0xc4, 0xff, 0x3d, 0x3f, 0x63, 0x6d, 0x00, 0x00, 0x00, 0x00,
+						0x01, 0x01, 0x01, 0x01, 0x27, 0x2d, 0xa8, 0xcb, 0x00, 0x01, 0xc7, 0xff, 0x1c, 0x28, 0xd5, 0xff, 0x00, 0x03, 0xc7, 0xff, 0x2e, 0x33, 0x9f, 0xbe, 0x1c, 0x1c, 0x1f, 0x20, 0x1c, 0x23, 0xb3, 0xdb, 0x01, 0x06, 0xc9, 0xff, 0x1c, 0x27, 0xd5, 0xff, 0x00, 0x01, 0xc6, 0xff, 0x27, 0x2d, 0xa9, 0xcb, 0x01, 0x01, 0x01, 0x01,
+						0x2a, 0x2a, 0x33, 0x36, 0x00, 0x04, 0xc6, 0xfe, 0x09, 0x13, 0xcd, 0xff, 0x16, 0x21, 0xd2, 0xff, 0x00, 0x00, 0xc4, 0xff, 0x3d, 0x3f, 0x61, 0x6b, 0x00, 0x00, 0x00, 0x00, 0x3d, 0x40, 0x7f, 0x91, 0x00, 0x00, 0xc4, 0xff, 0x18, 0x23, 0xd3, 0xff, 0x08, 0x12, 0xcd, 0xff, 0x00, 0x04, 0xc6, 0xfe, 0x2a, 0x2b, 0x33, 0x36,
+						0x3d, 0x40, 0x7c, 0x8c, 0x00, 0x00, 0xc4, 0xff, 0x18, 0x24, 0xd3, 0xff, 0x06, 0x0e, 0xcc, 0xff, 0x09, 0x0e, 0xc2, 0xf5, 0x13, 0x13, 0x15, 0x15, 0x00, 0x00, 0x00, 0x00, 0x29, 0x29, 0x32, 0x34, 0x01, 0x04, 0xc5, 0xfd, 0x07, 0x11, 0xcc, 0xff, 0x18, 0x24, 0xd3, 0xff, 0x00, 0x00, 0xc4, 0xff, 0x3e, 0x41, 0x7c, 0x8c,
+						0x26, 0x2c, 0xaa, 0xcd, 0x00, 0x02, 0xc7, 0xff, 0x1b, 0x26, 0xd4, 0xff, 0x00, 0x04, 0xc8, 0xff, 0x12, 0x1a, 0xbb, 0xe9, 0x3f, 0x41, 0x6a, 0x75, 0x3f, 0x41, 0x6a, 0x75, 0x3f, 0x41, 0x72, 0x7f, 0x07, 0x0f, 0xc5, 0xf7, 0x00, 0x05, 0xc8, 0xff, 0x1b, 0x27, 0xd4, 0xff, 0x00, 0x02, 0xc7, 0xff, 0x27, 0x2c, 0xaa, 0xcd,
+						0x14, 0x1b, 0xbb, 0xe8, 0x00, 0x08, 0xca, 0xff, 0x1a, 0x25, 0xd4, 0xff, 0x02, 0x09, 0xc9, 0xff, 0x00, 0x09, 0xc9, 0xff, 0x00, 0x00, 0xc7, 0xff, 0x00, 0x00, 0xc6, 0xff, 0x00, 0x00, 0xc7, 0xff, 0x01, 0x0a, 0xca, 0xff, 0x02, 0x09, 0xc9, 0xff, 0x1a, 0x25, 0xd4, 0xff, 0x00, 0x08, 0xca, 0xff, 0x14, 0x1b, 0xbb, 0xe8,
+						0x14, 0x1c, 0xbc, 0xea, 0x00, 0x06, 0xc9, 0xff, 0x28, 0x34, 0xda, 0xff, 0x1b, 0x25, 0xd3, 0xff, 0x1a, 0x25, 0xd4, 0xff, 0x1a, 0x25, 0xd4, 0xff, 0x1a, 0x25, 0xd4, 0xff, 0x1a, 0x25, 0xd4, 0xff, 0x1a, 0x26, 0xd4, 0xff, 0x1b, 0x25, 0xd3, 0xff, 0x28, 0x34, 0xda, 0xff, 0x00, 0x06, 0xc9, 0xff, 0x14, 0x1c, 0xbc, 0xea,
+						0x14, 0x1b, 0xbb, 0xe9, 0x00, 0x08, 0xca, 0xff, 0x18, 0x23, 0xd4, 0xff, 0x00, 0x06, 0xc8, 0xff, 0x00, 0x03, 0xc7, 0xff, 0x00, 0x00, 0xc6, 0xff, 0x00, 0x00, 0xc6, 0xff, 0x00, 0x00, 0xc6, 0xff, 0x00, 0x05, 0xc8, 0xff, 0x00, 0x06, 0xc8, 0xff, 0x18, 0x23, 0xd4, 0xff, 0x00, 0x08, 0xca, 0xff, 0x14, 0x1b, 0xbb, 0xe9,
+						0x14, 0x1b, 0xbb, 0xe9, 0x00, 0x08, 0xca, 0xff, 0x19, 0x24, 0xd4, 0xff, 0x00, 0x02, 0xc6, 0xff, 0x33, 0x38, 0x9c, 0xb8, 0x38, 0x39, 0x4d, 0x53, 0x38, 0x39, 0x4d, 0x53, 0x38, 0x39, 0x4d, 0x53, 0x27, 0x2d, 0xab, 0xcf, 0x00, 0x02, 0xc6, 0xff, 0x19, 0x24, 0xd4, 0xff, 0x00, 0x08, 0xca, 0xff, 0x14, 0x1b, 0xbb, 0xe9,
+						0x14, 0x1b, 0xbb, 0xe9, 0x00, 0x08, 0xca, 0xff, 0x19, 0x24, 0xd4, 0xff, 0x00, 0x00, 0xc5, 0xff, 0x3f, 0x42, 0x7e, 0x8f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x35, 0x3a, 0x99, 0xb4, 0x00, 0x00, 0xc5, 0xff, 0x19, 0x24, 0xd4, 0xff, 0x00, 0x08, 0xca, 0xff, 0x14, 0x1b, 0xbb, 0xe9,
+						0x0e, 0x17, 0xc0, 0xf0, 0x00, 0x00, 0xc7, 0xff, 0x00, 0x08, 0xc9, 0xff, 0x00, 0x00, 0xc5, 0xff, 0x3d, 0x41, 0x87, 0x9a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x36, 0xa0, 0xbe, 0x00, 0x00, 0xc5, 0xff, 0x00, 0x08, 0xc9, 0xff, 0x00, 0x00, 0xc7, 0xff, 0x0e, 0x17, 0xc0, 0xf0,
+						0x2a, 0x30, 0xa6, 0xc7, 0x14, 0x17, 0xba, 0xe9, 0x13, 0x1a, 0xbb, 0xe9, 0x14, 0x15, 0xb9, 0xe9, 0x3f, 0x40, 0x6b, 0x77, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3d, 0x40, 0x83, 0x96, 0x14, 0x14, 0xb9, 0xe9, 0x13, 0x1a, 0xbb, 0xe9, 0x14, 0x17, 0xba, 0xe9, 0x2a, 0x30, 0xa6, 0xc7,
+					},
+					NumGrays:  0x100,
+					PixelMode: PixelModeBGRA,
+				},
+				BitmapLeft:   0,
+				BitmapTop:    15,
+				Outline:      Outline{},
+				NumSubglyphs: 0,
+				LsbDelta:     0,
+				RsbDelta:     0,
+			},
+		},
+		{
+			name: "noto sans jp reg",
+			face: notoSansJpReg,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return f.LoadGlyph(0x22, LoadRender|LoadColor)
+			},
+			want: GlyphSlot{
+				GlyphIndex: 0x22,
+				Metrics: GlyphMetrics{
+					Width:        576,
+					Height:       704,
+					HoriBearingX: 0,
+					HoriBearingY: 704,
+					HoriAdvance:  576,
+					VertBearingX: -320,
+					VertBearingY: 128,
+					VertAdvance:  896,
+				},
+				LinearHoriAdvance: 556923,
+				LinearVertAdvance: 917500,
+				Advance: Vector26_6{
+					X: 576,
+					Y: 0,
+				},
+				Format: GlyphFormatBitmap,
+				Bitmap: Bitmap{
+					Rows:  0xb,
+					Width: 0x9,
+					Pitch: 9,
+					Buffer: []byte{
+						0x00, 0x00, 0x00, 0xa5, 0xff, 0x20, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x05, 0xef, 0xb9, 0x71, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x47, 0xd2, 0x63, 0xc2, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x98, 0x92, 0x22, 0xfd, 0x16, 0x00, 0x00,
+						0x00, 0x01, 0xe7, 0x52, 0x00, 0xe1, 0x64, 0x00, 0x00,
+						0x00, 0x3a, 0xfd, 0x13, 0x00, 0x9e, 0xb5, 0x00, 0x00,
+						0x00, 0x8b, 0xcf, 0x07, 0x07, 0x5f, 0xf8, 0x0d, 0x00,
+						0x00, 0xdc, 0xff, 0xff, 0xff, 0xff, 0xff, 0x57, 0x00,
+						0x2d, 0xff, 0x2c, 0x00, 0x00, 0x00, 0xbe, 0xa8, 0x00,
+						0x7e, 0xd7, 0x00, 0x00, 0x00, 0x00, 0x6a, 0xf2, 0x07,
+						0xcf, 0x82, 0x00, 0x00, 0x00, 0x00, 0x18, 0xfd, 0x4a,
+					},
+					NumGrays:  0x100,
+					PixelMode: PixelModeGray,
+				},
+				BitmapLeft:   0,
+				BitmapTop:    11,
+				Outline:      Outline{},
+				NumSubglyphs: 0,
+				LsbDelta:     0,
+				RsbDelta:     0,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.before != nil {
-				if err := tt.before(tt.face); err != nil {
-					t.Errorf("Face.Glyph() got error on before block: %v", err)
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if tt.setup != nil {
+				if err := tt.setup(face.Face); err != nil {
+					t.Fatalf("Face.Glyph() setup error: %v", err)
 				}
 			}
 
-			// if  !reflect.DeepEqual(got, tt.want) {
-			// 	t.Errorf("Face.Glyph() = %v, want %v", got, tt.want)
-			// }
+			got := face.Glyph()
 
-			got := tt.face.Glyph()
+			// in this case, vertical metrics are unreliable
+			if !face.HasFlag(FaceFlagVertical) {
+				got.Metrics.VertAdvance, tt.want.Metrics.VertAdvance = -1, -1
+				got.Metrics.VertBearingX, tt.want.Metrics.VertBearingX = -1, -1
+				got.Metrics.VertBearingY, tt.want.Metrics.VertBearingY = -1, -1
+			}
+
+			// in this case, horizontal metrics are unreliable
+			if !face.HasFlag(FaceFlagHorizontal) {
+				got.Metrics.HoriAdvance, tt.want.Metrics.HoriAdvance = -1, -1
+				got.Metrics.HoriBearingX, tt.want.Metrics.HoriBearingX = -1, -1
+				got.Metrics.HoriBearingY, tt.want.Metrics.HoriBearingY = -1, -1
+			}
+
 			if diff := deep.Equal(got, tt.want); diff != nil {
 				t.Error(diff)
+			}
+		})
+	}
+}
+
+func TestFace_SetTransform(t *testing.T) {
+	goRegular, err := goRegular()
+	if err != nil {
+		t.Fatalf("unable to open font: %s", err)
+	}
+	defer goRegular.Free()
+
+	// There's no way to test without including freetype's internal headers,
+	// as such the tests are pretty superficial.
+
+	t.Run("nil face", func(t *testing.T) {
+		var f *Face
+		var freeCount int
+		defer mockFree(func(v unsafe.Pointer) {
+			freeCount++
+		}, actuallyFreeItAfter)()
+
+		f.SetTransform(Matrix{}, Vector{})
+		if want := 0; freeCount != want {
+			t.Errorf("Face.SetTransform() free count %d, want %d", freeCount, want)
+		}
+	})
+
+	t.Run("non 0 matrix", func(t *testing.T) {
+		var freeCount int
+		defer mockFree(func(v unsafe.Pointer) {
+			freeCount++
+		}, actuallyFreeItAfter)()
+
+		goRegular.SetTransform(Matrix{Xx: 1}, Vector{})
+		if want := 1; freeCount != want {
+			t.Errorf("Face.SetTransform() free count %d, want %d", freeCount, want)
+		}
+	})
+
+	t.Run("non 0 vec", func(t *testing.T) {
+		var freeCount int
+		defer mockFree(func(v unsafe.Pointer) {
+			freeCount++
+		}, actuallyFreeItAfter)()
+
+		goRegular.SetTransform(Matrix{}, Vector{X: 1})
+		if want := 1; freeCount != want {
+			t.Errorf("Face.SetTransform() free count %d, want %d", freeCount, want)
+		}
+	})
+
+	t.Run("non 0 matrix and vec", func(t *testing.T) {
+		var freeCount int
+		defer mockFree(func(v unsafe.Pointer) {
+			freeCount++
+		}, actuallyFreeItAfter)()
+
+		goRegular.SetTransform(Matrix{Xx: 1}, Vector{X: 1})
+		if want := 2; freeCount != want {
+			t.Errorf("Face.SetTransform() free count %d, want %d", freeCount, want)
+		}
+	})
+
+	t.Run("rotate 90 deg", func(t *testing.T) {
+		angle := 90.0 / 360.0 * math.Pi * 2.0
+		m := Matrix{
+			Xx: (fixed.Int16_16)(math.Cos(angle) * 0x10000),
+			Xy: (fixed.Int16_16)(-math.Sin(angle) * 0x10000),
+			Yx: (fixed.Int16_16)(math.Sin(angle) * 0x10000),
+			Yy: (fixed.Int16_16)(math.Cos(angle) * 0x10000),
+		}
+		goRegular.SetTransform(m, Vector{})
+
+		if err := goRegular.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+			t.Fatalf("unable to set char size: %v", err)
+		}
+
+		if err := goRegular.LoadGlyph(0x24, LoadRender|LoadColor); err != nil {
+			t.Fatalf("unable to load glyph: %v", err)
+		}
+
+		got := goRegular.Glyph()
+		want := GlyphSlot{
+			GlyphIndex: 0x24,
+			Metrics: GlyphMetrics{
+				Width:        640,
+				Height:       704,
+				HoriBearingX: 0,
+				HoriBearingY: 704,
+				HoriAdvance:  576,
+			},
+			LinearHoriAdvance: 611968,
+			LinearVertAdvance: 884352,
+			Advance: Vector26_6{
+				X: 0,
+				Y: 576,
+			},
+			Format: GlyphFormatBitmap,
+			Bitmap: Bitmap{
+				Rows:  0xa,
+				Width: 0xb,
+				Pitch: 11,
+				Buffer: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x4f, 0xa7, 0xf4,
+					0x00, 0x00, 0x00, 0x00, 0x04, 0x47, 0x9f, 0xf0, 0xff, 0xe9, 0x90,
+					0x00, 0x02, 0x3f, 0x97, 0xeb, 0xff, 0xf3, 0xff, 0x61, 0x04, 0x00,
+					0x8f, 0xe5, 0xff, 0xf4, 0xa8, 0x53, 0x09, 0xfc, 0x28, 0x00, 0x00,
+					0xff, 0xff, 0xc4, 0x27, 0x00, 0x00, 0x00, 0xfc, 0x28, 0x00, 0x00,
+					0x35, 0x8e, 0xe5, 0xfe, 0xc5, 0x6f, 0x1a, 0xfc, 0x28, 0x00, 0x00,
+					0x00, 0x00, 0x02, 0x41, 0x9b, 0xee, 0xfd, 0xff, 0x75, 0x0e, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x4e, 0xa7, 0xf5, 0xf6, 0xa6,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0b, 0x5a, 0xb4,
+				},
+				NumGrays:  0x100,
+				PixelMode: PixelModeGray,
+			},
+			BitmapLeft:   -11,
+			BitmapTop:    10,
+			Outline:      Outline{},
+			NumSubglyphs: 0,
+			LsbDelta:     0,
+			RsbDelta:     0,
+		}
+
+		// go regular is not a vertical font, vertical metrics are unreliable
+		got.Metrics.VertAdvance, want.Metrics.VertAdvance = -1, -1
+		got.Metrics.VertBearingX, want.Metrics.VertBearingX = -1, -1
+		got.Metrics.VertBearingY, want.Metrics.VertBearingY = -1, -1
+
+		if diff := deep.Equal(got, want); diff != nil {
+			t.Error(diff)
+		}
+	})
+}
+
+func TestFace_LoadGlyph(t *testing.T) {
+	tests := []struct {
+		name    string
+		face    func() (testface, error)
+		setup   func(*Face) error
+		idx     GlyphIndex
+		flags   LoadFlag
+		wantErr error
+	}{
+		{
+			name:    "nil face",
+			face:    nilFace,
+			wantErr: ErrInvalidFaceHandle,
+		},
+		{
+			name:    "go regular, no size set",
+			face:    goRegular,
+			idx:     0x24,
+			flags:   LoadRender | LoadColor,
+			wantErr: ErrInvalidSizeHandle,
+		},
+		{
+			name: "go regular",
+			face: goRegular,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			idx:     0x24,
+			flags:   LoadRender | LoadColor,
+			wantErr: nil,
+		},
+		{
+			name:    "noto sans jp reg, no size",
+			face:    notoSansJpReg,
+			idx:     0x22,
+			flags:   LoadRender | LoadColor,
+			wantErr: ErrInvalidSizeHandle,
+		},
+		{
+			name: "noto sans jp reg, horizontal",
+			face: notoSansJpReg,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			idx:     0x22,
+			flags:   LoadRender | LoadColor,
+			wantErr: nil,
+		},
+		{
+			name: "noto sans jp reg, vertical",
+			face: notoSansJpReg,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			idx:     0x22,
+			flags:   LoadRender | LoadColor | LoadVerticalLayout,
+			wantErr: nil,
+		},
+		{
+			name:    "bungee color mac, no size",
+			face:    bungeeColorMac,
+			idx:     0x2b,
+			flags:   LoadRender | LoadColor,
+			wantErr: ErrInvalidSizeHandle,
+		},
+		{
+			name: "bungee color mac",
+			face: bungeeColorMac,
+			setup: func(f *Face) error {
+				if err := f.SelectSize(0); err != nil {
+					return fmt.Errorf("unable to select size: %v", err)
+				}
+
+				return nil
+			},
+			idx:     0x2b,
+			flags:   LoadRender | LoadColor,
+			wantErr: nil,
+		},
+		{
+			name:    "bungee color windows, no size",
+			face:    bungeeColorWin,
+			idx:     0x2b,
+			flags:   LoadRender | LoadColor,
+			wantErr: ErrInvalidSizeHandle,
+		},
+		{
+			name: "bungee color windows",
+			face: bungeeColorWin,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			idx:     0x2b,
+			flags:   LoadRender | LoadColor,
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if tt.setup != nil {
+				if err := tt.setup(face.Face); err != nil {
+					t.Fatalf("Face.LoadGlyph() setup error: %v", err)
+				}
+			}
+			if err := face.LoadGlyph(tt.idx, tt.flags); err != tt.wantErr {
+				t.Errorf("Face.LoadGlyph() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

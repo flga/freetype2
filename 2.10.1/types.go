@@ -201,7 +201,7 @@ func newBitmapSize(b C.FT_Bitmap_Size) BitmapSize {
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_charmap
 type CharMap struct {
 	// Format of the CharMap
-	Format int
+	Format truetype.CmapFormat
 
 	// Language id
 	Language truetype.LanguageID
@@ -243,7 +243,7 @@ func newCharMap(c C.FT_CharMap) CharMap {
 	}
 
 	return CharMap{
-		Format:     int(C.FT_Get_CMap_Format(c)),
+		Format:     truetype.CmapFormat(C.FT_Get_CMap_Format(c)),
 		Language:   truetype.LanguageID(C.FT_Get_CMap_Language_ID(c)),
 		Encoding:   Encoding(c.encoding),
 		PlatformID: truetype.PlatformID(c.platform_id),

@@ -118,9 +118,10 @@ func (x LoadFlag) String() string {
 	// the maximum concatenated len, at the time of writing, is 180.
 	s := make([]byte, 0, 180)
 
-	if x&LoadDefault > 0 {
-		s = append(s, []byte("Default|")...)
+	if x == LoadDefault {
+		return "Default"
 	}
+
 	if x&LoadNoScale > 0 {
 		s = append(s, []byte("NoScale|")...)
 	}
@@ -646,21 +647,23 @@ func (f *Face) Glyph() GlyphSlot {
 	return newGlyphSlot(f.ptr.glyph)
 }
 
-// Glyphs returns a copy of the current contents, if any, of the face's glyph
-// slot, following the linked list.
-func (f *Face) Glyphs() []GlyphSlot {
-	if f == nil || f.ptr == nil {
-		return nil
-	}
+// I don't know how to test this yet
+//
+// // Glyphs returns a copy of the current contents, if any, of the face's glyph
+// // slot, following the linked list.
+// func (f *Face) Glyphs() []GlyphSlot {
+// 	if f == nil || f.ptr == nil {
+// 		return nil
+// 	}
 
-	var ret []GlyphSlot
-	ptr := f.ptr.glyph
-	for ptr.next != nil {
-		ret = append(ret, newGlyphSlot(ptr))
-		ptr = ptr.next
-	}
-	return ret
-}
+// 	var ret []GlyphSlot
+// 	ptr := f.ptr.glyph
+// 	for ptr.next != nil {
+// 		ret = append(ret, newGlyphSlot(ptr))
+// 		ptr = ptr.next
+// 	}
+// 	return ret
+// }
 
 // Size returns a copy of the current active size for this face.
 func (f *Face) Size() Size {
@@ -865,13 +868,6 @@ func (f *Face) SelectCharMap(enc Encoding) error {
 	return getErr(C.FT_Select_Charmap(f.ptr, C.FT_Encoding(enc)))
 }
 
-func (f *Face) testClearCharmap() {
-	if f == nil || f.ptr == nil {
-		return
-	}
-	f.ptr.charmap = nil
-}
-
 // SetCharMap marks the given charmap as active for character code to glyph index mapping.
 //
 // It returns an error if the charmap is not part of the face (i.e., if it is not listed in the CharMaps() table).
@@ -888,7 +884,7 @@ func (f *Face) SetCharMap(c CharMap) error {
 	}
 
 	charmaps := f.charmaps()
-	if c.index >= len(charmaps) {
+	if c.index < 0 || c.index >= len(charmaps) {
 		return ErrInvalidCharMapHandle
 	}
 
