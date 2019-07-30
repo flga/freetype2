@@ -2295,3 +2295,50 @@ func TestFace_LoadGlyph(t *testing.T) {
 		})
 	}
 }
+
+func TestFace_CharIndex(t *testing.T) {
+	tests := []struct {
+		name string
+		face func() (testface, error)
+		r    rune
+		want GlyphIndex
+	}{
+		{
+			name: "nil face",
+			face: nilFace,
+			r:    0,
+			want: 0,
+		},
+		{
+			name: "goRegular",
+			face: goRegular,
+			r:    'A',
+			want: 0x24,
+		},
+		{
+			name: "notoSansJpReg",
+			face: notoSansJpReg,
+			r:    'A',
+			want: 0x22,
+		},
+		{
+			name: "bungeeColorMac",
+			face: bungeeColorMac,
+			r:    'A',
+			want: 0x2b,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if got := face.CharIndex(tt.r); got != tt.want {
+				t.Errorf("Face.CharIndex() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

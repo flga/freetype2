@@ -10,7 +10,12 @@ import (
 	"github.com/flga/freetype2/2.10.1/fixed"
 )
 
+// GlyphIndex is the index of the glyph in the font file. For CID-keyed fonts
+// (either in PS or in CFF format) it specifies the CID value.
 type GlyphIndex uint
+
+// MissingGlyph is the GlyphIndex for the undefined char code.
+const MissingGlyph GlyphIndex = 0
 
 // LoadFlag is a list of bit field constants for LoadGlyph to indicate what
 // kind of operations to perform during glyph loading.
@@ -850,6 +855,30 @@ func (f *Face) LoadGlyph(idx GlyphIndex, flags LoadFlag) error {
 	}
 
 	return getErr(C.FT_Load_Glyph(f.ptr, C.FT_UInt(idx), C.FT_Int32(flags)))
+}
+
+// CharIndex returns the glyph index of a given character code. This function
+// uses the currently selected charmap to do the mapping.
+//
+// NOTE:
+// If you use FreeType to manipulate the contents of font files directly, be
+// aware that the glyph index returned by this function doesn't always
+// correspond to the internal indices used within the file. This is done to
+// ensure that value 0 always corresponds to the ‘missing glyph’. If the first
+// glyph is not named ‘.notdef’, then for Type 1 and Type 42 fonts, ‘.notdef’
+// will be moved into the glyph ID 0 position, and whatever was there will be
+// moved to the position ‘.notdef’ had. For Type 1 fonts, if there is no
+// ‘.notdef’ glyph at all, then one will be created at index 0 and whatever was
+// there will be moved to the last index -- Type 42 fonts are considered invalid
+// under this condition.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_char_index
+func (f *Face) CharIndex(r rune) GlyphIndex {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+
+	return GlyphIndex(C.FT_Get_Char_Index(f.ptr, C.ulong(r)))
 }
 
 // SelectCharMap selects a given charmap by its encoding tag.
