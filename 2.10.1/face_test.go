@@ -2442,3 +2442,139 @@ func TestFace_IndexOf(t *testing.T) {
 		})
 	}
 }
+
+func TestFace_LoadChar(t *testing.T) {
+	tests := []struct {
+		name    string
+		face    func() (testface, error)
+		setup   func(*Face) error
+		r       rune
+		flags   LoadFlag
+		wantErr error
+	}{
+		{
+			name:    "nil face",
+			face:    nilFace,
+			r:       0,
+			flags:   0,
+			wantErr: ErrInvalidFaceHandle,
+		},
+		{
+			name:    "go regular, no size set",
+			face:    goRegular,
+			r:       'A',
+			flags:   LoadRender | LoadColor,
+			wantErr: ErrInvalidSizeHandle,
+		},
+		{
+			name: "go regular",
+			face: goRegular,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			r:       'A',
+			flags:   LoadRender | LoadColor,
+			wantErr: nil,
+		},
+		{
+			name:    "noto sans jp reg, no size",
+			face:    notoSansJpReg,
+			r:       'A',
+			flags:   LoadRender | LoadColor,
+			wantErr: ErrInvalidSizeHandle,
+		},
+		{
+			name: "noto sans jp reg, horizontal",
+			face: notoSansJpReg,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			r:       'A',
+			flags:   LoadRender | LoadColor,
+			wantErr: nil,
+		},
+		{
+			name: "noto sans jp reg, vertical",
+			face: notoSansJpReg,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			r:       'A',
+			flags:   LoadRender | LoadColor | LoadVerticalLayout,
+			wantErr: nil,
+		},
+		{
+			name:    "bungee color mac, no size",
+			face:    bungeeColorMac,
+			r:       'A',
+			flags:   LoadRender | LoadColor,
+			wantErr: ErrInvalidSizeHandle,
+		},
+		{
+			name: "bungee color mac",
+			face: bungeeColorMac,
+			setup: func(f *Face) error {
+				if err := f.SelectSize(0); err != nil {
+					return fmt.Errorf("unable to select size: %v", err)
+				}
+
+				return nil
+			},
+			r:       'A',
+			flags:   LoadRender | LoadColor,
+			wantErr: nil,
+		},
+		{
+			name:    "bungee color windows, no size",
+			face:    bungeeColorWin,
+			r:       'A',
+			flags:   LoadRender | LoadColor,
+			wantErr: ErrInvalidSizeHandle,
+		},
+		{
+			name: "bungee color windows",
+			face: bungeeColorWin,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			r:       'A',
+			flags:   LoadRender | LoadColor,
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if tt.setup != nil {
+				if err := tt.setup(face.Face); err != nil {
+					t.Fatalf("Face.LoadChar() setup error: %v", err)
+				}
+			}
+
+			if err := face.LoadChar(tt.r, tt.flags); err != tt.wantErr {
+				t.Errorf("Face.LoadChar() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

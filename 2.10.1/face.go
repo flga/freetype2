@@ -951,6 +951,26 @@ func (f *Face) IndexOf(glyphName string) GlyphIndex {
 	return GlyphIndex(C.FT_Get_Name_Index(f.ptr, cstr))
 }
 
+// LoadChar loads a glyph into the glyph slot of a face object, accessed by its
+// character code.
+// NOTE:
+// This function simply calls CharIndex and LoadGlyph.
+//
+// Many fonts contain glyphs that can't be loaded by this function since its
+// glyph indices are not listed in any of the font's charmaps.
+//
+// If no active cmap is set up (i.e., face.CharMap is zero), the call to
+// CharIndex is omitted, and the function behaves identically to LoadGlyph.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_load_char
+func (f *Face) LoadChar(r rune, flags LoadFlag) error {
+	if f == nil || f.ptr == nil {
+		return ErrInvalidFaceHandle
+	}
+
+	return getErr(C.FT_Load_Char(f.ptr, C.ulong(r), C.FT_Int32(flags)))
+}
+
 // SelectCharMap selects a given charmap by its encoding tag.
 // It returns an error if no charmap in the face corresponds to the encoding queried.
 //
