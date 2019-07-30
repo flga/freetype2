@@ -10,6 +10,93 @@ import (
 	"github.com/flga/freetype2/2.10.1/fixed"
 )
 
+// KerningMode is an enumeration to specify the format of kerning values
+// returned by Face.Kerning().
+//
+// NOTE:
+// KerningModeDefault returns full pixel values; it also makes FreeType
+// heuristically scale down kerning distances at small ppem values so that they
+// don't become too big.
+//
+// Both KerningModeDefault and KerningModeUnfitted use the current horizontal
+// scaling factor (as set e.g. with SetCharSize) to convert font units to pixels.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_kerning_mode
+type KerningMode uint
+
+const (
+	//KerningModeDefault returns grid-fitted kerning distances in 26.6 fractional pixels.
+	KerningModeDefault KerningMode = C.FT_KERNING_DEFAULT
+	//KerningModeUnfitted returns un-grid-fitted kerning distances in 26.6 fractional pixels.
+	KerningModeUnfitted KerningMode = C.FT_KERNING_UNFITTED
+	//KerningModeUnscaled returns the kerning vector in original font units.
+	KerningModeUnscaled KerningMode = C.FT_KERNING_UNSCALED
+)
+
+// RenderMode is an enumeration of the render modes supported by FreeType 2.
+// Each mode corresponds to a specific type of scanline conversion performed on
+// the outline.
+//
+// For bitmap fonts and embedded bitmaps the bitmap.PixelMode field in the
+// GlyphSlot struct gives the format of the returned bitmap.
+//
+// All modes except RenderModeMono use 256 levels of opacity, indicating pixel
+// coverage. Use linear alpha blending and gamma correction to correctly render
+// non-monochrome glyph bitmaps onto a surface.
+//
+// NOTE:
+// Should you define FT_CONFIG_OPTION_SUBPIXEL_RENDERING in your ftoption.h,
+// which enables patented ClearType-style rendering, the LCD-optimized glyph
+// bitmaps should be filtered to reduce color fringes inherent to this
+// technology. You can either set up LCD filtering with Library.SetLCDFilter()
+// or FaceProperties, or do the filtering yourself. The default FreeType LCD
+// rendering technology does not require filtering.
+//
+// The selected render mode only affects vector glyphs of a font. Embedded
+// bitmaps often have a different pixel mode like PixelModeMono. You can use
+// Bitmap.Convert() to transform them into 8-bit pixmaps.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_render_mode
+type RenderMode uint
+
+const (
+	// RenderModeNormal is the default render mode; it corresponds to 8-bit
+	// anti-aliased bitmaps.
+	RenderModeNormal RenderMode = C.FT_RENDER_MODE_NORMAL
+	// RenderModeLight is equivalent to RenderModeNormal. It is only defined as
+	// a separate value because render modes are also used indirectly to define
+	// hinting algorithm selectors. See LoadTarget for details.
+	RenderModeLight RenderMode = C.FT_RENDER_MODE_LIGHT
+	// RenderModeMono corresponds to 1-bit bitmaps (with 2 levels of opacity).
+	RenderModeMono RenderMode = C.FT_RENDER_MODE_MONO
+	// RenderModeLCD corresponds to horizontal RGB and BGR subpixel displays
+	// like LCD screens. It produces 8-bit bitmaps that are 3 times the width of
+	// the original glyph outline in pixels, and which use PixelModeLCD.
+	RenderModeLCD RenderMode = C.FT_RENDER_MODE_LCD
+	// RenderModeLCDV corresponds to vertical RGB and BGR subpixel displays
+	// (like PDA screens, rotated LCD displays, etc.). It produces 8-bit bitmaps
+	// that are 3 times the height of the original glyph outline in pixels and
+	// use PixelModeLCDV.
+	RenderModeLCDV RenderMode = C.FT_RENDER_MODE_LCD_V
+)
+
+func (r RenderMode) String() string {
+	switch r {
+	case RenderModeNormal:
+		return "Normal"
+	case RenderModeLight:
+		return "Light"
+	case RenderModeMono:
+		return "Mono"
+	case RenderModeLCD:
+		return "LCD"
+	case RenderModeLCDV:
+		return "LCDV"
+	default:
+		return "Unknown"
+	}
+}
+
 // GlyphIndex is the index of the glyph in the font file. For CID-keyed fonts
 // (either in PS or in CFF format) it specifies the CID value.
 type GlyphIndex uint
@@ -969,6 +1056,70 @@ func (f *Face) LoadChar(r rune, flags LoadFlag) error {
 	}
 
 	return getErr(C.FT_Load_Char(f.ptr, C.ulong(r), C.FT_Int32(flags)))
+}
+
+// TODO: FT_Render_Glyph
+
+// Kern returns the kerning vector between two glyphs of the same face.
+//
+// The return vector is either in font units, fractional pixels (26.6 format),
+// or pixels for scalable formats, and in pixels for fixed-sizes formats.
+//
+// NOTE:
+// Only horizontal layouts (left-to-right & right-to-left) are supported by this
+// method. Other layouts, or more sophisticated kernings, are out of the scope
+// of this API function -- they can be implemented through format-specific
+// interfaces.
+//
+// Kerning for OpenType fonts implemented in a ‘GPOS’ table is not supported;
+// use HasFlag(FaceFlagKerning) to find out whether a font has data that can be
+// extracted with Kerning().
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_kerning
+func (f *Face) Kern(left, right GlyphIndex, mode KerningMode) (Vector, error) {
+	if f == nil || f.ptr == nil {
+		return Vector{}, ErrInvalidFaceHandle
+	}
+
+	var vec C.FT_Vector
+	if err := getErr(C.FT_Get_Kerning(f.ptr, C.uint(left), C.uint(right), C.uint(mode), &vec)); err != nil {
+		return Vector{}, err
+	}
+
+	return Vector{X: Pos(vec.x), Y: Pos(vec.y)}, nil
+}
+
+// TODO: FT_Get_Track_Kerning
+
+// GlyphName returns the ASCII name of a given glyph in a face. This only works
+// for those faces where face.HasFlag(FaceFlagGlyphNames) is true.
+//
+// NOTE:
+// An error is returned if the face doesn't provide glyph names or if the glyph
+// index is invalid.
+//
+// Be aware that FreeType reorders glyph indices internally so that glyph index
+// 0 always corresponds to the ‘missing glyph’ (called ‘.notdef’).
+//
+// This function always returns an error if the config macro
+// FT_CONFIG_OPTION_NO_GLYPH_NAMES is not defined in  ftoption.h.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_glyph_name
+func (f *Face) GlyphName(idx GlyphIndex) (string, error) {
+	if f == nil || f.ptr == nil {
+		return "", ErrInvalidFaceHandle
+	}
+
+	// In all cases of failure, the first byte of buffer is set to 0 to indicate an empty name.
+	// The glyph name is truncated to fit within the buffer if it is too long. The returned string is always zero-terminated.
+	buf := (*C.char)(C.calloc(1024, C.sizeof_char))
+	defer free(unsafe.Pointer(buf))
+
+	if err := getErr(C.FT_Get_Glyph_Name(f.ptr, C.uint(idx), (C.FT_Pointer)(buf), 1024)); err != nil {
+		return "", err
+	}
+
+	return C.GoString(buf), nil
 }
 
 // SelectCharMap selects a given charmap by its encoding tag.

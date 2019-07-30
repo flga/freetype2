@@ -74,3 +74,6 @@ func notoSansJpReg() (testface, error) {
 func notoSansJpBold() (testface, error) {
 	return openFace(testdata("noto sans jp", "NotoSansJP-Bold.otf"))
 }
+func arimoRegular() (testface, error) {
+	return openFace(testdata("arimo", "Arimo-Regular.ttf"))
+}

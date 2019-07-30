@@ -2578,3 +2578,207 @@ func TestFace_LoadChar(t *testing.T) {
 		})
 	}
 }
+
+func TestFace_Kerning(t *testing.T) {
+	tests := []struct {
+		name    string
+		face    func() (testface, error)
+		setup   func(*Face) error
+		left    GlyphIndex
+		right   GlyphIndex
+		mode    KerningMode
+		want    Vector
+		wantErr error
+	}{
+		{
+			name:    "nil face",
+			face:    nilFace,
+			want:    Vector{},
+			wantErr: ErrInvalidFaceHandle,
+		},
+		{
+			name: "goRegular",
+			face: goRegular,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			left:    0x24,
+			right:   0x39,
+			mode:    KerningModeDefault,
+			want:    Vector{},
+			wantErr: nil,
+		},
+		{
+			name: "arimoRegular, default",
+			face: arimoRegular,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			left:    0x24,
+			right:   0x39,
+			mode:    KerningModeDefault,
+			want:    Vector{X: -64, Y: 0},
+			wantErr: nil,
+		},
+		{
+			name: "arimoRegular, unfitted",
+			face: arimoRegular,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			left:    0x24,
+			right:   0x39,
+			mode:    KerningModeUnfitted,
+			want:    Vector{X: -67, Y: 0},
+			wantErr: nil,
+		},
+		{
+			name: "arimoRegular, unscaled",
+			face: arimoRegular,
+			setup: func(f *Face) error {
+				if err := f.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+					return fmt.Errorf("unable to set char size: %v", err)
+				}
+
+				return nil
+			},
+			left:    0x24,
+			right:   0x39,
+			mode:    KerningModeUnscaled,
+			want:    Vector{X: -152, Y: 0},
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if tt.setup != nil {
+				if err := tt.setup(face.Face); err != nil {
+					t.Fatalf("Face.LoadChar() setup error: %v", err)
+				}
+			}
+
+			if got, err := face.Kern(tt.left, tt.right, tt.mode); got != tt.want || err != tt.wantErr {
+				t.Errorf("Face.Kerning() = %v, %v, want %v, %v", got, err, tt.want, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func TestFace_GlyphName(t *testing.T) {
+	t.Run("free", func(t *testing.T) {
+		face, err := goRegular()
+		if err != nil {
+			t.Fatalf("unable to load face: %v", err)
+		}
+		defer face.Free()
+
+		var freed bool
+		defer mockFree(func(_ unsafe.Pointer) {
+			freed = true
+		}, actuallyFreeItAfter)()
+
+		if _, err := face.GlyphName(0); err != nil {
+			t.Errorf("Face.GlyphName() error = %v", err)
+		}
+
+		if !freed {
+			t.Errorf("Face.GlyphName() free was not")
+		}
+	})
+
+	t.Run("free on error", func(t *testing.T) {
+		face, err := goRegular()
+		if err != nil {
+			t.Fatalf("unable to load face: %v", err)
+		}
+		defer face.Free()
+
+		var freed bool
+		defer mockFree(func(_ unsafe.Pointer) {
+			freed = true
+		}, actuallyFreeItAfter)()
+
+		wantErr := ErrBbxTooBig
+		defer mockGetErr(func(_ int) error {
+			return ErrBbxTooBig
+		})()
+
+		if _, err := face.GlyphName(0); err != wantErr {
+			t.Errorf("Face.GlyphName() error = %v, want %v", err, wantErr)
+		}
+
+		if !freed {
+			t.Errorf("Face.GlyphName() free was not")
+		}
+	})
+
+	tests := []struct {
+		name    string
+		face    func() (testface, error)
+		idx     GlyphIndex
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "nil face",
+			face:    nilFace,
+			idx:     0,
+			want:    "",
+			wantErr: ErrInvalidFaceHandle,
+		},
+		{
+			name:    "goRegular .notdef",
+			face:    goRegular,
+			idx:     0x00,
+			want:    ".notdef",
+			wantErr: nil,
+		},
+		{
+			name:    "goRegular A",
+			face:    goRegular,
+			idx:     0x24,
+			want:    "A",
+			wantErr: nil,
+		},
+		{
+			name:    "goRegular question",
+			face:    goRegular,
+			idx:     0x22,
+			want:    "question",
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if got, err := face.GlyphName(tt.idx); got != tt.want || err != tt.wantErr {
+				t.Errorf("Face.GlyphName() = %q, %v, want %v, %v", got, err, tt.want, tt.wantErr)
+				return
+			}
+		})
+	}
+}
