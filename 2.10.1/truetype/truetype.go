@@ -381,7 +381,6 @@ type CmapFormat int
 const (
 	// ByteEncodingTable is the Apple standard character to glyph index mapping table.
 	ByteEncodingTable CmapFormat = 0
-
 	// HighByteMappingThroughTable is useful for the national character code standards used for Japanese, Chinese, and
 	// Korean characters. These code standards use a mixed 8-/16-bit encoding, in which certain byte values signal the
 	// first byte of a 2-byte character (but these values are also legal as the second byte of a 2-byte character).
@@ -411,10 +410,35 @@ const (
 	UnicodeVariationSequences CmapFormat = 14
 )
 
+func (f CmapFormat) String() string {
+	switch f {
+	case ByteEncodingTable:
+		return "ByteEncodingTable"
+	case HighByteMappingThroughTable:
+		return "HighByteMappingThroughTable"
+	case SegmentMappingToDeltaValues:
+		return "SegmentMappingToDeltaValues"
+	case TrimmedTableMapping:
+		return "TrimmedTableMapping"
+	case Mixed16And32bitCoverage:
+		return "Mixed16And32bitCoverage"
+	case TrimmedArray:
+		return "TrimmedArray"
+	case SegmentedCoverage:
+		return "SegmentedCoverage"
+	case ManyToOneRangeMappings:
+		return "ManyToOneRangeMappings"
+	case UnicodeVariationSequences:
+		return "UnicodeVariationSequences"
+	default:
+		return "Unknown"
+	}
+}
+
 // PlatformID is an enum for the PlatformID in CharMap and SfntName structs.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-truetype_tables.html#tt_platform_xxx
-type PlatformID int
+type PlatformID uint
 
 const (
 	// PlatformAppleUnicode is used by Apple to indicate a Unicode character map and/or name entry. See AppleEncodingIDs
@@ -452,7 +476,7 @@ func (p PlatformID) String() string {
 }
 
 // EncodingID is an enum for EncodingID in CharMap and SfntName structs.
-type EncodingID int
+type EncodingID uint
 
 // EncodingIDs for PlatformAppleUnicode
 //
@@ -547,7 +571,10 @@ const (
 
 // LanguageID is an enum of possible values of the language identifier field in the name records of the
 // SFNT ‘name’ table.
-type LanguageID int
+type LanguageID uint
+
+// UVSLang is the language ID for UVS maps
+const UVSLang LanguageID = 0xFFFFFFFF
 
 // LangIDs for PlatformMacintosh
 //
@@ -888,7 +915,7 @@ const (
 
 // NameID is the ‘name’ identifier field in the name records of an SFNT ‘name’ table.
 // NameID values are platform independent.
-type NameID int
+type NameID uint
 
 // See https://www.freetype.org/freetype2/docs/reference/ft2-truetype_tables.html#tt_name_id_xxx
 const (
