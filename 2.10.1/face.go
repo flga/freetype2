@@ -916,6 +916,41 @@ func (f *Face) FirstChar() (rune, GlyphIndex) {
 	return rune(r), GlyphIndex(idx)
 }
 
+// NextChar returns the next character code in the current charmap of a given
+// face following current, as well as the corresponding glyph index.
+//
+// GlyphIndex is set to 0 when there are no more codes in the charmap.
+//
+// NOTE:
+// You should use this function with FirstChar to walk over all character codes
+// available in a given charmap. See the note for that function for a simple
+// code example.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_next_char
+func (f *Face) NextChar(current rune) (rune, GlyphIndex) {
+	if f == nil || f.ptr == nil {
+		return 0, 0
+	}
+
+	var idx C.uint
+	r := C.FT_Get_Next_Char(f.ptr, C.ulong(current), &idx)
+	return rune(r), GlyphIndex(idx)
+}
+
+// IndexOf returns the glyph index of a given glyph name.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_name_index
+func (f *Face) IndexOf(glyphName string) GlyphIndex {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+
+	cstr := C.CString(glyphName)
+	defer free(unsafe.Pointer(cstr))
+
+	return GlyphIndex(C.FT_Get_Name_Index(f.ptr, cstr))
+}
+
 // SelectCharMap selects a given charmap by its encoding tag.
 // It returns an error if no charmap in the face corresponds to the encoding queried.
 //
