@@ -124,10 +124,6 @@ func (x FSTypeFlag) String() string {
 		s = append(s, []byte("BitmapEmbeddingOnly|")...)
 	}
 
-	if len(s) == 0 {
-		return ""
-	}
-
 	return string(s[:len(s)-1]) // trim the leading |
 }
 

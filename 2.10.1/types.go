@@ -655,11 +655,165 @@ func newGlyphMetrics(m C.FT_Glyph_Metrics) GlyphMetrics {
 	}
 }
 
-type Outline struct {
-	// TODO: implement
+// OutlineFlag is a list of bit-field constants used for the flags in an Outline flags field.
+//
+// NOTE:
+// The flags OutlineIgnoreDropouts, OutlineSmartDropouts, and OutlineIncludeStubs
+// are ignored by the smooth rasterizer.
+//
+// There exists a second mechanism to pass the drop-out mode to the B/W rasterizer;
+// see the tags field in Outline.
+//
+// Please refer to the description of the ‘SCANTYPE’ instruction in the OpenType
+// specification (in file ttinst1.doc) how simple drop-outs, smart drop-outs,
+// and stubs are defined.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-outline_processing.html#ft_outline_xxx
+type OutlineFlag uint
+
+const (
+	outlineNone OutlineFlag = C.FT_OUTLINE_NONE
+
+	// OutlineOwner if set, this flag indicates that the outline's field arrays
+	// (i.e., points, flags, and contours) are ‘owned’ by the outline object,
+	// and should thus be freed when it is destroyed.
+	OutlineOwner OutlineFlag = C.FT_OUTLINE_OWNER
+	// OutlineEvenOddFill by default, outlines are filled using the non-zero
+	// winding rule. If set to 1, the outline will be filled using the even-odd
+	// fill rule (only works with the smooth rasterizer).
+	OutlineEvenOddFill OutlineFlag = C.FT_OUTLINE_EVEN_ODD_FILL
+	// OutlineReverseFill by default, outside contours of an outline are
+	// oriented in clock-wise direction, as defined in the TrueType
+	// specification. This flag is set if the outline uses the opposite
+	// direction (typically for Type 1 fonts). This flag is ignored by the scan
+	// converter.
+	OutlineReverseFill OutlineFlag = C.FT_OUTLINE_REVERSE_FILL
+	// OutlineIgnoreDropouts by default, the scan converter will try to detect
+	// drop-outs in an outline and correct the glyph bitmap to ensure consistent
+	// shape continuity. If set, this flag hints the scan-line converter to
+	// ignore such cases.
+	OutlineIgnoreDropouts OutlineFlag = C.FT_OUTLINE_IGNORE_DROPOUTS
+	// OutlineSmartDropouts select smart dropout control. If unset, use simple
+	// dropout control. Ignored if OutlineIgnoreDropouts is set.
+	OutlineSmartDropouts OutlineFlag = C.FT_OUTLINE_SMART_DROPOUTS
+	// OutlineIncludeStubs if set, turn pixels on for ‘stubs’, otherwise exclude
+	// them. Ignored if OutlineIgnoreDropouts is set.
+	OutlineIncludeStubs OutlineFlag = C.FT_OUTLINE_INCLUDE_STUBS
+	// OutlineHighPrecision indicates that the scan-line converter should try to
+	// convert this outline to bitmaps with the highest possible quality.
+	// It is typically set for small character sizes. Note that this is only a
+	// hint that might be completely ignored by a given scan-converter.
+	OutlineHighPrecision OutlineFlag = C.FT_OUTLINE_HIGH_PRECISION
+	// OutlineSinglePass is set to force a given scan-converter to only use a
+	// single pass over the outline to render a bitmap glyph image. Normally,
+	// it is set for very large character sizes. It is only a hint that might be
+	// completely ignored by a given scan-converter.
+	OutlineSinglePass OutlineFlag = C.FT_OUTLINE_SINGLE_PASS
+)
+
+func (x OutlineFlag) String() string {
+	// the maximum concatenated len, at the time of writing, is 97.
+	s := make([]byte, 0, 97)
+
+	if x&OutlineOwner > 0 {
+		s = append(s, []byte("Owner|")...)
+	}
+	if x&OutlineEvenOddFill > 0 {
+		s = append(s, []byte("EvenOddFill|")...)
+	}
+	if x&OutlineReverseFill > 0 {
+		s = append(s, []byte("ReverseFill|")...)
+	}
+	if x&OutlineIgnoreDropouts > 0 {
+		s = append(s, []byte("IgnoreDropouts|")...)
+	}
+	if x&OutlineSmartDropouts > 0 {
+		s = append(s, []byte("SmartDropouts|")...)
+	}
+	if x&OutlineIncludeStubs > 0 {
+		s = append(s, []byte("IncludeStubs|")...)
+	}
+	if x&OutlineHighPrecision > 0 {
+		s = append(s, []byte("HighPrecision|")...)
+	}
+	if x&OutlineSinglePass > 0 {
+		s = append(s, []byte("SinglePass|")...)
+	}
+
+	if len(s) == 0 {
+		return ""
+	}
+
+	return string(s[:len(s)-1]) // trim the leading |
 }
 
-func newOutline(_ C.FT_Outline) Outline {
-	// log.Println("NEW OUTLINE NOT IMPLEMENTED")
-	return Outline{}
+// Outline describes an outline to the scan-line converter.
+//
+// NOTE:
+// The B/W rasterizer only checks bit 2 in the tags array for the first point of
+// each contour. The drop-out mode as given with OutlineIgnoreDropouts,
+// OutlineSmartDropouts, and OutlineIncludeStubs in flags is then overridden.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-outline_processing.html#ft_outline
+type Outline struct {
+	// The outline's point coordinates.
+	Points []Vector
+	// The type of each outline point.
+	//
+	// If bit 0 is unset, the point is ‘off’ the curve, i.e., a Bezier control
+	// point, while it is ‘on’ if set.
+	//
+	// Bit 1 is meaningful for ‘off’ points only. If set, it indicates a
+	// third-order Bezier arc control point; and a second-order control point if
+	// unset.
+	//
+	// If bit 2 is set, bits 5-7 contain the drop-out mode (as defined in the
+	// OpenType specification; the value is the same as the argument to the
+	// ‘SCANMODE’ instruction).
+	//
+	// Bits 3 and 4 are reserved for internal purposes.
+	Tags []byte
+	// The end point of each contour within the outline. For example, the first
+	// contour is defined by the points ‘0’ to contours[0], the second one is
+	// defined by the points contours[0]+1 to contours[1], etc.
+	Contours []int16
+	// A set of bit flags used to characterize the outline and give hints to the
+	// scan-converter and hinter on how to convert/grid-fit it.
+	Flags OutlineFlag
+}
+
+func newOutline(v C.FT_Outline) Outline {
+	var points []Vector
+	if v.n_points > 0 {
+		points = make([]Vector, v.n_points)
+		ptr := (*[(1<<31 - 1) / C.sizeof_FT_Vector]C.FT_Vector)(unsafe.Pointer(v.points))[:v.n_points:v.n_points]
+		for i := range points {
+			points[i] = Vector{X: Pos(ptr[i].x), Y: Pos(ptr[i].y)}
+		}
+	}
+
+	var tags []byte
+	if v.n_points > 0 {
+		tags = make([]byte, v.n_points)
+		ptr := (*[(1<<31 - 1) / C.sizeof_char]C.char)(unsafe.Pointer(v.tags))[:v.n_points:v.n_points]
+		for i := range tags {
+			tags[i] = byte(ptr[i])
+		}
+	}
+
+	var contours []int16
+	if v.n_contours > 0 {
+		contours = make([]int16, v.n_contours)
+		ptr := (*[(1<<31 - 1) / C.sizeof_short]C.short)(unsafe.Pointer(v.contours))[:v.n_contours:v.n_contours]
+		for i := range contours {
+			contours[i] = int16(ptr[i])
+		}
+	}
+
+	return Outline{
+		Points:   points,
+		Tags:     tags,
+		Contours: contours,
+		Flags:    OutlineFlag(v.flags),
+	}
 }

@@ -108,3 +108,32 @@ func TestSizeRequestType_String(t *testing.T) {
 		t.Errorf("8912387.String() = %v, want %v", got, want)
 	}
 }
+
+func TestOutlineFlag_String(t *testing.T) {
+	var x OutlineFlag
+	if got, want := x.String(), ""; got != want {
+		t.Errorf("OutlineFlag.String(0) = %v, want %v", got, want)
+	}
+
+	x = OutlineIgnoreDropouts
+	if got, want := x.String(), "IgnoreDropouts"; got != want {
+		t.Errorf("OutlineFlag.String(OutlineIgnoreDropouts) = %v, want %v", got, want)
+	}
+
+	x = OutlineEvenOddFill | OutlineIncludeStubs
+	if got, want := x.String(), "EvenOddFill|IncludeStubs"; got != want {
+		t.Errorf("OutlineFlag.String(OutlineEvenOddFill | OutlineIncludeStubs) = %v, want %v", got, want)
+	}
+
+	x = OutlineOwner | OutlineIgnoreDropouts | OutlineHighPrecision
+	if got, want := x.String(), "Owner|IgnoreDropouts|HighPrecision"; got != want {
+		t.Errorf("OutlineFlag.String(OutlineOwner | OutlineIgnoreDropouts | OutlineHighPrecision) = %v, want %v", got, want)
+	}
+
+	x = OutlineOwner | OutlineEvenOddFill | OutlineReverseFill |
+		OutlineIgnoreDropouts | OutlineSmartDropouts | OutlineIncludeStubs |
+		OutlineHighPrecision | OutlineSinglePass
+	if got, want := x.String(), "Owner|EvenOddFill|ReverseFill|IgnoreDropouts|SmartDropouts|IncludeStubs|HighPrecision|SinglePass"; got != want {
+		t.Errorf("OutlineFlag.String(OutlineOwner | OutlineEvenOddFill | OutlineReverseFill | OutlineIgnoreDropouts | OutlineSmartDropouts | OutlineIncludeStubs | OutlineHighPrecision | OutlineSinglePass) = %v, want %v", got, want)
+	}
+}
