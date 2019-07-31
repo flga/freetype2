@@ -2955,25 +2955,26 @@ func TestFace_FSTypeFlags(t *testing.T) {
 }
 
 func TestFSTypeFlag_String(t *testing.T) {
-	tests := []struct {
-		name string
-		f    FSTypeFlag
-		want string
-	}{
-		{name: "InstallableEmbedding", f: FsTypeFlagInstallableEmbedding, want: "InstallableEmbedding"},
-		{name: "RestrictedLicenseEmbedding", f: FsTypeFlagRestrictedLicenseEmbedding, want: "RestrictedLicenseEmbedding"},
-		{name: "PreviewAndPrintEmbedding", f: FsTypeFlagPreviewAndPrintEmbedding, want: "PreviewAndPrintEmbedding"},
-		{name: "EditableEmbedding", f: FsTypeFlagEditableEmbedding, want: "EditableEmbedding"},
-		{name: "NoSubsetting", f: FsTypeFlagNoSubsetting, want: "NoSubsetting"},
-		{name: "BitmapEmbeddingOnly", f: FsTypeFlagBitmapEmbeddingOnly, want: "BitmapEmbeddingOnly"},
-		{name: "Unknown", f: 1, want: "Unknown"},
+	var x FSTypeFlag
+	if got, want := x.String(), "InstallableEmbedding"; got != want {
+		t.Errorf("FSTypeFlag.String() = %v, want %v", got, want)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.f.String(); got != tt.want {
-				t.Errorf("FSTypeFlag.String() = %v, want %v", got, tt.want)
-			}
-		})
+
+	x = FsTypeFlagRestrictedLicenseEmbedding
+	if got, want := x.String(), "RestrictedLicenseEmbedding"; got != want {
+		t.Errorf("FSTypeFlag.String(FsTypeFlagRestrictedLicenseEmbedding) = %v, want %v", got, want)
+	}
+
+	x = FsTypeFlagRestrictedLicenseEmbedding | FsTypeFlagPreviewAndPrintEmbedding
+	if got, want := x.String(), "RestrictedLicenseEmbedding|PreviewAndPrintEmbedding"; got != want {
+		t.Errorf("FSTypeFlag.String(FsTypeFlagRestrictedLicenseEmbedding | FsTypeFlagPreviewAndPrintEmbedding) = %v, want %v", got, want)
+	}
+
+	x = FsTypeFlagInstallableEmbedding | FsTypeFlagRestrictedLicenseEmbedding |
+		FsTypeFlagPreviewAndPrintEmbedding | FsTypeFlagEditableEmbedding |
+		FsTypeFlagNoSubsetting | FsTypeFlagBitmapEmbeddingOnly
+	if got, want := x.String(), "RestrictedLicenseEmbedding|PreviewAndPrintEmbedding|EditableEmbedding|NoSubsetting|BitmapEmbeddingOnly"; got != want {
+		t.Errorf("FSTypeFlag.String(FsTypeFlagInstallableEmbedding | FsTypeFlagRestrictedLicenseEmbedding | FsTypeFlagPreviewAndPrintEmbedding | FsTypeFlagEditableEmbedding | FsTypeFlagNoSubsetting | FsTypeFlagBitmapEmbeddingOnly) = %v, want %v", got, want)
 	}
 }
 
@@ -2996,5 +2997,33 @@ func TestRenderMode_String(t *testing.T) {
 				t.Errorf("RenderMode.String() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestFace_SubGlyphInfo(t *testing.T) {
+	t.Skip("I could not find a font with composite glyphs")
+}
+
+func TestSubGlyphFlag_String(t *testing.T) {
+	var x SubGlyphFlag
+	if got, want := x.String(), ""; got != want {
+		t.Errorf("SubGlyphFlag.String() = %v, want %v", got, want)
+	}
+
+	x = SubGlyphFlagXyScale
+	if got, want := x.String(), "XyScale"; got != want {
+		t.Errorf("SubGlyphFlag.String(SubGlyphFlagXyScale) = %v, want %v", got, want)
+	}
+
+	x = SubGlyphFlagArgsAreXyValues | SubGlyphFlagScale
+	if got, want := x.String(), "ArgsAreXyValues|Scale"; got != want {
+		t.Errorf("SubGlyphFlag.String(SubGlyphFlagArgsAreXyValues | SubGlyphFlagScale) = %v, want %v", got, want)
+	}
+
+	x = SubGlyphFlagArgsAreWords | SubGlyphFlagArgsAreXyValues |
+		SubGlyphFlagRoundXyToGrid | SubGlyphFlagScale | SubGlyphFlagXyScale |
+		SubGlyphFlag2x2 | SubGlyphFlagUseMyMetrics
+	if got, want := x.String(), "ArgsAreWords|ArgsAreXyValues|RoundXyToGrid|Scale|XyScale|2x2|UseMyMetrics"; got != want {
+		t.Errorf("SubGlyphFlag.String(SubGlyphFlagArgsAreWords | SubGlyphFlagArgsAreXyValues | SubGlyphFlagRoundXyToGrid | SubGlyphFlagScale | SubGlyphFlagXyScale | SubGlyphFlag2x2 | SubGlyphFlagUseMyMetrics) = %v, want %v", got, want)
 	}
 }

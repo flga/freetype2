@@ -10,6 +10,59 @@ import (
 	"github.com/flga/freetype2/2.10.1/fixed"
 )
 
+// SubGlyphFlag is a list of constants describing subglyphs.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_subglyph_flag_xxx
+type SubGlyphFlag uint
+
+// Please refer to the ‘glyf’ table description in the OpenType specification
+// for the meaning of the various flags (which get synthesized for non-OpenType
+// subglyphs).
+//
+// https://docs.microsoft.com/en-us/typography/opentype/spec/glyf#composite-glyph-description
+const (
+	SubGlyphFlagArgsAreWords    SubGlyphFlag = C.FT_SUBGLYPH_FLAG_ARGS_ARE_WORDS
+	SubGlyphFlagArgsAreXyValues SubGlyphFlag = C.FT_SUBGLYPH_FLAG_ARGS_ARE_XY_VALUES
+	SubGlyphFlagRoundXyToGrid   SubGlyphFlag = C.FT_SUBGLYPH_FLAG_ROUND_XY_TO_GRID
+	SubGlyphFlagScale           SubGlyphFlag = C.FT_SUBGLYPH_FLAG_SCALE
+	SubGlyphFlagXyScale         SubGlyphFlag = C.FT_SUBGLYPH_FLAG_XY_SCALE
+	SubGlyphFlag2x2             SubGlyphFlag = C.FT_SUBGLYPH_FLAG_2X2
+	SubGlyphFlagUseMyMetrics    SubGlyphFlag = C.FT_SUBGLYPH_FLAG_USE_MY_METRICS
+)
+
+func (x SubGlyphFlag) String() string {
+	// the maximum concatenated len, at the time of writing, is 74.
+	s := make([]byte, 0, 74)
+
+	if x&SubGlyphFlagArgsAreWords > 0 {
+		s = append(s, []byte("ArgsAreWords|")...)
+	}
+	if x&SubGlyphFlagArgsAreXyValues > 0 {
+		s = append(s, []byte("ArgsAreXyValues|")...)
+	}
+	if x&SubGlyphFlagRoundXyToGrid > 0 {
+		s = append(s, []byte("RoundXyToGrid|")...)
+	}
+	if x&SubGlyphFlagScale > 0 {
+		s = append(s, []byte("Scale|")...)
+	}
+	if x&SubGlyphFlagXyScale > 0 {
+		s = append(s, []byte("XyScale|")...)
+	}
+	if x&SubGlyphFlag2x2 > 0 {
+		s = append(s, []byte("2x2|")...)
+	}
+	if x&SubGlyphFlagUseMyMetrics > 0 {
+		s = append(s, []byte("UseMyMetrics|")...)
+	}
+
+	if len(s) == 0 {
+		return ""
+	}
+
+	return string(s[:len(s)-1]) // trim the leading |
+}
+
 // FSTypeFlag is a list of bit flags used in the fsType field of the OS/2 table
 // in a TrueType or OpenType font and the FSType entry in a PostScript font.
 // These bit flags are returned by Face,FSTypeFlags(); they inform client
@@ -47,23 +100,35 @@ const (
 	FsTypeFlagBitmapEmbeddingOnly FSTypeFlag = C.FT_FSTYPE_BITMAP_EMBEDDING_ONLY
 )
 
-func (f FSTypeFlag) String() string {
-	switch f {
-	case FsTypeFlagInstallableEmbedding:
+func (x FSTypeFlag) String() string {
+	if x == FsTypeFlagInstallableEmbedding {
 		return "InstallableEmbedding"
-	case FsTypeFlagRestrictedLicenseEmbedding:
-		return "RestrictedLicenseEmbedding"
-	case FsTypeFlagPreviewAndPrintEmbedding:
-		return "PreviewAndPrintEmbedding"
-	case FsTypeFlagEditableEmbedding:
-		return "EditableEmbedding"
-	case FsTypeFlagNoSubsetting:
-		return "NoSubsetting"
-	case FsTypeFlagBitmapEmbeddingOnly:
-		return "BitmapEmbeddingOnly"
-	default:
-		return "Unknown"
 	}
+
+	// the maximum concatenated len, at the time of writing, is 103.
+	s := make([]byte, 0, 103)
+
+	if x&FsTypeFlagRestrictedLicenseEmbedding > 0 {
+		s = append(s, []byte("RestrictedLicenseEmbedding|")...)
+	}
+	if x&FsTypeFlagPreviewAndPrintEmbedding > 0 {
+		s = append(s, []byte("PreviewAndPrintEmbedding|")...)
+	}
+	if x&FsTypeFlagEditableEmbedding > 0 {
+		s = append(s, []byte("EditableEmbedding|")...)
+	}
+	if x&FsTypeFlagNoSubsetting > 0 {
+		s = append(s, []byte("NoSubsetting|")...)
+	}
+	if x&FsTypeFlagBitmapEmbeddingOnly > 0 {
+		s = append(s, []byte("BitmapEmbeddingOnly|")...)
+	}
+
+	if len(s) == 0 {
+		return ""
+	}
+
+	return string(s[:len(s)-1]) // trim the leading |
 }
 
 // KerningMode is an enumeration to specify the format of kerning values
@@ -1263,4 +1328,53 @@ func (f *Face) FSTypeFlags() FSTypeFlag {
 	}
 
 	return FSTypeFlag(C.FT_Get_FSType_Flags(f.ptr))
+}
+
+// SubGlyphInfo contains info about a subglyph.
+// The values of Arg1, Arg2, and Transform must be interpreted depending on the
+// flags present in Flags. See the OpenType specification for details.
+//
+// https://docs.microsoft.com/en-us/typography/opentype/spec/glyf#composite-glyph-description
+type SubGlyphInfo struct {
+	Index     GlyphIndex
+	Flags     SubGlyphFlag
+	Arg1      int
+	Arg2      int
+	Transform Matrix
+}
+
+// SubGlyphInfo retrieves a description of a given subglyph. Only use it if
+// glyph.Format is GlyphFormatComposite; an error is returned otherwise.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_subglyph_info
+func (f *Face) SubGlyphInfo(idx int) (SubGlyphInfo, error) {
+	if f == nil || f.ptr == nil {
+		return SubGlyphInfo{}, ErrInvalidFaceHandle
+	}
+
+	if f.ptr.glyph == nil || C.uint(idx) >= f.ptr.glyph.num_subglyphs {
+		return SubGlyphInfo{}, ErrInvalidArgument
+	}
+
+	var index C.FT_Int
+	var flags C.FT_UInt
+	var arg1 C.FT_Int
+	var arg2 C.FT_Int
+	var transform C.FT_Matrix
+	if err := getErr(C.FT_Get_SubGlyph_Info(f.ptr.glyph, C.uint(idx), &index, &flags, &arg1, &arg2, &transform)); err != nil {
+		return SubGlyphInfo{}, err
+	}
+
+	return SubGlyphInfo{
+		Index: GlyphIndex(index),
+		Flags: SubGlyphFlag(flags),
+		Arg1:  int(arg1),
+		Arg2:  int(arg2),
+		Transform: Matrix{
+			Xx: fixed.Int16_16(transform.xx),
+			Xy: fixed.Int16_16(transform.xy),
+			Yx: fixed.Int16_16(transform.yx),
+			Yy: fixed.Int16_16(transform.yy),
+		},
+	}, nil
 }

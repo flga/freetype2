@@ -7,7 +7,6 @@ import (
 	"C"
 )
 import (
-	"log"
 	"math"
 	"unsafe"
 
@@ -661,6 +660,6 @@ type Outline struct {
 }
 
 func newOutline(_ C.FT_Outline) Outline {
-	log.Println("NEW OUTLINE NOT IMPLEMENTED")
+	// log.Println("NEW OUTLINE NOT IMPLEMENTED")
 	return Outline{}
 }
