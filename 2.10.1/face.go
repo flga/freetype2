@@ -10,6 +10,62 @@ import (
 	"github.com/flga/freetype2/2.10.1/fixed"
 )
 
+// FSTypeFlag is a list of bit flags used in the fsType field of the OS/2 table
+// in a TrueType or OpenType font and the FSType entry in a PostScript font.
+// These bit flags are returned by Face,FSTypeFlags(); they inform client
+// applications of embedding and subsetting restrictions associated with a font.
+//
+// See https://www.adobe.com/content/dam/Adobe/en/devnet/acrobat/pdfs/FontPolicies.pdf
+// for more details.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_fstype_xxx
+type FSTypeFlag uint
+
+const (
+	// FsTypeFlagInstallableEmbedding fonts with no fsType bit set may be
+	// embedded and permanently installed on the remote system by an application.
+	FsTypeFlagInstallableEmbedding FSTypeFlag = C.FT_FSTYPE_INSTALLABLE_EMBEDDING
+	// FsTypeFlagRestrictedLicenseEmbedding fonts that have only this bit set
+	// must not be modified, embedded or exchanged in any manner without first
+	// obtaining permission of the font software copyright owner.
+	FsTypeFlagRestrictedLicenseEmbedding FSTypeFlag = C.FT_FSTYPE_RESTRICTED_LICENSE_EMBEDDING
+	// FsTypeFlagPreviewAndPrintEmbedding the font may be embedded and
+	// temporarily loaded on the remote system. Documents containing Preview &
+	// Print fonts must be opened ‘read-only’; no edits can be applied to the
+	// document.
+	FsTypeFlagPreviewAndPrintEmbedding FSTypeFlag = C.FT_FSTYPE_PREVIEW_AND_PRINT_EMBEDDING
+	// FsTypeFlagEditableEmbedding the font may be embedded but must only be
+	// installed temporarily on other systems. In contrast to Preview & Print
+	// fonts, documents containing editable fonts may be opened for reading,
+	// editing is permitted, and changes may be saved.
+	FsTypeFlagEditableEmbedding FSTypeFlag = C.FT_FSTYPE_EDITABLE_EMBEDDING
+	// FsTypeFlagNoSubsetting the font may not be subsetted prior to embedding.
+	FsTypeFlagNoSubsetting FSTypeFlag = C.FT_FSTYPE_NO_SUBSETTING
+	// FsTypeFlagBitmapEmbeddingOnly only bitmaps contained in the font may be
+	// embedded; no outline data may be embedded. If there are no bitmaps
+	// available in the font, then the font is unembeddable.
+	FsTypeFlagBitmapEmbeddingOnly FSTypeFlag = C.FT_FSTYPE_BITMAP_EMBEDDING_ONLY
+)
+
+func (f FSTypeFlag) String() string {
+	switch f {
+	case FsTypeFlagInstallableEmbedding:
+		return "InstallableEmbedding"
+	case FsTypeFlagRestrictedLicenseEmbedding:
+		return "RestrictedLicenseEmbedding"
+	case FsTypeFlagPreviewAndPrintEmbedding:
+		return "PreviewAndPrintEmbedding"
+	case FsTypeFlagEditableEmbedding:
+		return "EditableEmbedding"
+	case FsTypeFlagNoSubsetting:
+		return "NoSubsetting"
+	case FsTypeFlagBitmapEmbeddingOnly:
+		return "BitmapEmbeddingOnly"
+	default:
+		return "Unknown"
+	}
+}
+
 // KerningMode is an enumeration to specify the format of kerning values
 // returned by Face.Kerning().
 //
@@ -1191,4 +1247,20 @@ func (f *Face) SetCharMap(c CharMap) error {
 	}
 
 	return getErr(C.FT_Set_Charmap(f.ptr, charmap))
+}
+
+// FSTypeFlags returns the fsType flags for a font.
+//
+// NOTE:
+// Use this function rather than directly reading the FsType field in the
+// FontInfo struct, which is only guaranteed to return the correct results for
+// Type 1 fonts.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_fstype_flags
+func (f *Face) FSTypeFlags() FSTypeFlag {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+
+	return FSTypeFlag(C.FT_Get_FSType_Flags(f.ptr))
 }

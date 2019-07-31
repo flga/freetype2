@@ -12,7 +12,7 @@ import (
 	"github.com/go-test/deep"
 )
 
-func TestFaceFlags_String(t *testing.T) {
+func TestFaceFlag_String(t *testing.T) {
 	var x FaceFlag
 	if got, want := x.String(), ""; got != want {
 		t.Errorf("FaceFlag.String(0) = %v, want %v", got, want)
@@ -41,7 +41,7 @@ func TestFaceFlags_String(t *testing.T) {
 	}
 }
 
-func TestStyleFlags_String(t *testing.T) {
+func TestStyleFlag_String(t *testing.T) {
 	var x StyleFlag
 
 	if got, want := x.String(), ""; got != want {
@@ -64,7 +64,7 @@ func TestStyleFlags_String(t *testing.T) {
 	}
 }
 
-func TestLoadFlags_String(t *testing.T) {
+func TestLoadFlag_String(t *testing.T) {
 	var x LoadFlag
 	if got, want := x.String(), "Default"; got != want {
 		t.Errorf("LoadFlag.String(0) = %v, want %v", got, want)
@@ -2449,7 +2449,67 @@ func TestFace_FirstChar(t *testing.T) {
 			defer face.Free()
 
 			if gotRune, gotIdx := face.FirstChar(); gotRune != tt.wantRune || gotIdx != tt.wantIdx {
-				t.Errorf("Face.FirstChar() got = %v, %v, want %v, %v", gotRune, tt.wantRune, gotIdx, tt.wantIdx)
+				t.Errorf("Face.FirstChar() got = %v, %v, want %v, %v", gotRune, gotIdx, tt.wantRune, tt.wantIdx)
+			}
+		})
+	}
+}
+
+func TestFace_NextChar(t *testing.T) {
+	tests := []struct {
+		name     string
+		face     func() (testface, error)
+		current  rune
+		wantRune rune
+	}{
+		{
+			name:     "nil face",
+			face:     nilFace,
+			current:  0,
+			wantRune: 0,
+		},
+		{
+			name:     "goRegular",
+			face:     goRegular,
+			current:  ' ',
+			wantRune: '!',
+		},
+		{
+			name:     "bungeeColorWin",
+			face:     bungeeColorWin,
+			current:  ' ',
+			wantRune: '!',
+		},
+		{
+			name:     "bungeeColorMac",
+			face:     bungeeColorMac,
+			current:  ' ',
+			wantRune: '!',
+		},
+		{
+			name:     "notoSansJpReg",
+			face:     notoSansJpReg,
+			current:  ' ',
+			wantRune: '!',
+		},
+		{
+			name:     "arimoRegular",
+			face:     arimoRegular,
+			current:  ' ',
+			wantRune: '!',
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			wantIdx := face.CharIndex(tt.wantRune)
+			if gotRune, gotIdx := face.NextChar(tt.current); gotRune != tt.wantRune || gotIdx != wantIdx {
+				t.Errorf("Face.NextChar(%d) got = %v, %v, want %v, %v", tt.current, gotRune, gotIdx, tt.wantRune, wantIdx)
 			}
 		})
 	}
@@ -2837,6 +2897,103 @@ func TestFace_GlyphName(t *testing.T) {
 			if got, err := face.GlyphName(tt.idx); got != tt.want || err != tt.wantErr {
 				t.Errorf("Face.GlyphName() = %q, %v, want %v, %v", got, err, tt.want, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func TestFace_FSTypeFlags(t *testing.T) {
+	tests := []struct {
+		name string
+		face func() (testface, error)
+		want FSTypeFlag
+	}{
+		{
+			name: "nil face",
+			face: nilFace,
+			want: FsTypeFlagInstallableEmbedding,
+		},
+		{
+			name: "goRegular",
+			face: goRegular,
+			want: FsTypeFlagInstallableEmbedding,
+		},
+		{
+			name: "bungeeColorMac",
+			face: bungeeColorMac,
+			want: 1,
+		},
+		{
+			name: "bungeeColorWin",
+			face: bungeeColorWin,
+			want: 1,
+		},
+		{
+			name: "notoSansJpReg",
+			face: notoSansJpReg,
+			want: FsTypeFlagInstallableEmbedding,
+		},
+		{
+			name: "arimoRegular",
+			face: arimoRegular,
+			want: FsTypeFlagEditableEmbedding,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if got := face.FSTypeFlags(); got != tt.want {
+				t.Errorf("Face.FSTypeFlags() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFSTypeFlag_String(t *testing.T) {
+	tests := []struct {
+		name string
+		f    FSTypeFlag
+		want string
+	}{
+		{name: "InstallableEmbedding", f: FsTypeFlagInstallableEmbedding, want: "InstallableEmbedding"},
+		{name: "RestrictedLicenseEmbedding", f: FsTypeFlagRestrictedLicenseEmbedding, want: "RestrictedLicenseEmbedding"},
+		{name: "PreviewAndPrintEmbedding", f: FsTypeFlagPreviewAndPrintEmbedding, want: "PreviewAndPrintEmbedding"},
+		{name: "EditableEmbedding", f: FsTypeFlagEditableEmbedding, want: "EditableEmbedding"},
+		{name: "NoSubsetting", f: FsTypeFlagNoSubsetting, want: "NoSubsetting"},
+		{name: "BitmapEmbeddingOnly", f: FsTypeFlagBitmapEmbeddingOnly, want: "BitmapEmbeddingOnly"},
+		{name: "Unknown", f: 1, want: "Unknown"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.f.String(); got != tt.want {
+				t.Errorf("FSTypeFlag.String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRenderMode_String(t *testing.T) {
+	tests := []struct {
+		name string
+		r    RenderMode
+		want string
+	}{
+		{name: "Normal", r: RenderModeNormal, want: "Normal"},
+		{name: "Light", r: RenderModeLight, want: "Light"},
+		{name: "Mono", r: RenderModeMono, want: "Mono"},
+		{name: "LCD", r: RenderModeLCD, want: "LCD"},
+		{name: "LCDV", r: RenderModeLCDV, want: "LCDV"},
+		{name: "Unknown", r: 90102, want: "Unknown"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.r.String(); got != tt.want {
+				t.Errorf("RenderMode.String() = %v, want %v", got, tt.want)
 			}
 		})
 	}
