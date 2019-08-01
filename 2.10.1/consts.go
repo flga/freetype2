@@ -260,3 +260,103 @@ func (g GlyphFormat) String() string {
 		return "Unknown"
 	}
 }
+
+// KerningMode is an enumeration to specify the format of kerning values
+// returned by Face.Kerning().
+//
+// NOTE:
+// KerningModeDefault returns full pixel values; it also makes FreeType
+// heuristically scale down kerning distances at small ppem values so that they
+// don't become too big.
+//
+// Both KerningModeDefault and KerningModeUnfitted use the current horizontal
+// scaling factor (as set e.g. with SetCharSize) to convert font units to pixels.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_kerning_mode
+type KerningMode uint
+
+const (
+	//KerningModeDefault returns grid-fitted kerning distances in 26.6 fractional pixels.
+	KerningModeDefault KerningMode = C.FT_KERNING_DEFAULT
+	//KerningModeUnfitted returns un-grid-fitted kerning distances in 26.6 fractional pixels.
+	KerningModeUnfitted KerningMode = C.FT_KERNING_UNFITTED
+	//KerningModeUnscaled returns the kerning vector in original font units.
+	KerningModeUnscaled KerningMode = C.FT_KERNING_UNSCALED
+)
+
+func (x KerningMode) String() string {
+	switch x {
+	case KerningModeDefault:
+		return "Default"
+	case KerningModeUnfitted:
+		return "Unfitted"
+	case KerningModeUnscaled:
+		return "Unscaled"
+	default:
+		return "Unknown"
+	}
+}
+
+// RenderMode is an enumeration of the render modes supported by FreeType 2.
+// Each mode corresponds to a specific type of scanline conversion performed on
+// the outline.
+//
+// For bitmap fonts and embedded bitmaps the bitmap.PixelMode field in the
+// GlyphSlot struct gives the format of the returned bitmap.
+//
+// All modes except RenderModeMono use 256 levels of opacity, indicating pixel
+// coverage. Use linear alpha blending and gamma correction to correctly render
+// non-monochrome glyph bitmaps onto a surface.
+//
+// NOTE:
+// Should you define FT_CONFIG_OPTION_SUBPIXEL_RENDERING in your ftoption.h,
+// which enables patented ClearType-style rendering, the LCD-optimized glyph
+// bitmaps should be filtered to reduce color fringes inherent to this
+// technology. You can either set up LCD filtering with Library.SetLCDFilter()
+// or FaceProperties, or do the filtering yourself. The default FreeType LCD
+// rendering technology does not require filtering.
+//
+// The selected render mode only affects vector glyphs of a font. Embedded
+// bitmaps often have a different pixel mode like PixelModeMono. You can use
+// Bitmap.Convert() to transform them into 8-bit pixmaps.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_render_mode
+type RenderMode uint
+
+const (
+	// RenderModeNormal is the default render mode; it corresponds to 8-bit
+	// anti-aliased bitmaps.
+	RenderModeNormal RenderMode = C.FT_RENDER_MODE_NORMAL
+	// RenderModeLight is equivalent to RenderModeNormal. It is only defined as
+	// a separate value because render modes are also used indirectly to define
+	// hinting algorithm selectors. See LoadTarget for details.
+	RenderModeLight RenderMode = C.FT_RENDER_MODE_LIGHT
+	// RenderModeMono corresponds to 1-bit bitmaps (with 2 levels of opacity).
+	RenderModeMono RenderMode = C.FT_RENDER_MODE_MONO
+	// RenderModeLCD corresponds to horizontal RGB and BGR subpixel displays
+	// like LCD screens. It produces 8-bit bitmaps that are 3 times the width of
+	// the original glyph outline in pixels, and which use PixelModeLCD.
+	RenderModeLCD RenderMode = C.FT_RENDER_MODE_LCD
+	// RenderModeLCDV corresponds to vertical RGB and BGR subpixel displays
+	// (like PDA screens, rotated LCD displays, etc.). It produces 8-bit bitmaps
+	// that are 3 times the height of the original glyph outline in pixels and
+	// use PixelModeLCDV.
+	RenderModeLCDV RenderMode = C.FT_RENDER_MODE_LCD_V
+)
+
+func (r RenderMode) String() string {
+	switch r {
+	case RenderModeNormal:
+		return "Normal"
+	case RenderModeLight:
+		return "Light"
+	case RenderModeMono:
+		return "Mono"
+	case RenderModeLCD:
+		return "LCD"
+	case RenderModeLCDV:
+		return "LCDV"
+	default:
+		return "Unknown"
+	}
+}

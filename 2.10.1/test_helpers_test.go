@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+
+	"github.com/go-test/deep"
 )
 
 func testdata(parts ...string) string {
@@ -76,4 +78,13 @@ func notoSansJpBold() (testface, error) {
 }
 func arimoRegular() (testface, error) {
 	return openFace(testdata("arimo", "Arimo-Regular.ttf"))
+}
+
+func diff(a, b interface{}) []string {
+	orig := deep.CompareUnexportedFields
+	defer func() {
+		deep.CompareUnexportedFields = orig
+	}()
+	deep.CompareUnexportedFields = true
+	return deep.Equal(a, b)
 }

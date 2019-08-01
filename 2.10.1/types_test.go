@@ -7,66 +7,71 @@ import (
 	"github.com/flga/freetype2/2.10.1/truetype"
 )
 
+func Test_newBitmap(t *testing.T) {
+	got := newBitmap(emptyBitmap)
+	want := Bitmap{}
+	if diff := diff(got, want); diff != nil {
+		t.Errorf("newBitmap(empty) %v", diff)
+	}
+
+	face, err := goRegular()
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
+	}
+	defer face.Free()
+
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+		t.Fatalf("unable to set char size: %v", err)
+	}
+
+	if err := face.LoadGlyph(0x24, LoadRender|LoadColor); err != nil {
+		t.Fatalf("unable laod glyph: %v", err)
+	}
+
+	got = newBitmap(face.ptr.glyph.bitmap)
+	want = Bitmap{
+		Rows:      0xb,
+		Width:     0xa,
+		Pitch:     10,
+		Buffer:    goRegularGlyphBuf(0x24, 0),
+		NumGrays:  0x100,
+		PixelMode: PixelModeGray,
+	}
+	if diff := diff(got, want); diff != nil {
+		t.Errorf("newBitmap() %v", diff)
+	}
+}
+
 func Test_newCharMap(t *testing.T) {
 	if got, want := newCharMap(nil), (CharMap{}); got != want {
 		t.Errorf("newCharMap(nil) = %v, want %v", got, want)
 	}
 
-	tests := []struct {
-		name string
-		face func() (testface, error)
-		want []CharMap
-	}{
-		{
-			name: "Go Regular",
-			face: goRegular,
-			want: []CharMap{
-				{Format: 4, Language: truetype.MacLangEnglish, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: truetype.AppleEncodingUnicode2_0, index: 0, valid: true},
-				{Format: 6, Language: truetype.MacLangEnglish, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: truetype.MacEncodingRoman, index: 1, valid: true},
-				{Format: 4, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: truetype.MicrosoftEncodingUnicodeCs, index: 2, valid: true},
-			},
-		},
-		{
-			name: "Bungee Layers Regular",
-			face: bungeeLayersReg,
-			want: []CharMap{
-				{Format: 4, Language: truetype.MacLangEnglish, Encoding: EncodingUnicode, PlatformID: truetype.PlatformAppleUnicode, EncodingID: truetype.AppleEncodingUnicode2_0, index: 0, valid: true},
-				{Format: 6, Language: truetype.MacLangEnglish, Encoding: EncodingAppleRoman, PlatformID: truetype.PlatformMacintosh, EncodingID: truetype.MacEncodingRoman, index: 1, valid: true},
-				{Format: 4, Language: 0, Encoding: EncodingUnicode, PlatformID: truetype.PlatformMicrosoft, EncodingID: truetype.MicrosoftEncodingUnicodeCs, index: 2, valid: true},
-				{Format: -1, Language: 0, Encoding: EncodingAdobeStandard, PlatformID: truetype.PlatformAdobe, EncodingID: truetype.AdobeEncodingStandard, index: 3, valid: true},
-			},
-		},
+	face, err := goRegular()
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
 	}
+	defer face.Free()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			face, err := tt.face()
-			if err != nil {
-				t.Fatalf("unable to load face: %v", err)
-			}
-			defer face.Free()
-
-			gotC := face.charmaps()
-			if len(gotC) != len(tt.want) {
-				t.Fatalf("got %d maps, want %d", len(gotC), len(tt.want))
-			}
-
-			got := make([]CharMap, len(gotC))
-			for i, c := range gotC {
-				got[i] = newCharMap(c)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("got %v, want %v", got, tt.want)
-			}
-		})
+	got := newCharMap(face.charmaps()[1])
+	want := CharMap{
+		Format:     6,
+		Language:   truetype.MacLangEnglish,
+		Encoding:   EncodingAppleRoman,
+		PlatformID: truetype.PlatformMacintosh,
+		EncodingID: truetype.MacEncodingRoman,
+		index:      1,
+		valid:      true,
+	}
+	if diff := diff(got, want); diff != nil {
+		t.Errorf("newCharMap() %v", diff)
 	}
 }
 
 func TestCharMap_Index(t *testing.T) {
 	t.Run("invalid", func(t *testing.T) {
 		want, wantOk := 0, false
-		var cmap CharMap
-		got, gotOk := cmap.Index()
+		got, gotOk := (CharMap{}).Index()
 		if got != want || gotOk != wantOk {
 			t.Errorf("CharMap.Index() = %v, %v, want %v, %v", got, gotOk, want, wantOk)
 		}
@@ -88,52 +93,136 @@ func TestCharMap_Index(t *testing.T) {
 	})
 }
 
-func TestSizeRequestType_String(t *testing.T) {
-	if got, want := SizeRequestTypeNominal.String(), "Nominal"; got != want {
-		t.Errorf("SizeRequestTypeNominal.String() = %v, want %v", got, want)
+func Test_newSize(t *testing.T) {
+	if got, want := newSize(nil), (Size{}); got != want {
+		t.Errorf("newSize(nil) = %v, want %v", got, want)
 	}
-	if got, want := SizeRequestTypeRealDim.String(), "RealDim"; got != want {
-		t.Errorf("SizeRequestTypeRealDim.String() = %v, want %v", got, want)
+	face, err := goRegular()
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
 	}
-	if got, want := SizeRequestTypeBBox.String(), "BBox"; got != want {
-		t.Errorf("SizeRequestTypeBBox.String() = %v, want %v", got, want)
+	defer face.Free()
+
+	if err := face.SetCharSize(20<<6, 20<<6, 72, 72); err != nil {
+		t.Fatalf("unable to set char size: %v", err)
 	}
-	if got, want := SizeRequestTypeCell.String(), "Cell"; got != want {
-		t.Errorf("SizeRequestTypeCell.String() = %v, want %v", got, want)
+
+	got := newSize(face.ptr.size)
+	want := Size{
+		SizeMetrics{
+			XPpem:      20,
+			YPpem:      20,
+			XScale:     40960,
+			YScale:     40960,
+			Ascender:   1216,
+			Descender:  -320,
+			Height:     1472,
+			MaxAdvance: 1408,
+		},
 	}
-	if got, want := SizeRequestTypeScales.String(), "Scales"; got != want {
-		t.Errorf("SizeRequestTypeScales.String() = %v, want %v", got, want)
-	}
-	if got, want := SizeRequestType(8912387).String(), "Unknown"; got != want {
-		t.Errorf("8912387.String() = %v, want %v", got, want)
+	if diff := diff(got, want); diff != nil {
+		t.Errorf("newSize() %v", diff)
 	}
 }
 
-func TestOutlineFlag_String(t *testing.T) {
-	var x OutlineFlag
-	if got, want := x.String(), ""; got != want {
-		t.Errorf("OutlineFlag.String(0) = %v, want %v", got, want)
+func Test_newGlyphSlot(t *testing.T) {
+	got := newGlyphSlot(nil)
+	want := GlyphSlot{}
+	if diff := diff(got, want); diff != nil {
+		t.Errorf("newGlyphSlot(nil) = %v", diff)
 	}
 
-	x = OutlineIgnoreDropouts
-	if got, want := x.String(), "IgnoreDropouts"; got != want {
-		t.Errorf("OutlineFlag.String(OutlineIgnoreDropouts) = %v, want %v", got, want)
+	face, err := notoSansJpReg() // noto has both horizontal and vertical modes
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
+	}
+	defer face.Free()
+
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+		t.Fatalf("unable to set char size: %v", err)
 	}
 
-	x = OutlineEvenOddFill | OutlineIncludeStubs
-	if got, want := x.String(), "EvenOddFill|IncludeStubs"; got != want {
-		t.Errorf("OutlineFlag.String(OutlineEvenOddFill | OutlineIncludeStubs) = %v, want %v", got, want)
+	if err := face.LoadGlyph(0x22, LoadRender|LoadColor); err != nil {
+		t.Fatalf("unable laod glyph: %v", err)
 	}
 
-	x = OutlineOwner | OutlineIgnoreDropouts | OutlineHighPrecision
-	if got, want := x.String(), "Owner|IgnoreDropouts|HighPrecision"; got != want {
-		t.Errorf("OutlineFlag.String(OutlineOwner | OutlineIgnoreDropouts | OutlineHighPrecision) = %v, want %v", got, want)
+	got = newGlyphSlot(face.ptr.glyph)
+	want = GlyphSlot{
+		GlyphIndex: 0x22,
+		Metrics: GlyphMetrics{
+			Width:        576,
+			Height:       704,
+			HoriBearingX: 0,
+			HoriBearingY: 704,
+			HoriAdvance:  576,
+			VertBearingX: -320,
+			VertBearingY: 128,
+			VertAdvance:  896,
+		},
+		LinearHoriAdvance: 556923,
+		LinearVertAdvance: 917500,
+		Advance:           Vector26_6{X: 576, Y: 0},
+		Format:            GlyphFormatBitmap,
+		Bitmap:            Bitmap{}, // separate test
+		BitmapLeft:        0,
+		BitmapTop:         11,
+		Outline:           Outline{}, // separate test
+		NumSubglyphs:      0,
+		LsbDelta:          0,
+		RsbDelta:          0,
 	}
 
-	x = OutlineOwner | OutlineEvenOddFill | OutlineReverseFill |
-		OutlineIgnoreDropouts | OutlineSmartDropouts | OutlineIncludeStubs |
-		OutlineHighPrecision | OutlineSinglePass
-	if got, want := x.String(), "Owner|EvenOddFill|ReverseFill|IgnoreDropouts|SmartDropouts|IncludeStubs|HighPrecision|SinglePass"; got != want {
-		t.Errorf("OutlineFlag.String(OutlineOwner | OutlineEvenOddFill | OutlineReverseFill | OutlineIgnoreDropouts | OutlineSmartDropouts | OutlineIncludeStubs | OutlineHighPrecision | OutlineSinglePass) = %v, want %v", got, want)
+	// don't care about the actual values, separate tests, just make sure
+	// they're not 0 vals
+	if reflect.DeepEqual(got.Bitmap, Bitmap{}) {
+		t.Errorf("newGlyphSlot() want non-zero %T", Bitmap{})
+	}
+	if reflect.DeepEqual(got.Outline, Outline{}) {
+		t.Errorf("newGlyphSlot() want non-zero %T", Outline{})
+	}
+	// set to 0 for comparison
+	got.Bitmap = Bitmap{}
+	got.Outline = Outline{}
+
+	if diff := diff(got, want); diff != nil {
+		t.Errorf("newGlyphSlot() %v", diff)
+	}
+}
+
+func Test_newOutline(t *testing.T) {
+	face, err := notoSansJpReg()
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
+	}
+	defer face.Free()
+
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+		t.Fatalf("unable to set char size: %v", err)
+	}
+
+	if err := face.LoadGlyph(0x22, LoadRender|LoadColor); err != nil {
+		t.Fatalf("unable laod glyph: %v", err)
+	}
+
+	got := newOutline(face.ptr.glyph.outline)
+	want := Outline{
+		Points: []Vector{
+			{X: 0x000000ab, Y: 0x00000102}, {X: 0x000000cb, Y: 0x00000178}, {X: 0x000000e2, Y: 0x000001cf},
+			{X: 0x000000f8, Y: 0x00000222}, {X: 0x0000010c, Y: 0x0000027c}, {X: 0x00000110, Y: 0x0000027c},
+			{X: 0x00000126, Y: 0x00000223}, {X: 0x0000013a, Y: 0x000001cf}, {X: 0x00000152, Y: 0x00000178},
+			{X: 0x00000172, Y: 0x00000102}, {X: 0x000001c5, Y: 0x00000000}, {X: 0x0000021d, Y: 0x00000000},
+			{X: 0x0000013e, Y: 0x000002c0}, {X: 0x000000e1, Y: 0x000002c0}, {X: 0x00000002, Y: 0x00000000},
+			{X: 0x00000056, Y: 0x00000000}, {X: 0x00000096, Y: 0x000000c0}, {X: 0x00000186, Y: 0x000000c0},
+		},
+		Tags: []byte{
+			0x01, 0x01, 0x02, 0x02, 0x01, 0x01, 0x02, 0x02, 0x01,
+			0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+		},
+		Contours: []int16{0x0009, 0x0011},
+		Flags:    0x00000104,
+	}
+
+	if diff := diff(got, want); diff != nil {
+		t.Errorf("newOutline() %v", diff)
 	}
 }

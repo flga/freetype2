@@ -10,537 +10,12 @@ import (
 	"github.com/flga/freetype2/2.10.1/fixed"
 )
 
-// SubGlyphFlag is a list of constants describing subglyphs.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_subglyph_flag_xxx
-type SubGlyphFlag uint
-
-// Please refer to the ‘glyf’ table description in the OpenType specification
-// for the meaning of the various flags (which get synthesized for non-OpenType
-// subglyphs).
-//
-// https://docs.microsoft.com/en-us/typography/opentype/spec/glyf#composite-glyph-description
-const (
-	SubGlyphFlagArgsAreWords    SubGlyphFlag = C.FT_SUBGLYPH_FLAG_ARGS_ARE_WORDS
-	SubGlyphFlagArgsAreXyValues SubGlyphFlag = C.FT_SUBGLYPH_FLAG_ARGS_ARE_XY_VALUES
-	SubGlyphFlagRoundXyToGrid   SubGlyphFlag = C.FT_SUBGLYPH_FLAG_ROUND_XY_TO_GRID
-	SubGlyphFlagScale           SubGlyphFlag = C.FT_SUBGLYPH_FLAG_SCALE
-	SubGlyphFlagXyScale         SubGlyphFlag = C.FT_SUBGLYPH_FLAG_XY_SCALE
-	SubGlyphFlag2x2             SubGlyphFlag = C.FT_SUBGLYPH_FLAG_2X2
-	SubGlyphFlagUseMyMetrics    SubGlyphFlag = C.FT_SUBGLYPH_FLAG_USE_MY_METRICS
-)
-
-func (x SubGlyphFlag) String() string {
-	// the maximum concatenated len, at the time of writing, is 74.
-	s := make([]byte, 0, 74)
-
-	if x&SubGlyphFlagArgsAreWords > 0 {
-		s = append(s, []byte("ArgsAreWords|")...)
-	}
-	if x&SubGlyphFlagArgsAreXyValues > 0 {
-		s = append(s, []byte("ArgsAreXyValues|")...)
-	}
-	if x&SubGlyphFlagRoundXyToGrid > 0 {
-		s = append(s, []byte("RoundXyToGrid|")...)
-	}
-	if x&SubGlyphFlagScale > 0 {
-		s = append(s, []byte("Scale|")...)
-	}
-	if x&SubGlyphFlagXyScale > 0 {
-		s = append(s, []byte("XyScale|")...)
-	}
-	if x&SubGlyphFlag2x2 > 0 {
-		s = append(s, []byte("2x2|")...)
-	}
-	if x&SubGlyphFlagUseMyMetrics > 0 {
-		s = append(s, []byte("UseMyMetrics|")...)
-	}
-
-	if len(s) == 0 {
-		return ""
-	}
-
-	return string(s[:len(s)-1]) // trim the leading |
-}
-
-// FSTypeFlag is a list of bit flags used in the fsType field of the OS/2 table
-// in a TrueType or OpenType font and the FSType entry in a PostScript font.
-// These bit flags are returned by Face,FSTypeFlags(); they inform client
-// applications of embedding and subsetting restrictions associated with a font.
-//
-// See https://www.adobe.com/content/dam/Adobe/en/devnet/acrobat/pdfs/FontPolicies.pdf
-// for more details.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_fstype_xxx
-type FSTypeFlag uint
-
-const (
-	// FsTypeFlagInstallableEmbedding fonts with no fsType bit set may be
-	// embedded and permanently installed on the remote system by an application.
-	FsTypeFlagInstallableEmbedding FSTypeFlag = C.FT_FSTYPE_INSTALLABLE_EMBEDDING
-	// FsTypeFlagRestrictedLicenseEmbedding fonts that have only this bit set
-	// must not be modified, embedded or exchanged in any manner without first
-	// obtaining permission of the font software copyright owner.
-	FsTypeFlagRestrictedLicenseEmbedding FSTypeFlag = C.FT_FSTYPE_RESTRICTED_LICENSE_EMBEDDING
-	// FsTypeFlagPreviewAndPrintEmbedding the font may be embedded and
-	// temporarily loaded on the remote system. Documents containing Preview &
-	// Print fonts must be opened ‘read-only’; no edits can be applied to the
-	// document.
-	FsTypeFlagPreviewAndPrintEmbedding FSTypeFlag = C.FT_FSTYPE_PREVIEW_AND_PRINT_EMBEDDING
-	// FsTypeFlagEditableEmbedding the font may be embedded but must only be
-	// installed temporarily on other systems. In contrast to Preview & Print
-	// fonts, documents containing editable fonts may be opened for reading,
-	// editing is permitted, and changes may be saved.
-	FsTypeFlagEditableEmbedding FSTypeFlag = C.FT_FSTYPE_EDITABLE_EMBEDDING
-	// FsTypeFlagNoSubsetting the font may not be subsetted prior to embedding.
-	FsTypeFlagNoSubsetting FSTypeFlag = C.FT_FSTYPE_NO_SUBSETTING
-	// FsTypeFlagBitmapEmbeddingOnly only bitmaps contained in the font may be
-	// embedded; no outline data may be embedded. If there are no bitmaps
-	// available in the font, then the font is unembeddable.
-	FsTypeFlagBitmapEmbeddingOnly FSTypeFlag = C.FT_FSTYPE_BITMAP_EMBEDDING_ONLY
-)
-
-func (x FSTypeFlag) String() string {
-	if x == FsTypeFlagInstallableEmbedding {
-		return "InstallableEmbedding"
-	}
-
-	// the maximum concatenated len, at the time of writing, is 103.
-	s := make([]byte, 0, 103)
-
-	if x&FsTypeFlagRestrictedLicenseEmbedding > 0 {
-		s = append(s, []byte("RestrictedLicenseEmbedding|")...)
-	}
-	if x&FsTypeFlagPreviewAndPrintEmbedding > 0 {
-		s = append(s, []byte("PreviewAndPrintEmbedding|")...)
-	}
-	if x&FsTypeFlagEditableEmbedding > 0 {
-		s = append(s, []byte("EditableEmbedding|")...)
-	}
-	if x&FsTypeFlagNoSubsetting > 0 {
-		s = append(s, []byte("NoSubsetting|")...)
-	}
-	if x&FsTypeFlagBitmapEmbeddingOnly > 0 {
-		s = append(s, []byte("BitmapEmbeddingOnly|")...)
-	}
-
-	return string(s[:len(s)-1]) // trim the leading |
-}
-
-// KerningMode is an enumeration to specify the format of kerning values
-// returned by Face.Kerning().
-//
-// NOTE:
-// KerningModeDefault returns full pixel values; it also makes FreeType
-// heuristically scale down kerning distances at small ppem values so that they
-// don't become too big.
-//
-// Both KerningModeDefault and KerningModeUnfitted use the current horizontal
-// scaling factor (as set e.g. with SetCharSize) to convert font units to pixels.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_kerning_mode
-type KerningMode uint
-
-const (
-	//KerningModeDefault returns grid-fitted kerning distances in 26.6 fractional pixels.
-	KerningModeDefault KerningMode = C.FT_KERNING_DEFAULT
-	//KerningModeUnfitted returns un-grid-fitted kerning distances in 26.6 fractional pixels.
-	KerningModeUnfitted KerningMode = C.FT_KERNING_UNFITTED
-	//KerningModeUnscaled returns the kerning vector in original font units.
-	KerningModeUnscaled KerningMode = C.FT_KERNING_UNSCALED
-)
-
-// RenderMode is an enumeration of the render modes supported by FreeType 2.
-// Each mode corresponds to a specific type of scanline conversion performed on
-// the outline.
-//
-// For bitmap fonts and embedded bitmaps the bitmap.PixelMode field in the
-// GlyphSlot struct gives the format of the returned bitmap.
-//
-// All modes except RenderModeMono use 256 levels of opacity, indicating pixel
-// coverage. Use linear alpha blending and gamma correction to correctly render
-// non-monochrome glyph bitmaps onto a surface.
-//
-// NOTE:
-// Should you define FT_CONFIG_OPTION_SUBPIXEL_RENDERING in your ftoption.h,
-// which enables patented ClearType-style rendering, the LCD-optimized glyph
-// bitmaps should be filtered to reduce color fringes inherent to this
-// technology. You can either set up LCD filtering with Library.SetLCDFilter()
-// or FaceProperties, or do the filtering yourself. The default FreeType LCD
-// rendering technology does not require filtering.
-//
-// The selected render mode only affects vector glyphs of a font. Embedded
-// bitmaps often have a different pixel mode like PixelModeMono. You can use
-// Bitmap.Convert() to transform them into 8-bit pixmaps.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_render_mode
-type RenderMode uint
-
-const (
-	// RenderModeNormal is the default render mode; it corresponds to 8-bit
-	// anti-aliased bitmaps.
-	RenderModeNormal RenderMode = C.FT_RENDER_MODE_NORMAL
-	// RenderModeLight is equivalent to RenderModeNormal. It is only defined as
-	// a separate value because render modes are also used indirectly to define
-	// hinting algorithm selectors. See LoadTarget for details.
-	RenderModeLight RenderMode = C.FT_RENDER_MODE_LIGHT
-	// RenderModeMono corresponds to 1-bit bitmaps (with 2 levels of opacity).
-	RenderModeMono RenderMode = C.FT_RENDER_MODE_MONO
-	// RenderModeLCD corresponds to horizontal RGB and BGR subpixel displays
-	// like LCD screens. It produces 8-bit bitmaps that are 3 times the width of
-	// the original glyph outline in pixels, and which use PixelModeLCD.
-	RenderModeLCD RenderMode = C.FT_RENDER_MODE_LCD
-	// RenderModeLCDV corresponds to vertical RGB and BGR subpixel displays
-	// (like PDA screens, rotated LCD displays, etc.). It produces 8-bit bitmaps
-	// that are 3 times the height of the original glyph outline in pixels and
-	// use PixelModeLCDV.
-	RenderModeLCDV RenderMode = C.FT_RENDER_MODE_LCD_V
-)
-
-func (r RenderMode) String() string {
-	switch r {
-	case RenderModeNormal:
-		return "Normal"
-	case RenderModeLight:
-		return "Light"
-	case RenderModeMono:
-		return "Mono"
-	case RenderModeLCD:
-		return "LCD"
-	case RenderModeLCDV:
-		return "LCDV"
-	default:
-		return "Unknown"
-	}
-}
-
 // GlyphIndex is the index of the glyph in the font file. For CID-keyed fonts
 // (either in PS or in CFF format) it specifies the CID value.
 type GlyphIndex uint
 
 // MissingGlyph is the GlyphIndex for the undefined char code.
 const MissingGlyph GlyphIndex = 0
-
-// LoadFlag is a list of bit field constants for LoadGlyph to indicate what
-// kind of operations to perform during glyph loading.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_load_xxx
-type LoadFlag int32
-
-const (
-	// LoadDefault is used as the default glyph load operation. In this case, the following happens:
-	//
-	// 1 - FreeType looks for a bitmap for the glyph corresponding to the face's current size. If one is found, the function
-	// returns. The bitmap data can be accessed from the glyph slot (see note below).
-	// 2 - If no embedded bitmap is searched for or found, FreeType looks for a scalable outline. If one is found, it is
-	// loaded from the font file, scaled to device pixels, then ‘hinted’ to the pixel grid in order to optimize it. The
-	// outline data can be accessed from the glyph slot (see note below).
-	//
-	// Note that by default the glyph loader doesn't render outlines into bitmaps. The following flags are used to modify
-	// this default behaviour to more specific and useful cases.
-	LoadDefault LoadFlag = C.FT_LOAD_DEFAULT
-	// LoadNoScale don't scale the loaded outline glyph but keep it in font units.
-	//
-	// This flag implies LoadNoHinting and LoadNoBitmap, and unsets LoadRender.
-	//
-	// If the font is ‘tricky’ (see FaceFlagTricky for more), using LoadNoScale usually yields meaningless outlines
-	// because the subglyphs must be scaled and positioned with hinting instructions. This can be solved by loading the
-	// font without LoadNoScale and setting the character size to face.UnitsPerEM().
-	LoadNoScale LoadFlag = C.FT_LOAD_NO_SCALE
-	// LoadNoHinting disables hinting. This generally generates ‘blurrier’ bitmap glyphs when the glyph are rendered
-	// in any of the anti-aliased modes. See also the note below.
-	//
-	// This flag is implied by LoadNoScale.
-	LoadNoHinting LoadFlag = C.FT_LOAD_NO_HINTING
-	// LoadRender call RenderGlyph after the glyph is loaded. By default, the glyph is rendered in RenderModeNormal mode.
-	// This can be overridden by any LoadTarget or LoadMonochrome.
-	//
-	// This flag is unset by LoadNoScale.
-	LoadRender LoadFlag = C.FT_LOAD_RENDER
-	// LoadNoBitmap ignores bitmap strikes when loading. Bitmap-only fonts ignore this flag.
-	//
-	// LoadNoScale always sets this flag.
-	LoadNoBitmap LoadFlag = C.FT_LOAD_NO_BITMAP
-	// LoadVerticalLayout load the glyph for vertical text layout. In particular, the advance value in the GlyphSlot is
-	// set to the VertAdvance value of the metrics field.
-	//
-	// If the face does not have FaceFlagVertical, you shouldn't use this flag currently. Reason is that in this case
-	// vertical metrics get synthesized, and those values are not always consistent across various font formats.
-	LoadVerticalLayout LoadFlag = C.FT_LOAD_VERTICAL_LAYOUT
-	// LoadForceAutohint prefer the auto-hinter over the font's native hinter. See also the note below.
-	LoadForceAutohint LoadFlag = C.FT_LOAD_FORCE_AUTOHINT
-	// LoadPedantic makes the font driver perform pedantic verifications during glyph loading and hinting. This is
-	// mostly used to detect broken glyphs in fonts. By default, FreeType tries to handle broken fonts also.
-	//
-	// In particular, errors from the TrueType bytecode engine are not passed to the application if this flag is not set;
-	// this might result in partially hinted or distorted glyphs in case a glyph's bytecode is buggy.
-	LoadPedantic LoadFlag = C.FT_LOAD_PEDANTIC
-	// LoadNoRecurse don't load composite glyphs recursively. Instead, the font driver fills the NumSubglyph and
-	// Subglyphs values of the glyph slot; it also sets glyph.Format to GlyphFormatComposite. The description of
-	// subglyphs can then be accessed with GetSubGlyphInfo.
-	//
-	// Don't use this flag for retrieving metrics information since some font drivers only return rudimentary data.
-	//
-	// This flag implies LoadNoScale and LoadIgnoreTransform.
-	LoadNoRecurse LoadFlag = C.FT_LOAD_NO_RECURSE
-	// LoadIgnoreTransform ignore the transform matrix set by SetTransform.
-	LoadIgnoreTransform LoadFlag = C.FT_LOAD_IGNORE_TRANSFORM
-	// LoadMonochrome is used with LoadRender to indicate that you want to render an outline glyph to a 1-bit monochrome
-	// bitmap glyph, with 8 pixels packed into each byte of the bitmap data.
-	//
-	// Note that this has no effect on the hinting algorithm used. You should rather use LoadTargetMono so that the
-	// monochrome-optimized hinting algorithm is used.
-	LoadMonochrome LoadFlag = C.FT_LOAD_MONOCHROME
-	// LoadLinearDesign keep LinearHoriAdvance and LinearVertAdvance fields of GlyphSlot in font units. See GlyphSlot
-	// for details.
-	LoadLinearDesign LoadFlag = C.FT_LOAD_LINEAR_DESIGN
-	// LoadNoAutohint disables the auto-hinter. See also the note below.
-	LoadNoAutohint LoadFlag = C.FT_LOAD_NO_AUTOHINT
-	// LoadColor loads colored glyphs. There are slight differences depending on the font format.
-	//
-	// [Since 2.5] Load embedded color bitmap images. The resulting color bitmaps, if available, will have the
-	// PixelModeBGRA format, with pre-multiplied color channels. If the flag is not set and color bitmaps are found,
-	// they are converted to 256-level gray bitmaps, using the PixelModeGray format.
-	//
-	// [Since 2.10, experimental] If the glyph index contains an entry in the face's ‘COLR’ table with a ‘CPAL’ palette
-	// table (as defined in the OpenType specification), make RenderGlyph provide a default blending of the color glyph
-	// layers associated with the glyph index, using the same bitmap format as embedded color bitmap images. This is
-	// mainly for convenience; for full control of color layers use GetColorGlyphLayer and FreeType's color functions
-	// like PaletteSelect instead of setting LoadColor for rendering so that the client application can handle blending
-	// by itself.
-	LoadColor LoadFlag = C.FT_LOAD_COLOR
-	// LoadComputeMetrics [Since 2.6.1] Compute glyph metrics from the glyph data, without the use of bundled metrics
-	// tables (for example, the ‘hdmx’ table in TrueType fonts). This flag is mainly used by font validating or font
-	// editing applications, which need to ignore, verify, or edit those tables.
-	//
-	// Currently, this flag is only implemented for TrueType fonts.
-	LoadComputeMetrics LoadFlag = C.FT_LOAD_COMPUTE_METRICS
-	// LoadBitmapMetricsOnly [Since 2.7.1] request loading of the metrics and bitmap image information of a (possibly
-	// embedded) bitmap glyph without allocating or copying the bitmap image data itself. No effect if the target glyph
-	// is not a bitmap image.
-	//
-	// This flag unsets LoadRender.
-	LoadBitmapMetricsOnly LoadFlag = C.FT_LOAD_BITMAP_METRICS_ONLY
-)
-
-func (x LoadFlag) String() string {
-	// the maximum concatenated len, at the time of writing, is 180.
-	s := make([]byte, 0, 180)
-
-	if x == LoadDefault {
-		return "Default"
-	}
-
-	if x&LoadNoScale > 0 {
-		s = append(s, []byte("NoScale|")...)
-	}
-	if x&LoadNoHinting > 0 {
-		s = append(s, []byte("NoHinting|")...)
-	}
-	if x&LoadRender > 0 {
-		s = append(s, []byte("Render|")...)
-	}
-	if x&LoadNoBitmap > 0 {
-		s = append(s, []byte("NoBitmap|")...)
-	}
-	if x&LoadVerticalLayout > 0 {
-		s = append(s, []byte("VerticalLayout|")...)
-	}
-	if x&LoadForceAutohint > 0 {
-		s = append(s, []byte("ForceAutohint|")...)
-	}
-	if x&LoadPedantic > 0 {
-		s = append(s, []byte("Pedantic|")...)
-	}
-	if x&LoadNoRecurse > 0 {
-		s = append(s, []byte("NoRecurse|")...)
-	}
-	if x&LoadIgnoreTransform > 0 {
-		s = append(s, []byte("IgnoreTransform|")...)
-	}
-	if x&LoadMonochrome > 0 {
-		s = append(s, []byte("Monochrome|")...)
-	}
-	if x&LoadLinearDesign > 0 {
-		s = append(s, []byte("LinearDesign|")...)
-	}
-	if x&LoadNoAutohint > 0 {
-		s = append(s, []byte("NoAutohint|")...)
-	}
-	if x&LoadColor > 0 {
-		s = append(s, []byte("Color|")...)
-	}
-	if x&LoadComputeMetrics > 0 {
-		s = append(s, []byte("ComputeMetrics|")...)
-	}
-	if x&LoadBitmapMetricsOnly > 0 {
-		s = append(s, []byte("BitmapMetricsOnly|")...)
-	}
-	if len(s) == 0 {
-		return ""
-	}
-
-	return string(s[:len(s)-1]) // trim the leading |
-}
-
-// FaceFlag is a list of bit flags of a given face.
-// They inform client applications of properties of the corresponding face.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_face_flag_xxx
-type FaceFlag int
-
-const (
-	// FaceFlagScalable the face contains outline glyphs. Note that a face can contain bitmap strikes also, i.e., a
-	// face can have both this flag and FaceFlagFixedSizes set.
-	FaceFlagScalable FaceFlag = C.FT_FACE_FLAG_SCALABLE
-
-	// FaceFlagFixedSizes the face contains bitmap strikes. See also the Face.NumFixedSizes() and Face.AvailableSizes().
-	FaceFlagFixedSizes FaceFlag = C.FT_FACE_FLAG_FIXED_SIZES
-
-	// FaceFlagFixedWidth the face contains fixed-width characters (like Courier, Lucida, MonoType, etc.).
-	FaceFlagFixedWidth FaceFlag = C.FT_FACE_FLAG_FIXED_WIDTH
-
-	// FaceFlagSfnt the face uses the SFNT storage scheme. For now, this means TrueType and OpenType.
-	FaceFlagSfnt FaceFlag = C.FT_FACE_FLAG_SFNT
-
-	// FaceFlagHorizontal the face contains horizontal glyph metrics. This should be set for all common formats.
-	FaceFlagHorizontal FaceFlag = C.FT_FACE_FLAG_HORIZONTAL
-
-	// FaceFlagVertical the face contains vertical glyph metrics. This is only available in some formats, not all of them.
-	FaceFlagVertical FaceFlag = C.FT_FACE_FLAG_VERTICAL
-
-	// FaceFlagKerning the face contains kerning information. If set, the kerning distance can be retrieved using the
-	// GetKerning() method.
-	// Otherwise the function always returnS the vector (0,0). Note that FreeType doesn't handle kerning data from the
-	// SFNT ‘GPOS’ table (as present in many OpenType fonts).
-	FaceFlagKerning FaceFlag = C.FT_FACE_FLAG_KERNING
-
-	// FaceFlagMultipleMasters the face contains multiple masters and is capable of interpolating between them.
-	// Supported formats are Adobe MM, TrueType GX, and OpenType variation fonts.
-	//
-	// See https://www.freetype.org/freetype2/docs/reference/ft2-multiple_masters.html
-	FaceFlagMultipleMasters FaceFlag = C.FT_FACE_FLAG_MULTIPLE_MASTERS
-
-	// FaceFlagGlyphNames the face contains glyph names, which can be retrieved using GetGlyphName().
-	// Note that some TrueType fonts contain broken glyph name tables. Use HasPSGlyphNames() when needed.
-	FaceFlagGlyphNames FaceFlag = C.FT_FACE_FLAG_GLYPH_NAMES
-
-	// FaceFlagHinter the font driver has a hinting machine of its own. For example, with TrueType fonts, it makes sense
-	// to use data from the SFNT ‘gasp’ table only if the native TrueType hinting engine (with the bytecode interpreter)
-	// is available and active.
-	FaceFlagHinter FaceFlag = C.FT_FACE_FLAG_HINTER
-
-	// FaceFlagCidKeyed The face is CID-keyed. In that case, the face is not accessed by glyph indices but by CID values.
-	// For subsetted CID-keyed fonts this has the consequence that not all index values are a valid argument to
-	// LoadGlyph(). Only the CID values for which corresponding glyphs in the subsetted font exist make LoadGlyph()
-	// return successfully; in all other cases you get an ErrInvalidArgument error.
-	//
-	// Note that CID-keyed fonts that are in an SFNT wrapper (this is, all OpenType/CFF fonts) don't have this flag set
-	// since the glyphs are accessed in the normal way (using contiguous indices); the ‘CID-ness’ isn't visible to the
-	// application.
-	FaceFlagCidKeyed FaceFlag = C.FT_FACE_FLAG_CID_KEYED
-
-	// FaceFlagTricky the face is ‘tricky’, this is, it always needs the font format's native hinting engine to get a
-	// reasonable result.
-	// A typical example is the old Chinese font mingli.ttf (but not mingliu.ttc) that uses TrueType bytecode
-	// instructions to move and scale all of its subglyphs.
-	//
-	// It is not possible to auto-hint such fonts using LoadForceAutohint; it will also ignore LoadNoHinting. You have
-	// to set both LoadNoHinting and LoadNoAutohint to really disable hinting; however, you probably never want this
-	// except for demonstration purposes.
-	//
-	// Currently, there are about a dozen TrueType fonts in the list of tricky fonts; they are hard-coded in file ttobjs.c.
-	FaceFlagTricky FaceFlag = C.FT_FACE_FLAG_TRICKY
-
-	// FaceFlagColor the face has color glyph tables. See LoadColor for more information.
-	// [Since 2.5.1].
-	FaceFlagColor FaceFlag = C.FT_FACE_FLAG_COLOR
-
-	// FaceFlagVariation [Since 2.9] set if the current face (or named instance) has been altered with
-	// SetMMDesignCoordinates, SetVarDesignCoordinates, or SetVarBlend_Coordinates.
-	// This flag is unset by a call to SetNamedInstance.
-	FaceFlagVariation FaceFlag = C.FT_FACE_FLAG_VARIATION
-)
-
-func (x FaceFlag) String() string {
-	s := make([]byte, 0, 130) // len = sum of all the strings below.
-
-	if x&FaceFlagScalable > 0 {
-		s = append(s, []byte("Scalable|")...)
-	}
-	if x&FaceFlagFixedSizes > 0 {
-		s = append(s, []byte("FixedSizes|")...)
-	}
-	if x&FaceFlagFixedWidth > 0 {
-		s = append(s, []byte("FixedWidth|")...)
-	}
-	if x&FaceFlagSfnt > 0 {
-		s = append(s, []byte("Sfnt|")...)
-	}
-	if x&FaceFlagHorizontal > 0 {
-		s = append(s, []byte("Horizontal|")...)
-	}
-	if x&FaceFlagVertical > 0 {
-		s = append(s, []byte("Vertical|")...)
-	}
-	if x&FaceFlagKerning > 0 {
-		s = append(s, []byte("Kerning|")...)
-	}
-	if x&FaceFlagMultipleMasters > 0 {
-		s = append(s, []byte("MultipleMasters|")...)
-	}
-	if x&FaceFlagGlyphNames > 0 {
-		s = append(s, []byte("GlyphNames|")...)
-	}
-	if x&FaceFlagHinter > 0 {
-		s = append(s, []byte("Hinter|")...)
-	}
-	if x&FaceFlagCidKeyed > 0 {
-		s = append(s, []byte("CidKeyed|")...)
-	}
-	if x&FaceFlagTricky > 0 {
-		s = append(s, []byte("Tricky|")...)
-	}
-	if x&FaceFlagColor > 0 {
-		s = append(s, []byte("Color|")...)
-	}
-	if x&FaceFlagVariation > 0 {
-		s = append(s, []byte("Variation|")...)
-	}
-
-	if len(s) == 0 {
-		return ""
-	}
-	return string(s[:len(s)-1]) // trim the leading |
-}
-
-// StyleFlag is a list of bit flags to indicate the style of a given face.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_style_flag_xxx
-type StyleFlag int
-
-const (
-	// StyleFlagItalic the face style is italic or oblique
-	StyleFlagItalic StyleFlag = C.FT_STYLE_FLAG_ITALIC
-	// StyleFlagBold the face is bold
-	StyleFlagBold StyleFlag = C.FT_STYLE_FLAG_BOLD
-)
-
-func (x StyleFlag) String() string {
-	s := make([]byte, 0, 12) // len = sum of all the strings below.
-
-	if x&StyleFlagItalic > 0 {
-		s = append(s, []byte("Italic|")...)
-	}
-	if x&StyleFlagBold > 0 {
-		s = append(s, []byte("Bold|")...)
-	}
-
-	if len(s) == 0 {
-		return ""
-	}
-	return string(s[:len(s)-1]) // trim the leading |
-}
 
 // Face models a given typeface, in a given style.
 //
@@ -707,7 +182,13 @@ func (f *Face) AvailableSizes() []BitmapSize {
 	ret := make([]BitmapSize, n)
 	ptr := (*[(1<<31 - 1) / C.sizeof_FT_Bitmap_Size]C.FT_Bitmap_Size)(unsafe.Pointer(f.ptr.available_sizes))[:n:n]
 	for i := range ret {
-		ret[i] = newBitmapSize(ptr[i])
+		ret[i] = BitmapSize{
+			Height: int(ptr[i].height),
+			Width:  int(ptr[i].width),
+			Size:   fixed.Int26_6(ptr[i].size),
+			XPpem:  fixed.Int26_6(ptr[i].x_ppem),
+			YPpem:  fixed.Int26_6(ptr[i].y_ppem),
+		}
 	}
 	return ret
 }
@@ -732,24 +213,14 @@ func (f *Face) CharMaps() []CharMap {
 	}
 
 	ret := make([]CharMap, n)
-	ptr := (*[(1<<31 - 1) / C.sizeof_FT_CharMap]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
-	for i := range ret {
-		ret[i] = newCharMap(ptr[i])
+	for i, v := range f.charmaps() {
+		ret[i] = newCharMap(v)
 	}
 	return ret
 }
 
 func (f *Face) charmaps() []C.FT_CharMap {
-	if f == nil || f.ptr == nil {
-		return nil
-	}
-
-	n := int(f.ptr.num_charmaps)
-	if n == 0 {
-		return nil
-	}
-
-	return (*[(1<<31 - 1) / C.sizeof_FT_CharMap]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:n:n]
+	return (*[(1<<31 - 1) / C.sizeof_FT_CharMap]C.FT_CharMap)(unsafe.Pointer(f.ptr.charmaps))[:f.ptr.num_charmaps:f.ptr.num_charmaps]
 }
 
 // BBox returns a copy of the font bounding box. Coordinates are expressed in font units (see UnitsPerEM).
@@ -763,7 +234,12 @@ func (f *Face) BBox() BBox {
 		return BBox{}
 	}
 
-	return newBBox(f.ptr.bbox)
+	return BBox{
+		XMin: Pos(f.ptr.bbox.xMin),
+		YMin: Pos(f.ptr.bbox.yMin),
+		XMax: Pos(f.ptr.bbox.xMax),
+		YMax: Pos(f.ptr.bbox.yMax),
+	}
 }
 
 // UnitsPerEM reports the number of font units per EM square for this face. This is typically 2048 for TrueType fonts,
@@ -965,6 +441,78 @@ func (f *Face) SetPixelSizes(width, height uint) error {
 		C.FT_UInt(width),
 		C.FT_UInt(height),
 	))
+}
+
+// SizeRequestType is an enumeration of the supported size request types, i.e.,
+// what input size (in font units) maps to the requested output size (in pixels,
+// as computed from the arguments of SizeRequest).
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_request_type
+type SizeRequestType int
+
+const (
+	// SizeRequestTypeNominal the UnitsPerEM method of Face is used to determine both scaling values.
+	//
+	// This is the standard scaling found in most applications. In particular, use this size request type for TrueType
+	// fonts if they provide optical scaling or something similar. Note, however, that UnitsPerEM is a rather abstract
+	// value which bears no relation to the actual size of the glyphs in a font.
+	SizeRequestTypeNominal SizeRequestType = C.FT_SIZE_REQUEST_TYPE_NOMINAL
+	// SizeRequestTypeRealDim the sum of the ascender and (minus of) the descender fields of Face is used to determine
+	// both scaling values.
+	SizeRequestTypeRealDim SizeRequestType = C.FT_SIZE_REQUEST_TYPE_REAL_DIM
+	// SizeRequestTypeBBox the width and height of the BBox field of Face are used to determine the horizontal and
+	// vertical scaling value, respectively.
+	SizeRequestTypeBBox SizeRequestType = C.FT_SIZE_REQUEST_TYPE_BBOX
+	// SizeRequestTypeCell the MaxAdvanceWidth field of Face is used to determine the horizontal scaling value; the
+	// vertical scaling valueis determined the same way as SizeRequestTypeRealDim does. Finally, both scaling values are
+	// set to the smaller one. This type is useful if you want to specify the font size for, say, a window of a given
+	// dimension and 80x24 cells.
+	SizeRequestTypeCell SizeRequestType = C.FT_SIZE_REQUEST_TYPE_CELL
+	// SizeRequestTypeScales specify the scaling values directly.
+	SizeRequestTypeScales SizeRequestType = C.FT_SIZE_REQUEST_TYPE_SCALES
+)
+
+func (s SizeRequestType) String() string {
+	switch s {
+	case SizeRequestTypeNominal:
+		return "Nominal"
+	case SizeRequestTypeRealDim:
+		return "RealDim"
+	case SizeRequestTypeBBox:
+		return "BBox"
+	case SizeRequestTypeCell:
+		return "Cell"
+	case SizeRequestTypeScales:
+		return "Scales"
+	default:
+		return "Unknown"
+	}
+}
+
+// SizeRequest models a size request.
+//
+// If type is SizeRequestTypeScales, width and height are interpreted directly as 16.16 fractional scaling values,
+// without any further modification, and both horiResolution and vertResolution are ignored.
+//
+// NOTE:
+// If width is zero, the horizontal scaling value is set equal to the vertical scaling value, and vice versa.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_requestrec
+type SizeRequest struct {
+	// See SizeRequestType
+	Type SizeRequestType
+	// The desired width, given as a 26.6 fractional point value (with 72pt = 1in).
+	Width fixed.Int26_6
+	// The desired height, given as a 26.6 fractional point value (with 72pt = 1in).
+	Height fixed.Int26_6
+	// The horizontal resolution (dpi, i.e., pixels per inch). If set to zero,
+	// width is treated as a 26.6 fractional pixel value, which gets internally
+	// rounded to an integer.
+	HoriResolution uint
+	// The vertical resolution (dpi, i.e., pixels per inch). If set to zero,
+	// height is treated as a 26.6 fractional pixel value, which gets internally
+	// rounded to an integer.
+	VertResolution uint
 }
 
 // RequestSize resizes the scale of the active Size object.
@@ -1294,20 +842,12 @@ func (f *Face) SetCharMap(c CharMap) error {
 		return ErrInvalidCharMapHandle
 	}
 
-	charmaps := f.charmaps()
-	if c.index < 0 || c.index >= len(charmaps) {
+	maps := f.charmaps()
+	if c.index < 0 || c.index >= len(maps) {
 		return ErrInvalidCharMapHandle
 	}
 
-	var charmap C.FT_CharMap
-	for i, cmap := range charmaps {
-		if i == c.index {
-			charmap = cmap
-			break
-		}
-	}
-
-	return getErr(C.FT_Set_Charmap(f.ptr, charmap))
+	return getErr(C.FT_Set_Charmap(f.ptr, maps[c.index]))
 }
 
 // FSTypeFlags returns the fsType flags for a font.

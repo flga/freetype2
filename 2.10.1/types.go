@@ -57,15 +57,6 @@ type BBox struct {
 	YMax Pos
 }
 
-func newBBox(b C.FT_BBox) BBox {
-	return BBox{
-		XMin: Pos(b.xMin),
-		YMin: Pos(b.yMin),
-		XMax: Pos(b.xMax),
-		YMax: Pos(b.yMax),
-	}
-}
-
 // Matrix stores a 2x2 matrix. Coefficients are in 16.16 fixed-point format.
 //
 // The computation performed is:
@@ -133,6 +124,8 @@ type Bitmap struct {
 	PixelMode PixelMode
 }
 
+var emptyBitmap C.FT_Bitmap
+
 func newBitmap(b C.FT_Bitmap) Bitmap {
 	bitmap := Bitmap{
 		Rows:      int(b.rows),
@@ -174,16 +167,6 @@ type BitmapSize struct {
 	XPpem fixed.Int26_6
 	// The vertical ppem (nominal height).
 	YPpem fixed.Int26_6
-}
-
-func newBitmapSize(b C.FT_Bitmap_Size) BitmapSize {
-	return BitmapSize{
-		Height: int(b.height),
-		Width:  int(b.width),
-		Size:   fixed.Int26_6(b.size),
-		XPpem:  fixed.Int26_6(b.x_ppem),
-		YPpem:  fixed.Int26_6(b.y_ppem),
-	}
 }
 
 // CharMap is used to translate character codes in a given encoding into glyph indexes for its parent's face.
@@ -367,78 +350,6 @@ type SizeMetrics struct {
 	MaxAdvance fixed.Int26_6
 }
 
-// SizeRequestType is an enumeration of the supported size request types, i.e.,
-// what input size (in font units) maps to the requested output size (in pixels,
-// as computed from the arguments of SizeRequest).
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_request_type
-type SizeRequestType int
-
-const (
-	// SizeRequestTypeNominal the UnitsPerEM method of Face is used to determine both scaling values.
-	//
-	// This is the standard scaling found in most applications. In particular, use this size request type for TrueType
-	// fonts if they provide optical scaling or something similar. Note, however, that UnitsPerEM is a rather abstract
-	// value which bears no relation to the actual size of the glyphs in a font.
-	SizeRequestTypeNominal SizeRequestType = C.FT_SIZE_REQUEST_TYPE_NOMINAL
-	// SizeRequestTypeRealDim the sum of the ascender and (minus of) the descender fields of Face is used to determine
-	// both scaling values.
-	SizeRequestTypeRealDim SizeRequestType = C.FT_SIZE_REQUEST_TYPE_REAL_DIM
-	// SizeRequestTypeBBox the width and height of the BBox field of Face are used to determine the horizontal and
-	// vertical scaling value, respectively.
-	SizeRequestTypeBBox SizeRequestType = C.FT_SIZE_REQUEST_TYPE_BBOX
-	// SizeRequestTypeCell the MaxAdvanceWidth field of Face is used to determine the horizontal scaling value; the
-	// vertical scaling valueis determined the same way as SizeRequestTypeRealDim does. Finally, both scaling values are
-	// set to the smaller one. This type is useful if you want to specify the font size for, say, a window of a given
-	// dimension and 80x24 cells.
-	SizeRequestTypeCell SizeRequestType = C.FT_SIZE_REQUEST_TYPE_CELL
-	// SizeRequestTypeScales specify the scaling values directly.
-	SizeRequestTypeScales SizeRequestType = C.FT_SIZE_REQUEST_TYPE_SCALES
-)
-
-func (s SizeRequestType) String() string {
-	switch s {
-	case SizeRequestTypeNominal:
-		return "Nominal"
-	case SizeRequestTypeRealDim:
-		return "RealDim"
-	case SizeRequestTypeBBox:
-		return "BBox"
-	case SizeRequestTypeCell:
-		return "Cell"
-	case SizeRequestTypeScales:
-		return "Scales"
-	default:
-		return "Unknown"
-	}
-}
-
-// SizeRequest models a size request.
-//
-// If type is SizeRequestTypeScales, width and height are interpreted directly as 16.16 fractional scaling values,
-// without any further modification, and both horiResolution and vertResolution are ignored.
-//
-// NOTE:
-// If width is zero, the horizontal scaling value is set equal to the vertical scaling value, and vice versa.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_requestrec
-type SizeRequest struct {
-	// See SizeRequestType
-	Type SizeRequestType
-	// The desired width, given as a 26.6 fractional point value (with 72pt = 1in).
-	Width fixed.Int26_6
-	// The desired height, given as a 26.6 fractional point value (with 72pt = 1in).
-	Height fixed.Int26_6
-	// The horizontal resolution (dpi, i.e., pixels per inch). If set to zero,
-	// width is treated as a 26.6 fractional pixel value, which gets internally
-	// rounded to an integer.
-	HoriResolution uint
-	// The vertical resolution (dpi, i.e., pixels per inch). If set to zero,
-	// height is treated as a 26.6 fractional pixel value, which gets internally
-	// rounded to an integer.
-	VertResolution uint
-}
-
 // GlyphSlot is a container where individual glyphs can be loaded, be they in
 // outline or bitmap format.
 //
@@ -580,9 +491,18 @@ func newGlyphSlot(s C.FT_GlyphSlot) GlyphSlot {
 		return GlyphSlot{}
 	}
 
-	slot := GlyphSlot{
-		GlyphIndex:        GlyphIndex(s.glyph_index),
-		Metrics:           newGlyphMetrics(s.metrics),
+	return GlyphSlot{
+		GlyphIndex: GlyphIndex(s.glyph_index),
+		Metrics: GlyphMetrics{
+			Width:        Pos(s.metrics.width),
+			Height:       Pos(s.metrics.height),
+			HoriBearingX: Pos(s.metrics.horiBearingX),
+			HoriBearingY: Pos(s.metrics.horiBearingY),
+			HoriAdvance:  Pos(s.metrics.horiAdvance),
+			VertBearingX: Pos(s.metrics.vertBearingX),
+			VertBearingY: Pos(s.metrics.vertBearingY),
+			VertAdvance:  Pos(s.metrics.vertAdvance),
+		},
 		LinearHoriAdvance: fixed.Int16_16(s.linearHoriAdvance),
 		LinearVertAdvance: fixed.Int16_16(s.linearVertAdvance),
 		Advance: Vector26_6{
@@ -598,8 +518,6 @@ func newGlyphSlot(s C.FT_GlyphSlot) GlyphSlot {
 		LsbDelta:     Pos(s.lsb_delta),
 		RsbDelta:     Pos(s.rsb_delta),
 	}
-
-	return slot
 }
 
 // GlyphMetrics models the metrics of a single glyph. The values are expressed
@@ -640,111 +558,6 @@ type GlyphMetrics struct {
 	// Advance height for vertical layout. Positive values mean the glyph has a
 	// positive advance downward.
 	VertAdvance Pos
-}
-
-func newGlyphMetrics(m C.FT_Glyph_Metrics) GlyphMetrics {
-	return GlyphMetrics{
-		Width:        Pos(m.width),
-		Height:       Pos(m.height),
-		HoriBearingX: Pos(m.horiBearingX),
-		HoriBearingY: Pos(m.horiBearingY),
-		HoriAdvance:  Pos(m.horiAdvance),
-		VertBearingX: Pos(m.vertBearingX),
-		VertBearingY: Pos(m.vertBearingY),
-		VertAdvance:  Pos(m.vertAdvance),
-	}
-}
-
-// OutlineFlag is a list of bit-field constants used for the flags in an Outline flags field.
-//
-// NOTE:
-// The flags OutlineIgnoreDropouts, OutlineSmartDropouts, and OutlineIncludeStubs
-// are ignored by the smooth rasterizer.
-//
-// There exists a second mechanism to pass the drop-out mode to the B/W rasterizer;
-// see the tags field in Outline.
-//
-// Please refer to the description of the ‘SCANTYPE’ instruction in the OpenType
-// specification (in file ttinst1.doc) how simple drop-outs, smart drop-outs,
-// and stubs are defined.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-outline_processing.html#ft_outline_xxx
-type OutlineFlag uint
-
-const (
-	outlineNone OutlineFlag = C.FT_OUTLINE_NONE
-
-	// OutlineOwner if set, this flag indicates that the outline's field arrays
-	// (i.e., points, flags, and contours) are ‘owned’ by the outline object,
-	// and should thus be freed when it is destroyed.
-	OutlineOwner OutlineFlag = C.FT_OUTLINE_OWNER
-	// OutlineEvenOddFill by default, outlines are filled using the non-zero
-	// winding rule. If set to 1, the outline will be filled using the even-odd
-	// fill rule (only works with the smooth rasterizer).
-	OutlineEvenOddFill OutlineFlag = C.FT_OUTLINE_EVEN_ODD_FILL
-	// OutlineReverseFill by default, outside contours of an outline are
-	// oriented in clock-wise direction, as defined in the TrueType
-	// specification. This flag is set if the outline uses the opposite
-	// direction (typically for Type 1 fonts). This flag is ignored by the scan
-	// converter.
-	OutlineReverseFill OutlineFlag = C.FT_OUTLINE_REVERSE_FILL
-	// OutlineIgnoreDropouts by default, the scan converter will try to detect
-	// drop-outs in an outline and correct the glyph bitmap to ensure consistent
-	// shape continuity. If set, this flag hints the scan-line converter to
-	// ignore such cases.
-	OutlineIgnoreDropouts OutlineFlag = C.FT_OUTLINE_IGNORE_DROPOUTS
-	// OutlineSmartDropouts select smart dropout control. If unset, use simple
-	// dropout control. Ignored if OutlineIgnoreDropouts is set.
-	OutlineSmartDropouts OutlineFlag = C.FT_OUTLINE_SMART_DROPOUTS
-	// OutlineIncludeStubs if set, turn pixels on for ‘stubs’, otherwise exclude
-	// them. Ignored if OutlineIgnoreDropouts is set.
-	OutlineIncludeStubs OutlineFlag = C.FT_OUTLINE_INCLUDE_STUBS
-	// OutlineHighPrecision indicates that the scan-line converter should try to
-	// convert this outline to bitmaps with the highest possible quality.
-	// It is typically set for small character sizes. Note that this is only a
-	// hint that might be completely ignored by a given scan-converter.
-	OutlineHighPrecision OutlineFlag = C.FT_OUTLINE_HIGH_PRECISION
-	// OutlineSinglePass is set to force a given scan-converter to only use a
-	// single pass over the outline to render a bitmap glyph image. Normally,
-	// it is set for very large character sizes. It is only a hint that might be
-	// completely ignored by a given scan-converter.
-	OutlineSinglePass OutlineFlag = C.FT_OUTLINE_SINGLE_PASS
-)
-
-func (x OutlineFlag) String() string {
-	// the maximum concatenated len, at the time of writing, is 97.
-	s := make([]byte, 0, 97)
-
-	if x&OutlineOwner > 0 {
-		s = append(s, []byte("Owner|")...)
-	}
-	if x&OutlineEvenOddFill > 0 {
-		s = append(s, []byte("EvenOddFill|")...)
-	}
-	if x&OutlineReverseFill > 0 {
-		s = append(s, []byte("ReverseFill|")...)
-	}
-	if x&OutlineIgnoreDropouts > 0 {
-		s = append(s, []byte("IgnoreDropouts|")...)
-	}
-	if x&OutlineSmartDropouts > 0 {
-		s = append(s, []byte("SmartDropouts|")...)
-	}
-	if x&OutlineIncludeStubs > 0 {
-		s = append(s, []byte("IncludeStubs|")...)
-	}
-	if x&OutlineHighPrecision > 0 {
-		s = append(s, []byte("HighPrecision|")...)
-	}
-	if x&OutlineSinglePass > 0 {
-		s = append(s, []byte("SinglePass|")...)
-	}
-
-	if len(s) == 0 {
-		return ""
-	}
-
-	return string(s[:len(s)-1]) // trim the leading |
 }
 
 // Outline describes an outline to the scan-line converter.

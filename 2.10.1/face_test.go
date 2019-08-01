@@ -9,101 +9,9 @@ import (
 
 	"github.com/flga/freetype2/2.10.1/fixed"
 	"github.com/flga/freetype2/2.10.1/truetype"
-	"github.com/go-test/deep"
 )
 
-func TestFaceFlag_String(t *testing.T) {
-	var x FaceFlag
-	if got, want := x.String(), ""; got != want {
-		t.Errorf("FaceFlag.String(0) = %v, want %v", got, want)
-	}
-
-	x = FaceFlagColor
-	if got, want := x.String(), "Color"; got != want {
-		t.Errorf("FaceFlag.String(FaceFlagColor) = %v, want %v", got, want)
-	}
-
-	x = FaceFlagKerning | FaceFlagCidKeyed
-	if got, want := x.String(), "Kerning|CidKeyed"; got != want {
-		t.Errorf("FaceFlag.String(FaceFlagKerning | FaceFlagCidKeyed) = %v, want %v", got, want)
-	}
-
-	x = FaceFlagVertical | FaceFlagMultipleMasters | FaceFlagHinter
-	if got, want := x.String(), "Vertical|MultipleMasters|Hinter"; got != want {
-		t.Errorf("FaceFlag.String(FaceFlagVertical | FaceFlagMultipleMasters | FaceFlagHinter) = %v, want %v", got, want)
-	}
-
-	x = FaceFlagScalable | FaceFlagFixedSizes | FaceFlagFixedWidth | FaceFlagSfnt | FaceFlagHorizontal |
-		FaceFlagVertical | FaceFlagKerning | FaceFlagMultipleMasters | FaceFlagGlyphNames | FaceFlagHinter |
-		FaceFlagCidKeyed | FaceFlagTricky | FaceFlagColor | FaceFlagVariation
-	if got, want := x.String(), "Scalable|FixedSizes|FixedWidth|Sfnt|Horizontal|Vertical|Kerning|MultipleMasters|GlyphNames|Hinter|CidKeyed|Tricky|Color|Variation"; got != want {
-		t.Errorf("FaceFlag.String(FaceFlagScalable | FaceFlagFixedSizes | FaceFlagFixedWidth | FaceFlagSfnt | FaceFlagHorizontal | FaceFlagVertical | FaceFlagKerning | FaceFlagMultipleMasters | FaceFlagGlyphNames | FaceFlagHinter | FaceFlagCidKeyed | FaceFlagTricky | FaceFlagColor | FaceFlagVariation) = %v, want %v", got, want)
-	}
-}
-
-func TestStyleFlag_String(t *testing.T) {
-	var x StyleFlag
-
-	if got, want := x.String(), ""; got != want {
-		t.Errorf("StyleFlag.String(0) = %v, want %v", got, want)
-	}
-
-	x = StyleFlagItalic
-	if got, want := x.String(), "Italic"; got != want {
-		t.Errorf("StyleFlag.String(StyleFlagItalic) = %v, want %v", got, want)
-	}
-
-	x = StyleFlagBold
-	if got, want := x.String(), "Bold"; got != want {
-		t.Errorf("StyleFlag.String(StyleFlagBold) = %v, want %v", got, want)
-	}
-
-	x = StyleFlagItalic | StyleFlagBold
-	if got, want := x.String(), "Italic|Bold"; got != want {
-		t.Errorf("StyleFlag.String(StyleFlagItalic | StyleFlagBold) = %v, want %v", got, want)
-	}
-}
-
-func TestLoadFlag_String(t *testing.T) {
-	var x LoadFlag
-	if got, want := x.String(), "Default"; got != want {
-		t.Errorf("LoadFlag.String(0) = %v, want %v", got, want)
-	}
-
-	x = 1 << 30
-	if got, want := x.String(), ""; got != want {
-		t.Errorf("LoadFlag.String(1 << 30) = %v, want %v", got, want)
-	}
-
-	x = LoadDefault
-	if got, want := x.String(), "Default"; got != want {
-		t.Errorf("LoadFlag.String(LoadDefault) = %v, want %v", got, want)
-	}
-
-	x = LoadColor
-	if got, want := x.String(), "Color"; got != want {
-		t.Errorf("LoadFlag.String(LoadColor) = %v, want %v", got, want)
-	}
-
-	x = LoadMonochrome | LoadNoAutohint
-	if got, want := x.String(), "Monochrome|NoAutohint"; got != want {
-		t.Errorf("LoadFlag.String(LoadMonochrome | LoadNoAutohint) = %v, want %v", got, want)
-	}
-
-	x = LoadIgnoreTransform | LoadColor | LoadComputeMetrics
-	if got, want := x.String(), "IgnoreTransform|Color|ComputeMetrics"; got != want {
-		t.Errorf("LoadFlag.String(LoadIgnoreTransform | LoadColor | LoadComputeMetrics) = %v, want %v", got, want)
-	}
-
-	x = LoadDefault | LoadNoScale | LoadNoHinting | LoadRender | LoadNoBitmap | LoadVerticalLayout | LoadForceAutohint |
-		LoadPedantic | LoadNoRecurse | LoadIgnoreTransform | LoadMonochrome | LoadLinearDesign | LoadNoAutohint |
-		LoadColor | LoadComputeMetrics | LoadBitmapMetricsOnly
-	if got, want := x.String(), "NoScale|NoHinting|Render|NoBitmap|VerticalLayout|ForceAutohint|Pedantic|NoRecurse|IgnoreTransform|Monochrome|LinearDesign|NoAutohint|Color|ComputeMetrics|BitmapMetricsOnly"; got != want {
-		t.Errorf("LoadFlag.String(LoadDefault | LoadNoScale | LoadNoHinting | LoadRender | LoadNoBitmap | LoadVerticalLayout | LoadForceAutohint | LoadPedantic | LoadNoRecurse | LoadIgnoreTransform | LoadMonochrome | LoadLinearDesign | LoadNoAutohint | LoadColor | LoadComputeMetrics | LoadBitmapMetricsOnly) = %v, want %v", got, want)
-	}
-}
-
-func TestFaceFree(t *testing.T) {
+func TestFace_Free(t *testing.T) {
 	l, err := NewLibrary()
 	if err != nil {
 		t.Fatalf("unable to init lib: %s", err)
@@ -781,7 +689,7 @@ func TestFaceProps(t *testing.T) {
 					reflect.Array,
 					reflect.Interface,
 					reflect.Map:
-					if diff := deep.Equal(got, want); diff != nil {
+					if diff := diff(got, want); diff != nil {
 						t.Errorf("%s() = %v", name, diff)
 					}
 				default:
@@ -1203,31 +1111,25 @@ func TestFace_SetCharSize(t *testing.T) {
 }
 
 func TestFace_SetPixelSizes(t *testing.T) {
-	type args struct {
-		width  uint
-		height uint
-	}
 	tests := []struct {
 		name     string
 		face     func() (testface, error)
-		args     args
+		width    uint
+		height   uint
 		wantSize Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
 			face:     nilFace,
-			args:     args{},
 			wantSize: Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
-			name: "go regular",
-			face: goRegular,
-			args: args{
-				width:  20,
-				height: 20,
-			},
+			name:   "go regular",
+			face:   goRegular,
+			width:  20,
+			height: 20,
 			wantSize: Size{
 				SizeMetrics{
 					XPpem:      20,
@@ -1243,12 +1145,10 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "bungee color mac, first size",
-			face: bungeeColorMac,
-			args: args{
-				width:  20,
-				height: 20,
-			},
+			name:   "bungee color mac, first size",
+			face:   bungeeColorMac,
+			width:  20,
+			height: 20,
 			wantSize: Size{
 				SizeMetrics{
 					XPpem:      20,
@@ -1264,12 +1164,10 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "bungee color mac, second size",
-			face: bungeeColorMac,
-			args: args{
-				width:  32,
-				height: 32,
-			},
+			name:   "bungee color mac, second size",
+			face:   bungeeColorMac,
+			width:  32,
+			height: 32,
 			wantSize: Size{
 				SizeMetrics{
 					XPpem:      32,
@@ -1285,12 +1183,10 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "bungee color mac, < first size",
-			face: bungeeColorMac,
-			args: args{
-				width:  19,
-				height: 19,
-			},
+			name:   "bungee color mac, < first size",
+			face:   bungeeColorMac,
+			width:  19,
+			height: 19,
 			wantSize: Size{
 				SizeMetrics{
 					XScale: 1 << 16,
@@ -1300,12 +1196,10 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			wantErr: ErrInvalidPixelSize,
 		},
 		{
-			name: "bungee color mac, > first size",
-			face: bungeeColorMac,
-			args: args{
-				width:  21,
-				height: 21,
-			},
+			name:   "bungee color mac, > first size",
+			face:   bungeeColorMac,
+			width:  21,
+			height: 21,
 			wantSize: Size{
 				SizeMetrics{
 					XScale: 1 << 16,
@@ -1323,11 +1217,33 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			}
 			defer face.Free()
 
-			if err := face.SetPixelSizes(tt.args.width, tt.args.height); err != tt.wantErr {
+			if err := face.SetPixelSizes(tt.width, tt.height); err != tt.wantErr {
 				t.Errorf("Face.SetPixelSizes() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if got := face.Size(); got != tt.wantSize {
 				t.Errorf("Face.SetPixelSizes() %v, want %v", got, tt.wantSize)
+			}
+		})
+	}
+}
+
+func TestSizeRequestType_String(t *testing.T) {
+	tests := []struct {
+		name string
+		x    SizeRequestType
+		want string
+	}{
+		{name: "Nominal", x: SizeRequestTypeNominal, want: "Nominal"},
+		{name: "RealDim", x: SizeRequestTypeRealDim, want: "RealDim"},
+		{name: "BBox", x: SizeRequestTypeBBox, want: "BBox"},
+		{name: "Cell", x: SizeRequestTypeCell, want: "Cell"},
+		{name: "Scales", x: SizeRequestTypeScales, want: "Scales"},
+		{name: "Unknown", x: 8912387, want: "Unknown"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.x.String(); got != tt.want {
+				t.Errorf("SizeRequestType.String() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -2110,7 +2026,7 @@ func TestFace_Glyph(t *testing.T) {
 				got.Metrics.HoriBearingY, tt.want.Metrics.HoriBearingY = -1, -1
 			}
 
-			if diff := deep.Equal(got, tt.want); diff != nil {
+			if diff := diff(got, tt.want); diff != nil {
 				t.Error(diff)
 			}
 		})
@@ -2178,30 +2094,29 @@ func TestFace_SetTransform(t *testing.T) {
 }
 
 func TestRotate90Deg(t *testing.T) {
-	goRegular, err := goRegular()
+	face, err := goRegular()
 	if err != nil {
 		t.Fatalf("unable to open font: %s", err)
 	}
-	defer goRegular.Free()
+	defer face.Free()
 	deg := float64(90)
 	angle := deg / 360.0 * math.Pi * 2.0
-	m := Matrix{
+	face.SetTransform(Matrix{
 		Xx: (fixed.Int16_16)(math.Cos(angle) * 0x10000),
 		Xy: (fixed.Int16_16)(-math.Sin(angle) * 0x10000),
 		Yx: (fixed.Int16_16)(math.Sin(angle) * 0x10000),
 		Yy: (fixed.Int16_16)(math.Cos(angle) * 0x10000),
-	}
-	goRegular.SetTransform(m, Vector{})
+	}, Vector{})
 
-	if err := goRegular.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
 		t.Fatalf("unable to set char size: %v", err)
 	}
 
-	if err := goRegular.LoadGlyph(0x24, LoadRender|LoadColor); err != nil {
+	if err := face.LoadGlyph(0x24, LoadRender|LoadColor); err != nil {
 		t.Fatalf("unable to load glyph: %v", err)
 	}
 
-	got := goRegular.Glyph()
+	got := face.Glyph()
 	want := GlyphSlot{
 		GlyphIndex: 0x24,
 		Metrics: GlyphMetrics{
@@ -2247,7 +2162,7 @@ func TestRotate90Deg(t *testing.T) {
 	got.Metrics.VertBearingX, want.Metrics.VertBearingX = -1, -1
 	got.Metrics.VertBearingY, want.Metrics.VertBearingY = -1, -1
 
-	if diff := deep.Equal(got, want); diff != nil {
+	if diff := diff(got, want); diff != nil {
 		t.Error(diff)
 	}
 }
@@ -2984,76 +2899,6 @@ func TestFace_FSTypeFlags(t *testing.T) {
 	}
 }
 
-func TestFSTypeFlag_String(t *testing.T) {
-	var x FSTypeFlag
-	if got, want := x.String(), "InstallableEmbedding"; got != want {
-		t.Errorf("FSTypeFlag.String() = %v, want %v", got, want)
-	}
-
-	x = FsTypeFlagRestrictedLicenseEmbedding
-	if got, want := x.String(), "RestrictedLicenseEmbedding"; got != want {
-		t.Errorf("FSTypeFlag.String(FsTypeFlagRestrictedLicenseEmbedding) = %v, want %v", got, want)
-	}
-
-	x = FsTypeFlagRestrictedLicenseEmbedding | FsTypeFlagPreviewAndPrintEmbedding
-	if got, want := x.String(), "RestrictedLicenseEmbedding|PreviewAndPrintEmbedding"; got != want {
-		t.Errorf("FSTypeFlag.String(FsTypeFlagRestrictedLicenseEmbedding | FsTypeFlagPreviewAndPrintEmbedding) = %v, want %v", got, want)
-	}
-
-	x = FsTypeFlagInstallableEmbedding | FsTypeFlagRestrictedLicenseEmbedding |
-		FsTypeFlagPreviewAndPrintEmbedding | FsTypeFlagEditableEmbedding |
-		FsTypeFlagNoSubsetting | FsTypeFlagBitmapEmbeddingOnly
-	if got, want := x.String(), "RestrictedLicenseEmbedding|PreviewAndPrintEmbedding|EditableEmbedding|NoSubsetting|BitmapEmbeddingOnly"; got != want {
-		t.Errorf("FSTypeFlag.String(FsTypeFlagInstallableEmbedding | FsTypeFlagRestrictedLicenseEmbedding | FsTypeFlagPreviewAndPrintEmbedding | FsTypeFlagEditableEmbedding | FsTypeFlagNoSubsetting | FsTypeFlagBitmapEmbeddingOnly) = %v, want %v", got, want)
-	}
-}
-
-func TestRenderMode_String(t *testing.T) {
-	tests := []struct {
-		name string
-		r    RenderMode
-		want string
-	}{
-		{name: "Normal", r: RenderModeNormal, want: "Normal"},
-		{name: "Light", r: RenderModeLight, want: "Light"},
-		{name: "Mono", r: RenderModeMono, want: "Mono"},
-		{name: "LCD", r: RenderModeLCD, want: "LCD"},
-		{name: "LCDV", r: RenderModeLCDV, want: "LCDV"},
-		{name: "Unknown", r: 90102, want: "Unknown"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.r.String(); got != tt.want {
-				t.Errorf("RenderMode.String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestFace_SubGlyphInfo(t *testing.T) {
 	t.Skip("I could not find a font with composite glyphs")
-}
-
-func TestSubGlyphFlag_String(t *testing.T) {
-	var x SubGlyphFlag
-	if got, want := x.String(), ""; got != want {
-		t.Errorf("SubGlyphFlag.String() = %v, want %v", got, want)
-	}
-
-	x = SubGlyphFlagXyScale
-	if got, want := x.String(), "XyScale"; got != want {
-		t.Errorf("SubGlyphFlag.String(SubGlyphFlagXyScale) = %v, want %v", got, want)
-	}
-
-	x = SubGlyphFlagArgsAreXyValues | SubGlyphFlagScale
-	if got, want := x.String(), "ArgsAreXyValues|Scale"; got != want {
-		t.Errorf("SubGlyphFlag.String(SubGlyphFlagArgsAreXyValues | SubGlyphFlagScale) = %v, want %v", got, want)
-	}
-
-	x = SubGlyphFlagArgsAreWords | SubGlyphFlagArgsAreXyValues |
-		SubGlyphFlagRoundXyToGrid | SubGlyphFlagScale | SubGlyphFlagXyScale |
-		SubGlyphFlag2x2 | SubGlyphFlagUseMyMetrics
-	if got, want := x.String(), "ArgsAreWords|ArgsAreXyValues|RoundXyToGrid|Scale|XyScale|2x2|UseMyMetrics"; got != want {
-		t.Errorf("SubGlyphFlag.String(SubGlyphFlagArgsAreWords | SubGlyphFlagArgsAreXyValues | SubGlyphFlagRoundXyToGrid | SubGlyphFlagScale | SubGlyphFlagXyScale | SubGlyphFlag2x2 | SubGlyphFlagUseMyMetrics) = %v, want %v", got, want)
-	}
 }
