@@ -14,6 +14,11 @@ import (
 	"github.com/flga/freetype2/2.10.1/truetype"
 )
 
+// Tag is a typedef for 32-bit tags (as used in the SFNT format).
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_tag
+type Tag uint32
+
 // Pos is used to store vectorial coordinates. Depending on the context, these can represent distances in integer
 // font units, or 16.16, or 26.6 fixed-point pixel coordinates.
 //
