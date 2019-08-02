@@ -914,3 +914,97 @@ func (f *Face) SubGlyphInfo(idx int) (SubGlyphInfo, error) {
 		},
 	}, nil
 }
+
+// CharVariantIndex returns the glyph index of a given character code as
+// modified by the variation selector.
+//
+// Return 0 means either ‘undefined character code’, or ‘undefined selector code’,
+// or ‘no variation selector cmap subtable’, or ‘current CharMap is not Unicode’.
+//
+// NOTE:
+// If you use FreeType to manipulate the contents of font files directly, be
+// aware that the glyph index returned by this function doesn't always
+// correspond to the internal indices used within the file. This is done to
+// ensure that value 0 always corresponds to the ‘missing glyph’.
+//
+// This function is only meaningful if a) the font has a variation selector cmap
+// sub table, and b) the current charmap has a Unicode encoding.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-glyph_variants.html#ft_face_getcharvariantindex
+func (f *Face) CharVariantIndex(r, variantSelector rune) GlyphIndex {
+	if f == nil || f.ptr == nil {
+		return 0
+	}
+
+	return GlyphIndex(C.FT_Face_GetCharVariantIndex(
+		f.ptr,
+		C.ulong(r),
+		C.ulong(variantSelector),
+	))
+}
+
+// VariantType is the type of variant as returned by Face.CharVariantIsDefault()
+type VariantType int
+
+const (
+	// VariantTypeStandard found in the standard (Unicode) cmap
+	VariantTypeStandard VariantType = 1
+	// VariantTypeVariant found in the variation selector cmap
+	VariantTypeVariant VariantType = 0
+	// VariantTypeNotVariation not a variation
+	VariantTypeNotVariation VariantType = -1
+)
+
+// CharVariantIsDefault checks whether this variation of this Unicode character
+// is the one to be found in the charmap.
+//
+// NOTE:
+// This function is only meaningful if the font has a variation selector cmap subtable.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-glyph_variants.html#ft_face_getcharvariantisdefault
+func (f *Face) CharVariantIsDefault(r, variantSelector rune) VariantType {
+	if f == nil || f.ptr == nil {
+		return VariantTypeNotVariation
+	}
+
+	return VariantType(C.FT_Face_GetCharVariantIsDefault(
+		f.ptr,
+		C.ulong(r),
+		C.ulong(variantSelector),
+	))
+}
+
+// VariantSelectors returns a list of Unicode variation selectors found in the font.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-glyph_variants.html#ft_face_getvariantselectors
+func (f *Face) VariantSelectors() []rune {
+	if f == nil || f.ptr == nil {
+		return nil
+	}
+
+	return sliceFromZeroTerminatedUint32(C.FT_Face_GetVariantSelectors(f.ptr))
+}
+
+// VariantsOfChar returns a list of Unicode variation selectors found for the
+// specified character code.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-glyph_variants.html#ft_face_getvariantsofchar
+func (f *Face) VariantsOfChar(r rune) []rune {
+	if f == nil || f.ptr == nil {
+		return nil
+	}
+
+	return sliceFromZeroTerminatedUint32(C.FT_Face_GetVariantsOfChar(f.ptr, C.ulong(r)))
+}
+
+// CharsOfVariant returns a list of Unicode character codes found for the
+// specified variation selector. Both default and non-default codes are included.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-glyph_variants.html#ft_face_getcharsofvariant
+func (f *Face) CharsOfVariant(variantSelector rune) []rune {
+	if f == nil || f.ptr == nil {
+		return nil
+	}
+
+	return sliceFromZeroTerminatedUint32(C.FT_Face_GetCharsOfVariant(f.ptr, C.ulong(variantSelector)))
+}

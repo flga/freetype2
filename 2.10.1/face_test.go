@@ -2902,3 +2902,286 @@ func TestFace_FSTypeFlags(t *testing.T) {
 func TestFace_SubGlyphInfo(t *testing.T) {
 	t.Skip("I could not find a font with composite glyphs")
 }
+
+func TestFace_VariantSelectors(t *testing.T) {
+	tests := []struct {
+		name string
+		face func() (testface, error)
+		want []rune
+	}{
+		{
+			name: "nil face",
+			face: nilFace,
+			want: nil,
+		},
+		{
+			name: "goRegular",
+			face: goRegular,
+			want: nil,
+		},
+		{
+			name: "notoSansJpReg",
+			face: notoSansJpReg,
+			want: []rune{
+				0x0fe00, 0x0fe01, 0xe0100, 0xe0101, 0xe0102, 0xe0103,
+				0xe0104, 0xe0105, 0xe0106, 0xe0107, 0xe0108, 0xe0109,
+				0xe010a, 0xe010b, 0xe010c, 0xe010d, 0xe010e,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if diff := diff(face.VariantSelectors(), tt.want); diff != nil {
+				t.Errorf("Face.VariantSelectors() %v", diff)
+			}
+		})
+	}
+}
+
+func TestFace_VariantsOfChar(t *testing.T) {
+	tests := []struct {
+		name string
+		face func() (testface, error)
+		r    rune
+		want []rune
+	}{
+		{
+			name: "nil face",
+			face: nilFace,
+			r:    0,
+			want: nil,
+		},
+		{
+			name: "goRegular",
+			face: goRegular,
+			r:    0,
+			want: nil,
+		},
+		{
+			name: "notoSansJpReg, A",
+			face: notoSansJpReg,
+			r:    0x41,
+			want: nil,
+		},
+		{
+			name: "notoSansJpReg, 0x04fae",
+			face: notoSansJpReg,
+			r:    0x04fae,
+			want: []rune{0x0fe00, 0xe0100, 0xe0101},
+		},
+		{
+			name: "notoSansJpReg, 0x050e7",
+			face: notoSansJpReg,
+			r:    0x050e7,
+			want: []rune{0x0fe00, 0xe0100, 0xe0101},
+		},
+		{
+			name: "notoSansJpReg, 0x53a9",
+			face: notoSansJpReg,
+			r:    0x53a9,
+			want: []rune{0xe0100, 0xe0101, 0xe0102, 0xe0103, 0xe0104, 0xe0105},
+		},
+		{
+			name: "notoSansJpReg, 0x6168",
+			face: notoSansJpReg,
+			r:    0x6168,
+			want: []rune{0x0fe00, 0xe0100, 0xe0101, 0xe0102, 0xe0103, 0xe0104, 0xe0105},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if diff := diff(face.VariantsOfChar(tt.r), tt.want); diff != nil {
+				t.Errorf("Face.VariantsOfChar() %v", diff)
+			}
+		})
+	}
+}
+
+func TestFace_CharsOfVariant(t *testing.T) {
+	tests := []struct {
+		name            string
+		face            func() (testface, error)
+		variantSelector rune
+		want            []rune
+	}{
+		{
+			name:            "nil face",
+			face:            nilFace,
+			variantSelector: 0,
+			want:            nil,
+		},
+		{
+			name:            "goRegular",
+			face:            goRegular,
+			variantSelector: 0,
+			want:            nil,
+		},
+		{
+			name:            "notoSansJpReg, unknown variant",
+			face:            notoSansJpReg,
+			variantSelector: 0x8afba,
+			want:            nil,
+		},
+		{
+			name:            "notoSansJpReg, 0x0fe00",
+			face:            notoSansJpReg,
+			variantSelector: 0x0fe00,
+			want: []rune{
+				0x04fae, 0x050e7, 0x0514d, 0x051de, 0x052c9, 0x052e4, 0x05351,
+				0x0559d, 0x05606, 0x05668, 0x05840, 0x0585a, 0x058a8, 0x05c64,
+				0x05c6e, 0x05eca, 0x06075, 0x06094, 0x06168, 0x0618e, 0x061f2,
+				0x0654f, 0x065e2, 0x06674, 0x06691, 0x06717, 0x06885, 0x06b04,
+				0x06bba, 0x06d77, 0x06e1a, 0x06f22, 0x0716e, 0x0722b, 0x0732a,
+				0x07422, 0x076ca, 0x07891, 0x0793c, 0x0793e, 0x07948, 0x07949,
+				0x07950, 0x07956, 0x0795d, 0x0795e, 0x07965, 0x0798d, 0x0798e,
+				0x0798f, 0x07a40, 0x07a81, 0x07bc0, 0x07cbe, 0x07e09, 0x07e41,
+				0x07f72, 0x07fbd, 0x08005, 0x081ed, 0x08218, 0x08279, 0x08457,
+				0x08612, 0x0865c, 0x08910, 0x08996, 0x08af8, 0x08b01, 0x08b39,
+				0x08cd3, 0x08d08, 0x08fb6, 0x09038, 0x090fd, 0x09686, 0x096e3,
+				0x09756, 0x097ff, 0x0983b, 0x0985e, 0x098ef, 0x098fc, 0x09928,
+				0x09db4, 0x242ee,
+			},
+		},
+		{
+			name:            "notoSansJpReg, 0xe0105",
+			face:            notoSansJpReg,
+			variantSelector: 0xe0105,
+			want:            []rune{0x53a9, 0x6168, 0x9089, 0x908a},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if diff := diff(face.CharsOfVariant(tt.variantSelector), tt.want); diff != nil {
+				t.Errorf("Face.CharsOfVariant() %v", diff)
+			}
+		})
+	}
+}
+
+func TestFace_CharVariantIsDefault(t *testing.T) {
+	tests := []struct {
+		name            string
+		face            func() (testface, error)
+		r               rune
+		variantSelector rune
+		want            VariantType
+	}{
+		{
+			name: "nil face",
+			face: nilFace,
+			want: VariantTypeNotVariation,
+		},
+		{
+			name: "goRegular",
+			face: goRegular,
+			want: VariantTypeNotVariation,
+		},
+		{
+			name:            "notoSansJpReg",
+			face:            notoSansJpReg,
+			r:               0x41,
+			variantSelector: 0,
+			want:            VariantTypeNotVariation,
+		},
+		{
+			name:            "notoSansJpReg",
+			face:            notoSansJpReg,
+			r:               0x6168,
+			variantSelector: 0xfe00,
+			want:            VariantTypeVariant,
+		},
+		{
+			name:            "notoSansJpReg",
+			face:            notoSansJpReg,
+			r:               0x6168,
+			variantSelector: 0xe0100,
+			want:            VariantTypeStandard,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if got := face.CharVariantIsDefault(tt.r, tt.variantSelector); got != tt.want {
+				t.Errorf("Face.CharVariantIsDefault() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFace_CharVariantIndex(t *testing.T) {
+	tests := []struct {
+		name            string
+		face            func() (testface, error)
+		r               rune
+		variantSelector rune
+		want            GlyphIndex
+	}{
+		{
+			name: "nil face",
+			face: nilFace,
+			want: MissingGlyph,
+		},
+		{
+			name: "goRegular",
+			face: goRegular,
+			want: MissingGlyph,
+		},
+		{
+			name:            "notoSansJpReg",
+			face:            notoSansJpReg,
+			r:               0x41,
+			variantSelector: 0,
+			want:            MissingGlyph,
+		},
+		{
+			name:            "notoSansJpReg",
+			face:            notoSansJpReg,
+			r:               0x6168,
+			variantSelector: 0xfe00,
+			want:            0x3b27,
+		},
+		{
+			name:            "notoSansJpReg",
+			face:            notoSansJpReg,
+			r:               0x6168,
+			variantSelector: 0xe0100,
+			want:            0x15cc,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			face, err := tt.face()
+			if err != nil {
+				t.Fatalf("unable to load face: %v", err)
+			}
+			defer face.Free()
+
+			if got := face.CharVariantIndex(tt.r, tt.variantSelector); got != tt.want {
+				t.Errorf("Face.CharVariantIndex() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

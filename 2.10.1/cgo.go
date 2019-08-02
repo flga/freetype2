@@ -27,6 +27,19 @@ package freetype2
 // #include <stdlib.h>
 // #include <ft2build.h>
 // #include FT_FREETYPE_H
+//
+// FT_UInt32* test_makeList(int elems) {
+// 	if (elems <= 0) {
+// 		return NULL;
+// 	}
+//
+// 	FT_UInt32* ptr = (FT_UInt32*)calloc(elems+1, sizeof(FT_UInt32));
+// 	for(int i = 0; i < elems; ++i) {
+// 		ptr[i] = i+1;
+// 	}
+//
+// 	return ptr;
+// }
 import "C"
 
 import (
@@ -61,4 +74,21 @@ func mockFree(fn func(v unsafe.Pointer), actuallyFreeIt freeBehaviour) (restore 
 		free = orig
 		mockFreeMu.Unlock()
 	}
+}
+
+func testMakeList(n int) *C.FT_UInt32 {
+	return C.test_makeList(C.int(n))
+}
+
+func sliceFromZeroTerminatedUint32(head *C.FT_UInt32) []rune {
+	if head == nil {
+		return nil
+	}
+
+	var ret []rune
+	ptr := (*[(1<<31 - 1) / C.sizeof_FT_UInt32]C.FT_UInt32)(unsafe.Pointer(head))[:]
+	for i := 0; ptr[i] != 0; i++ {
+		ret = append(ret, rune(ptr[i]))
+	}
+	return ret
 }
