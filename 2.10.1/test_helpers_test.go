@@ -79,6 +79,12 @@ func notoSansJpBold() (testface, error) {
 func arimoRegular() (testface, error) {
 	return openFace(testdata("arimo", "Arimo-Regular.ttf"))
 }
+func twemojiMozilla() (testface, error) {
+	return openFace(testdata("twemoji-colr", "TwemojiMozilla.ttf"))
+}
+func notoColorEmoji() (testface, error) {
+	return openFace(testdata("noto-color-emoji", "NotoColorEmoji.ttf"))
+}
 
 func diff(a, b interface{}) []string {
 	orig := deep.CompareUnexportedFields
