@@ -85,6 +85,9 @@ func twemojiMozilla() (testface, error) {
 func notoColorEmoji() (testface, error) {
 	return openFace(testdata("noto-color-emoji", "NotoColorEmoji.ttf"))
 }
+func chromacheckColr() (testface, error) {
+	return openFace(testdata("chromacheck", "chromacheck-colr.woff"))
+}
 
 func diff(a, b interface{}) []string {
 	orig := deep.CompareUnexportedFields
