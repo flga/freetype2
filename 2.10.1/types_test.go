@@ -127,7 +127,7 @@ func Test_newSize(t *testing.T) {
 
 func Test_newGlyphSlot(t *testing.T) {
 	got := newGlyphSlot(nil)
-	want := GlyphSlot{}
+	var want *GlyphSlot
 	if diff := diff(got, want); diff != nil {
 		t.Errorf("newGlyphSlot(nil) = %v", diff)
 	}
@@ -147,7 +147,7 @@ func Test_newGlyphSlot(t *testing.T) {
 	}
 
 	got = newGlyphSlot(face.ptr.glyph)
-	want = GlyphSlot{
+	want = &GlyphSlot{
 		GlyphIndex: 0x22,
 		Metrics: GlyphMetrics{
 			Width:        576,

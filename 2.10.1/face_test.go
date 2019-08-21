@@ -7,8 +7,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/flga/freetype2/2.10.1/fixed"
 	"github.com/flga/freetype2/2.10.1/truetype"
+	"github.com/flga/freetype2/fixed"
 )
 
 func TestFace_Free(t *testing.T) {
@@ -77,6 +77,7 @@ func TestFaceProps(t *testing.T) {
 		maxAdvanceHeight   int
 		underlinePosition  int
 		underlineThickness int
+		glyphSlot          *GlyphSlot
 	}{
 		{
 			name:               "nil face",
@@ -113,6 +114,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   0,
 			underlinePosition:  0,
 			underlineThickness: 0,
+			glyphSlot:          nil,
 		},
 		{
 			name:              "goRegular",
@@ -161,6 +163,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -300,
 			underlineThickness: 50,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "goBold",
@@ -209,6 +212,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -300,
 			underlineThickness: 100,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "goItalic",
@@ -257,6 +261,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -300,
 			underlineThickness: 50,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "goBoldItalic",
@@ -305,6 +310,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -350,
 			underlineThickness: 100,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "goMono",
@@ -353,6 +359,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -300,
 			underlineThickness: 50,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "bungeeColorWin",
@@ -401,6 +408,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   1200,
 			underlinePosition:  0,
 			underlineThickness: 0,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "bungeeColorMac",
@@ -459,6 +467,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   0,
 			underlinePosition:  0,
 			underlineThickness: 0,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "bungeeLayersReg",
@@ -508,6 +517,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   1200,
 			underlinePosition:  0,
 			underlineThickness: 0,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "notoSansJpReg",
@@ -558,6 +568,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   3000,
 			underlinePosition:  -150,
 			underlineThickness: 50,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "notoSansJpBold",
@@ -608,6 +619,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   3000,
 			underlinePosition:  -150,
 			underlineThickness: 50,
+			glyphSlot:          &GlyphSlot{},
 		},
 		{
 			name:              "arimoRegular",
@@ -654,6 +666,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2355,
 			underlinePosition:  -292,
 			underlineThickness: 150,
+			glyphSlot:          &GlyphSlot{},
 		},
 	}
 	for _, tt := range tests {
@@ -688,6 +701,7 @@ func TestFaceProps(t *testing.T) {
 					reflect.Struct,
 					reflect.Array,
 					reflect.Interface,
+					reflect.Ptr,
 					reflect.Map:
 					if diff := diff(got, want); diff != nil {
 						t.Errorf("%s() = %v", name, diff)
@@ -733,7 +747,7 @@ func TestFaceProps(t *testing.T) {
 			testProp("MaxAdvanceHeight", face.MaxAdvanceHeight(), tt.maxAdvanceHeight)
 			testProp("UnderlinePosition", face.UnderlinePosition(), tt.underlinePosition)
 			testProp("UnderlineThickness", face.UnderlineThickness(), tt.underlineThickness)
-			testProp("Glyph", face.Glyph(), GlyphSlot{})
+			testProp("GlyphSlot", face.GlyphSlot(), tt.glyphSlot)
 		})
 	}
 }
@@ -1583,38 +1597,6 @@ func TestFace_RequestSize(t *testing.T) {
 	}
 }
 
-func TestFace_RequestSize_Free(t *testing.T) {
-	l, err := NewLibrary()
-	if err != nil {
-		t.Fatalf("unable to create lib: %s", err)
-	}
-	defer l.Free()
-
-	goRegular, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
-	var freed bool
-	defer mockFree(func(_ unsafe.Pointer) {
-		freed = true
-	}, actuallyFreeItAfter)()
-	if err := goRegular.RequestSize(SizeRequest{
-		Type:           SizeRequestTypeNominal,
-		Width:          20 << 6,
-		Height:         20 << 6,
-		HoriResolution: 72,
-		VertResolution: 72,
-	}); err != nil {
-		t.Fatalf("unable to request size: %s", err)
-	}
-
-	if !freed {
-		t.Errorf("free() was not called")
-	}
-}
-
 func TestFace_SelectSize(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1832,17 +1814,17 @@ func TestFace_SelectSize(t *testing.T) {
 	}
 }
 
-func TestFace_Glyph(t *testing.T) {
+func TestFace_GlyphSlot(t *testing.T) {
 	tests := []struct {
 		name  string
 		setup func(f *Face) error
 		face  func() (testface, error)
-		want  GlyphSlot
+		want  *GlyphSlot
 	}{
 		{
 			name: "nill face",
 			face: nilFace,
-			want: GlyphSlot{},
+			want: nil,
 		},
 		{
 			name: "go regular",
@@ -1854,7 +1836,7 @@ func TestFace_Glyph(t *testing.T) {
 
 				return f.LoadGlyph(0x24, LoadRender|LoadColor)
 			},
-			want: GlyphSlot{
+			want: &GlyphSlot{
 				GlyphIndex: 0x24,
 				Metrics: GlyphMetrics{
 					Width:        640,
@@ -1906,7 +1888,7 @@ func TestFace_Glyph(t *testing.T) {
 
 				return f.LoadGlyph(0x2b, LoadRender|LoadColor)
 			},
-			want: GlyphSlot{
+			want: &GlyphSlot{
 				GlyphIndex: 0x2b,
 				Metrics: GlyphMetrics{
 					Width:        832,
@@ -1948,7 +1930,7 @@ func TestFace_Glyph(t *testing.T) {
 
 				return f.LoadGlyph(0x22, LoadRender|LoadColor)
 			},
-			want: GlyphSlot{
+			want: &GlyphSlot{
 				GlyphIndex: 0x22,
 				Metrics: GlyphMetrics{
 					Width:        576,
@@ -2006,21 +1988,21 @@ func TestFace_Glyph(t *testing.T) {
 
 			if tt.setup != nil {
 				if err := tt.setup(face.Face); err != nil {
-					t.Fatalf("Face.Glyph() setup error: %v", err)
+					t.Fatalf("Face.GlyphSlot() setup error: %v", err)
 				}
 			}
 
-			got := face.Glyph()
+			got := face.GlyphSlot()
 
 			// in this case, vertical metrics are unreliable
-			if !face.HasFlag(FaceFlagVertical) {
+			if got != nil && !face.HasFlag(FaceFlagVertical) {
 				got.Metrics.VertAdvance, tt.want.Metrics.VertAdvance = -1, -1
 				got.Metrics.VertBearingX, tt.want.Metrics.VertBearingX = -1, -1
 				got.Metrics.VertBearingY, tt.want.Metrics.VertBearingY = -1, -1
 			}
 
 			// in this case, horizontal metrics are unreliable
-			if !face.HasFlag(FaceFlagHorizontal) {
+			if got != nil && !face.HasFlag(FaceFlagHorizontal) {
 				got.Metrics.HoriAdvance, tt.want.Metrics.HoriAdvance = -1, -1
 				got.Metrics.HoriBearingX, tt.want.Metrics.HoriBearingX = -1, -1
 				got.Metrics.HoriBearingY, tt.want.Metrics.HoriBearingY = -1, -1
@@ -2031,66 +2013,59 @@ func TestFace_Glyph(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("free", func(t *testing.T) {
+		face, err := goRegular()
+		if err != nil {
+			t.Fatalf("unable to load face: %v", err)
+		}
+
+		if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+			t.Fatalf("unable to set char size: %v", err)
+		}
+
+		if err := face.LoadChar('A', LoadDefault); err != nil {
+			t.Fatalf("unable to load char: %v", err)
+		}
+
+		slot := face.GlyphSlot()
+		if slot == nil || slot.ptr == nil {
+			t.Fatalf("slot/ptr should not be nil: %v", slot)
+		}
+
+		glyph, err := slot.Glyph()
+		if err != nil {
+			t.Fatalf("unable to get glyph: %v", err)
+		}
+		if glyph == nil || glyph.getptr() == nil {
+			t.Fatalf("glyph/ptr should not be nil: %v", glyph)
+		}
+		if err := face.Free(); err != nil {
+			t.Fatalf("unable to free face: %v", err)
+		}
+
+		if glyph.getptr() == nil {
+			t.Fatalf("glyph.ptr should not be nil: %v", glyph)
+		}
+
+		if slot.ptr != nil {
+			t.Fatalf("slot.ptr should be nil: %v", slot)
+		}
+
+		glyph2, err := slot.Glyph()
+		if glyph2 != nil {
+			t.Fatalf("glyph2 should be nil: %v", glyph2)
+		}
+		if err != ErrInvalidSlotHandle {
+			t.Fatalf("got err %v, want %v", err, ErrInvalidSlotHandle)
+		}
+	})
 }
 
 func TestFace_SetTransform(t *testing.T) {
-	goRegular, err := goRegular()
-	if err != nil {
-		t.Fatalf("unable to open font: %s", err)
-	}
-	defer goRegular.Free()
-
 	// There's no way to test without including freetype's internal headers,
-	// as such the tests are pretty superficial.
-
-	t.Run("nil face", func(t *testing.T) {
-		var f *Face
-		var freeCount int
-		defer mockFree(func(v unsafe.Pointer) {
-			freeCount++
-		}, actuallyFreeItAfter)()
-
-		f.SetTransform(Matrix{}, Vector{})
-		if want := 0; freeCount != want {
-			t.Errorf("Face.SetTransform() free count %d, want %d", freeCount, want)
-		}
-	})
-
-	t.Run("non 0 matrix", func(t *testing.T) {
-		var freeCount int
-		defer mockFree(func(v unsafe.Pointer) {
-			freeCount++
-		}, actuallyFreeItAfter)()
-
-		goRegular.SetTransform(Matrix{Xx: 1}, Vector{})
-		if want := 1; freeCount != want {
-			t.Errorf("Face.SetTransform() free count %d, want %d", freeCount, want)
-		}
-	})
-
-	t.Run("non 0 vec", func(t *testing.T) {
-		var freeCount int
-		defer mockFree(func(v unsafe.Pointer) {
-			freeCount++
-		}, actuallyFreeItAfter)()
-
-		goRegular.SetTransform(Matrix{}, Vector{X: 1})
-		if want := 1; freeCount != want {
-			t.Errorf("Face.SetTransform() free count %d, want %d", freeCount, want)
-		}
-	})
-
-	t.Run("non 0 matrix and vec", func(t *testing.T) {
-		var freeCount int
-		defer mockFree(func(v unsafe.Pointer) {
-			freeCount++
-		}, actuallyFreeItAfter)()
-
-		goRegular.SetTransform(Matrix{Xx: 1}, Vector{X: 1})
-		if want := 2; freeCount != want {
-			t.Errorf("Face.SetTransform() free count %d, want %d", freeCount, want)
-		}
-	})
+	// see TestRotate90Deg for a "general" test.
+	t.Skip()
 }
 
 func TestRotate90Deg(t *testing.T) {
@@ -2116,8 +2091,8 @@ func TestRotate90Deg(t *testing.T) {
 		t.Fatalf("unable to load glyph: %v", err)
 	}
 
-	got := face.Glyph()
-	want := GlyphSlot{
+	got := face.GlyphSlot()
+	want := &GlyphSlot{
 		GlyphIndex: 0x24,
 		Metrics: GlyphMetrics{
 			Width:        640,

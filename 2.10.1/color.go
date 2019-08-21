@@ -27,7 +27,6 @@ const (
 
 // PaletteData holds the data of the ‘CPAL’ table.
 //
-// NOTE:
 // Use GetSfntName to map name IDs and entry name IDs to name strings.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-color_management.html#ft_palette_data

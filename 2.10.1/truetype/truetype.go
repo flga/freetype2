@@ -38,7 +38,7 @@ import (
 import (
 	"time"
 
-	"github.com/flga/freetype2/2.10.1/fixed"
+	"github.com/flga/freetype2/fixed"
 )
 
 // Header models a TrueType font header table. All fields follow the OpenType specification.

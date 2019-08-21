@@ -26,7 +26,7 @@ func (v Version) String() string {
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_library
 type Library struct {
-	ptr   C.FT_Library
+	ptr   C.FT_Library `deep:"-"`
 	faces []*Face
 }
 

@@ -5,7 +5,8 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/go-test/deep"
+	"github.com/flga/freetype2/fixed"
+	"github.com/flga/freetype2/internal/deep"
 )
 
 func testdata(parts ...string) string {
@@ -89,11 +90,93 @@ func chromacheckColr() (testface, error) {
 	return openFace(testdata("chromacheck", "chromacheck-colr.woff"))
 }
 
+type testglyph struct {
+	Glyph
+	f testface
+	l *Library
+}
+
+func (g testglyph) Free() {
+	if g.Glyph != nil {
+		g.Glyph.Free()
+	}
+	g.f.Free()
+	g.l.Free()
+}
+
+func newTestGlyph(facefn func() (testface, error), char rune, flags LoadFlag, size fixed.Int26_6, dpi uint) func() (testglyph, error) {
+	return func() (testglyph, error) {
+		face, err := facefn()
+		if err != nil {
+			return testglyph{}, err
+		}
+
+		if face.Flags()&FaceFlagFixedSizes > 0 {
+			if err := face.SelectSize(0); err != nil {
+				face.Free()
+				return testglyph{}, err
+			}
+		} else {
+			if err := face.SetCharSize(size, size, dpi, dpi); err != nil {
+				face.Free()
+				return testglyph{}, err
+			}
+		}
+
+		if err := face.LoadChar(char, flags); err != nil {
+			face.Free()
+			return testglyph{}, err
+		}
+
+		slot := face.GlyphSlot()
+		got, err := slot.Glyph()
+		if err != nil {
+			face.Free()
+			return testglyph{}, err
+		}
+
+		return testglyph{Glyph: got}, nil
+	}
+}
+
+func newEmptyGlyph(format GlyphFormat) func() (testglyph, error) {
+	return func() (testglyph, error) {
+		l, err := NewLibrary()
+		if err != nil {
+			return testglyph{}, err
+		}
+
+		g, err := l.NewGlyph(format)
+		if err != nil {
+			l.Free()
+			return testglyph{}, err
+		}
+
+		return testglyph{Glyph: g, l: l}, nil
+	}
+}
+
+func newNilGlyph() (testglyph, error) {
+	return testglyph{}, nil
+}
+
+func newZeroGlyph(typ ...GlyphFormat) func() (testglyph, error) {
+	return func() (testglyph, error) {
+		t := GlyphFormatBitmap
+		if len(typ) > 0 {
+			t = typ[0]
+		}
+		switch t {
+		case GlyphFormatBitmap:
+			return testglyph{Glyph: &BitmapGlyph{}}, nil
+		case GlyphFormatOutline:
+			return testglyph{Glyph: &OutlineGlyph{}}, nil
+		default:
+			return testglyph{}, nil
+		}
+	}
+}
+
 func diff(a, b interface{}) []string {
-	orig := deep.CompareUnexportedFields
-	defer func() {
-		deep.CompareUnexportedFields = orig
-	}()
-	deep.CompareUnexportedFields = true
-	return deep.Equal(a, b)
+	return deep.Equal(a, b, deep.WithCompareUnexportedFields())
 }

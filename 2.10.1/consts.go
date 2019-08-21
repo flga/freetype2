@@ -264,7 +264,6 @@ func (g GlyphFormat) String() string {
 // KerningMode is an enumeration to specify the format of kerning values
 // returned by Face.Kerning().
 //
-// NOTE:
 // KerningModeDefault returns full pixel values; it also makes FreeType
 // heuristically scale down kerning distances at small ppem values so that they
 // don't become too big.
@@ -308,7 +307,6 @@ func (x KerningMode) String() string {
 // coverage. Use linear alpha blending and gamma correction to correctly render
 // non-monochrome glyph bitmaps onto a surface.
 //
-// NOTE:
 // Should you define FT_CONFIG_OPTION_SUBPIXEL_RENDERING in your ftoption.h,
 // which enables patented ClearType-style rendering, the LCD-optimized glyph
 // bitmaps should be filtered to reduce color fringes inherent to this

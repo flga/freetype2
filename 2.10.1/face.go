@@ -7,7 +7,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/flga/freetype2/2.10.1/fixed"
+	"github.com/flga/freetype2/fixed"
 )
 
 // GlyphIndex is the index of the glyph in the font file. For CID-keyed fonts
@@ -26,7 +26,7 @@ const MissingGlyph GlyphIndex = 0
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_face
 type Face struct {
-	ptr     C.FT_Face
+	ptr     C.FT_Face `deep:"-"`
 	dealloc []func()
 }
 
@@ -323,13 +323,21 @@ func (f *Face) UnderlineThickness() int {
 	return int(f.ptr.underline_thickness)
 }
 
-// Glyph returns a copy of the current contents, if any, of the face's glyph slot.
-func (f *Face) Glyph() GlyphSlot {
+// GlyphSlot returns a copy of the current contents, if any, of the face's glyph slot.
+func (f *Face) GlyphSlot() *GlyphSlot {
 	if f == nil || f.ptr == nil {
-		return GlyphSlot{}
+		return nil
 	}
 
-	return newGlyphSlot(f.ptr.glyph)
+	ret := newGlyphSlot(f.ptr.glyph)
+	if ret == nil {
+		return nil
+	}
+
+	f.dealloc = append(f.dealloc, func() {
+		ret.ptr = nil
+	})
+	return ret
 }
 
 // I don't know how to test this yet
@@ -377,7 +385,6 @@ func (f *Face) ActiveCharMap() (CharMap, bool) {
 // PostscriptName returns the ASCII PostScript name of a given face, if
 // available. This only works with PostScript, TrueType, and OpenType fonts.
 //
-// NOTE:
 // For variation fonts, this string changes if you select a different instance,
 // and you have to call PostscriptName again to retrieve it. FreeType follows
 // Adobe TechNote #5902, ‘Generating PostScript Names for Fonts Using OpenType
@@ -405,7 +412,6 @@ func (f *Face) PostscriptName() string {
 //
 // Don't use this function if you are using the FreeType cache API.
 //
-// NOTE:
 // While this function allows fractional points as input values, the resulting ppem value for the given resolution
 // is always rounded to the nearest integer.
 // A character width or height smaller than 1pt is set to 1pt; if both resolution values are zero, they are set to 72dpi.
@@ -428,7 +434,6 @@ func (f *Face) SetCharSize(nominalWidth, nominalHeight fixed.Int26_6, horzDPI, v
 //
 // Don't use this function if you are using the FreeType cache API.
 //
-// NOTE:
 // You should not rely on the resulting glyphs matching or being constrained to this pixel size. Refer to FT_Request_Size to understand how requested sizes relate to actual sizes.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_set_pixel_sizes
@@ -494,7 +499,6 @@ func (s SizeRequestType) String() string {
 // If type is SizeRequestTypeScales, width and height are interpreted directly as 16.16 fractional scaling values,
 // without any further modification, and both horiResolution and vertResolution are ignored.
 //
-// NOTE:
 // If width is zero, the horizontal scaling value is set equal to the vertical scaling value, and vice versa.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_requestrec
@@ -535,23 +539,15 @@ func (f *Face) RequestSize(req SizeRequest) error {
 		return ErrInvalidFaceHandle
 	}
 
-	ptr := (*C.FT_Size_RequestRec)(C.calloc(1, C.sizeof_struct_FT_Size_RequestRec_))
-	ptr._type = C.FT_Size_Request_Type(req.Type)
-	ptr.width = C.FT_Long(req.Width)
-	ptr.height = C.FT_Long(req.Height)
-	ptr.horiResolution = C.FT_UInt(req.HoriResolution)
-	ptr.vertResolution = C.FT_UInt(req.VertResolution)
-	defer free(unsafe.Pointer(ptr))
+	creq := &C.FT_Size_RequestRec{
+		_type:          C.FT_Size_Request_Type(req.Type),
+		width:          C.FT_Long(req.Width),
+		height:         C.FT_Long(req.Height),
+		horiResolution: C.FT_UInt(req.HoriResolution),
+		vertResolution: C.FT_UInt(req.VertResolution),
+	}
 
-	// creq := C.FT_Size_RequestRec{
-	// 	_type:          C.FT_Size_Request_Type(req.Type),
-	// 	width:          C.FT_Long(req.Width),
-	// 	height:         C.FT_Long(req.Height),
-	// 	horiResolution: C.FT_UInt(req.HoriResolution),
-	// 	vertResolution: C.FT_UInt(req.VertResolution),
-	// }
-
-	return getErr(C.FT_Request_Size(f.ptr, ptr))
+	return getErr(C.FT_Request_Size(f.ptr, creq)) // FT_Request_Size does not hold on to creq
 }
 
 // SelectSize selects a bitmap strike.
@@ -560,7 +556,6 @@ func (f *Face) RequestSize(req SizeRequest) error {
 //
 // Don't use this function if you are using the FreeType cache API.
 //
-// NOTE:
 // For bitmaps embedded in outline fonts it is common that only a subset of the available glyphs at a given ppem value
 // is available. FreeType silently uses outlines if there is no bitmap for a given glyph index.
 //
@@ -580,7 +575,6 @@ func (f *Face) SelectSize(strikeIndex int) error {
 // SetTransform sets the transformation that is applied to glyph images when they are loaded into a glyph slot through
 // LoadGlyph.
 //
-// NOTE:
 // The transformation is only applied to scalable image formats after the glyph has been loaded. It means that hinting
 // is unaltered by the transformation and is performed on the character size given in the last call to SetCharSize or
 // SetPixelSizes.
@@ -595,23 +589,23 @@ func (f *Face) SetTransform(matrix Matrix, delta Vector) {
 
 	var cmatrix *C.FT_Matrix
 	if matrix != (Matrix{}) {
-		cmatrix = (*C.FT_Matrix)(C.calloc(1, C.sizeof_struct_FT_Matrix_))
-		cmatrix.xx = C.FT_Fixed(matrix.Xx)
-		cmatrix.xy = C.FT_Fixed(matrix.Xy)
-		cmatrix.yx = C.FT_Fixed(matrix.Yx)
-		cmatrix.yy = C.FT_Fixed(matrix.Yy)
-		defer free(unsafe.Pointer(cmatrix)) // FT_Set_Transform makes a copy
+		cmatrix = &C.FT_Matrix{
+			xx: C.FT_Fixed(matrix.Xx),
+			xy: C.FT_Fixed(matrix.Xy),
+			yx: C.FT_Fixed(matrix.Yx),
+			yy: C.FT_Fixed(matrix.Yy),
+		}
 	}
 
 	var cdelta *C.FT_Vector
 	if delta != (Vector{}) {
-		cdelta = (*C.FT_Vector)(C.calloc(1, C.sizeof_struct_FT_Vector_))
-		cdelta.x = C.FT_Pos(delta.X)
-		cdelta.y = C.FT_Pos(delta.Y)
-		defer free(unsafe.Pointer(cdelta)) // FT_Set_Transform makes a copy
+		cdelta = &C.FT_Vector{
+			x: C.FT_Pos(delta.X),
+			y: C.FT_Pos(delta.Y),
+		}
 	}
 
-	C.FT_Set_Transform(f.ptr, cmatrix, cdelta)
+	C.FT_Set_Transform(f.ptr, cmatrix, cdelta) // c makes a copy of matrix & delta
 }
 
 // LoadGlyph loads a glyph into the glyph slot of the face.
@@ -636,7 +630,6 @@ func (f *Face) LoadGlyph(idx GlyphIndex, flags LoadFlag) error {
 // CharIndex returns the glyph index of a given character code. This function
 // uses the currently selected charmap to do the mapping.
 //
-// NOTE:
 // If you use FreeType to manipulate the contents of font files directly, be
 // aware that the glyph index returned by this function doesn't always
 // correspond to the internal indices used within the file. This is done to
@@ -660,7 +653,6 @@ func (f *Face) CharIndex(r rune) GlyphIndex {
 // FirstChar returns the first character code in the current charmap of a given
 // face, together with its corresponding glyph index.
 //
-// NOTE:
 // You should use this function together with NextChar to parse all character
 // codes available in a given charmap. The code should look like this: (TODO)
 //	FT_ULong  charcode;
@@ -697,7 +689,6 @@ func (f *Face) FirstChar() (rune, GlyphIndex) {
 //
 // GlyphIndex is set to 0 when there are no more codes in the charmap.
 //
-// NOTE:
 // You should use this function with FirstChar to walk over all character codes
 // available in a given charmap. See the note for that function for a simple
 // code example.
@@ -729,7 +720,7 @@ func (f *Face) IndexOf(glyphName string) GlyphIndex {
 
 // LoadChar loads a glyph into the glyph slot of a face object, accessed by its
 // character code.
-// NOTE:
+//
 // This function simply calls CharIndex and LoadGlyph.
 //
 // Many fonts contain glyphs that can't be loaded by this function since its
@@ -754,7 +745,6 @@ func (f *Face) LoadChar(r rune, flags LoadFlag) error {
 // The return vector is either in font units, fractional pixels (26.6 format),
 // or pixels for scalable formats, and in pixels for fixed-sizes formats.
 //
-// NOTE:
 // Only horizontal layouts (left-to-right & right-to-left) are supported by this
 // method. Other layouts, or more sophisticated kernings, are out of the scope
 // of this API function -- they can be implemented through format-specific
@@ -783,7 +773,6 @@ func (f *Face) Kern(left, right GlyphIndex, mode KerningMode) (Vector, error) {
 // GlyphName returns the ASCII name of a given glyph in a face. This only works
 // for those faces where face.HasFlag(FaceFlagGlyphNames) is true.
 //
-// NOTE:
 // An error is returned if the face doesn't provide glyph names or if the glyph
 // index is invalid.
 //
@@ -852,7 +841,6 @@ func (f *Face) SetCharMap(c CharMap) error {
 
 // FSTypeFlags returns the fsType flags for a font.
 //
-// NOTE:
 // Use this function rather than directly reading the FsType field in the
 // FontInfo struct, which is only guaranteed to return the correct results for
 // Type 1 fonts.
@@ -921,7 +909,6 @@ func (f *Face) SubGlyphInfo(idx int) (SubGlyphInfo, error) {
 // Return 0 means either ‘undefined character code’, or ‘undefined selector code’,
 // or ‘no variation selector cmap subtable’, or ‘current CharMap is not Unicode’.
 //
-// NOTE:
 // If you use FreeType to manipulate the contents of font files directly, be
 // aware that the glyph index returned by this function doesn't always
 // correspond to the internal indices used within the file. This is done to
@@ -958,7 +945,6 @@ const (
 // CharVariantIsDefault checks whether this variation of this Unicode character
 // is the one to be found in the charmap.
 //
-// NOTE:
 // This function is only meaningful if the font has a variation selector cmap subtable.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-glyph_variants.html#ft_face_getcharvariantisdefault

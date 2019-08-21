@@ -106,7 +106,6 @@ func (f *Face) GetColorGlyphLayers(baseGlyph GlyphIndex) []ColorLayer {
 // 'n'th element should be rendered with the associated palette color and
 // blended on top of the already rendered layers (elements 0, 1, ..., n-1).
 //
-// NOTE:
 // This function is necessary if you want to handle glyph layers by yourself.
 // In particular, functions that operate with Glyph objects (like GetGlyph or
 // GlyphToBitmap) don't have access to this information. TODO: revisit these names, they're not implemented yet, might change

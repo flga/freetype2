@@ -10,8 +10,8 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/flga/freetype2/2.10.1/fixed"
 	"github.com/flga/freetype2/2.10.1/truetype"
+	"github.com/flga/freetype2/fixed"
 )
 
 // Tag is a typedef for 32-bit tags (as used in the SFNT format).
@@ -37,6 +37,13 @@ type Vector struct {
 // See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_vector
 type Vector26_6 struct {
 	X, Y fixed.Int26_6
+}
+
+// Vector16_16 models a 2D vector
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_vector
+type Vector16_16 struct {
+	X, Y fixed.Int16_16
 }
 
 // BBox holds an outline's bounding box, i.e., the coordinates of its extrema in the horizontal and vertical directions.
@@ -151,11 +158,9 @@ func newBitmap(b C.FT_Bitmap) Bitmap {
 // BitmapSize models the metrics of a bitmap strike (i.e., a set of glyphs for a given point size and resolution) in a
 // bitmap font.
 //
-// NOTE:
 // Windows FNT: The nominal size given in a FNT font is not reliable. If the driver finds it incorrect, it sets Size to
 // some calculated values, and XPpem and YPpem to the pixel width and height given in the font, respectively.
 //
-// NOTE:
 // TrueType embedded bitmaps: size, width, and height values are not contained in the bitmap strike itself. They are
 // computed from the global font parameters.
 //
@@ -180,7 +185,6 @@ type BitmapSize struct {
 // Each face object owns zero or more charmaps, but only one of them can be ‘active’, providing the data used by
 // GetCharIndex or LoadChar.
 //
-// NOTE:
 // When a new face is created (either through NewFace or OpenFace), the library looks for a Unicode
 // charmap within the list and automatically activates it. If there is no Unicode charmap, FreeType doesn't set an
 // ‘active’ charmap.
@@ -430,7 +434,8 @@ type SizeMetrics struct {
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_glyphslot
 type GlyphSlot struct {
-	// [Since 2.10] The glyph index passed as an argument to LoadGlyph while
+	ptr C.FT_GlyphSlot `deep:"-"`
+	// The glyph index passed as an argument to LoadGlyph while
 	// initializing the glyph slot.
 	GlyphIndex GlyphIndex
 	// The metrics of the last loaded glyph in the slot. The returned values
@@ -491,12 +496,13 @@ type GlyphSlot struct {
 	RsbDelta Pos
 }
 
-func newGlyphSlot(s C.FT_GlyphSlot) GlyphSlot {
+func newGlyphSlot(s C.FT_GlyphSlot) *GlyphSlot {
 	if s == nil {
-		return GlyphSlot{}
+		return nil
 	}
 
-	return GlyphSlot{
+	return &GlyphSlot{
+		ptr:        s,
 		GlyphIndex: GlyphIndex(s.glyph_index),
 		Metrics: GlyphMetrics{
 			Width:        Pos(s.metrics.width),
