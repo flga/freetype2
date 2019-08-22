@@ -89,6 +89,9 @@ func notoColorEmoji() (testface, error) {
 func chromacheckColr() (testface, error) {
 	return openFace(testdata("chromacheck", "chromacheck-colr.woff"))
 }
+func nimbusMono() (testface, error) {
+	return openFace(testdata("nimbus", "NimbusMonoPS-Regular.pfa"))
+}
 
 type testglyph struct {
 	Glyph
