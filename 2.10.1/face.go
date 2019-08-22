@@ -359,12 +359,16 @@ func (f *Face) GlyphSlot() *GlyphSlot {
 // }
 
 // Size returns a copy of the current active size for this face.
-func (f *Face) Size() Size {
+func (f *Face) Size() *Size {
 	if f == nil || f.ptr == nil {
-		return Size{}
+		return nil
 	}
 
-	return newSize(f.ptr.size)
+	ret := newSize(f.ptr.size)
+	f.dealloc = append(f.dealloc, func() {
+		ret.ptr = nil
+	})
+	return ret
 }
 
 // ActiveCharMap returns a copy of the active charmap.

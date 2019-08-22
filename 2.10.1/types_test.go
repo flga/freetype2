@@ -94,7 +94,7 @@ func TestCharMap_Index(t *testing.T) {
 }
 
 func Test_newSize(t *testing.T) {
-	if got, want := newSize(nil), (Size{}); got != want {
+	if got, want := newSize(nil), (*Size)(nil); got != want {
 		t.Errorf("newSize(nil) = %v, want %v", got, want)
 	}
 	face, err := goRegular()
@@ -108,8 +108,8 @@ func Test_newSize(t *testing.T) {
 	}
 
 	got := newSize(face.ptr.size)
-	want := Size{
-		SizeMetrics{
+	want := &Size{
+		SizeMetrics: SizeMetrics{
 			XPpem:      20,
 			YPpem:      20,
 			XScale:     40960,
@@ -190,6 +190,11 @@ func Test_newGlyphSlot(t *testing.T) {
 }
 
 func TestGlyphSlot_SubGlyphInfo(t *testing.T) {
+	var nilSlot *GlyphSlot
+	if got, err := nilSlot.SubGlyphInfo(0); got != (SubGlyphInfo{}) || err != ErrInvalidArgument {
+		t.Errorf("GlyphSlot.SubGlyphInfo() got %v, %v, want %v, %v", got, err, SubGlyphInfo{}, ErrInvalidArgument)
+	}
+
 	face, err := bungeeColorWin()
 	if err != nil {
 		t.Fatalf("unable to load face: %v", err)
@@ -204,7 +209,6 @@ func TestGlyphSlot_SubGlyphInfo(t *testing.T) {
 		t.Fatalf("unable load char: %v", err)
 	}
 
-	slot := face.GlyphSlot()
 	want0 := SubGlyphInfo{
 		Index:     0x18,
 		Flags:     0x226,
@@ -221,20 +225,24 @@ func TestGlyphSlot_SubGlyphInfo(t *testing.T) {
 		Transform: Matrix{Xx: 65536, Xy: 0, Yx: 0, Yy: 65536},
 	}
 
-	got0, err := slot.SubGlyphInfo(0)
-	if err != nil {
-		t.Errorf("GlyphSlot.SubGlyphInfo() error = %v", err)
+	got0, err := face.GlyphSlot().SubGlyphInfo(0)
+	if diff := diff(got0, want0); diff != nil || err != nil {
+		t.Errorf("GlyphSlot.SubGlyphInfo(0) = %v, %v", diff, err)
 	}
-	if diff := diff(got0, want0); diff != nil {
-		t.Errorf("GlyphSlot.SubGlyphInfo() = %v", diff)
+	got1, err := face.GlyphSlot().SubGlyphInfo(1)
+	if diff := diff(got1, want1); diff != nil || err != nil {
+		t.Errorf("GlyphSlot.SubGlyphInfo(1) = %v, %v", diff, err)
+	}
+	if got, err := face.GlyphSlot().SubGlyphInfo(2); got != (SubGlyphInfo{}) || err != ErrInvalidArgument {
+		t.Errorf("GlyphSlot.SubGlyphInfo(2) got %v, %v, want %v, %v", got, err, SubGlyphInfo{}, ErrInvalidArgument)
 	}
 
-	got1, err := slot.SubGlyphInfo(1)
-	if err != nil {
-		t.Errorf("GlyphSlot.SubGlyphInfo() error = %v", err)
+	// not a composite
+	if err := face.LoadChar(0x3a, LoadDefault); err != nil {
+		t.Fatalf("unable load char: %v", err)
 	}
-	if diff := diff(got1, want1); diff != nil {
-		t.Errorf("GlyphSlot.SubGlyphInfo() = %v", diff)
+	if got, err := face.GlyphSlot().SubGlyphInfo(0); got != (SubGlyphInfo{}) || err != ErrInvalidArgument {
+		t.Errorf("GlyphSlot.SubGlyphInfo() got %v, %v, want %v, %v", got, err, SubGlyphInfo{}, ErrInvalidArgument)
 	}
 }
 
@@ -405,4 +413,39 @@ func TestGlyphSlot_RenderGlyph(t *testing.T) {
 		t.Error(diff)
 	}
 
+}
+
+func TestSize_Free(t *testing.T) {
+	var nilSize *Size
+	if err := nilSize.Free(); err != nil {
+		t.Errorf("Size.Free() error = %v", err)
+	}
+
+	face, err := goRegular()
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
+	}
+
+	s, err := face.NewSize()
+	if err != nil {
+		t.Fatalf("unable to create size: %v", err)
+	}
+	if err := s.Free(); err != nil {
+		t.Fatalf("unable to free: %v", err)
+	}
+	if s.ptr != nil {
+		t.Fatalf("ptr should be nil")
+	}
+
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+		t.Fatalf("unable to set char size: %v", err)
+	}
+
+	s = face.Size()
+	if err := face.Free(); err != nil {
+		t.Fatalf("unable to free: %v", err)
+	}
+	if s.ptr != nil {
+		t.Fatalf("ptr should be nil")
+	}
 }

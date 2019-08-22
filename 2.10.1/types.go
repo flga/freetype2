@@ -2,6 +2,7 @@ package freetype2
 
 // #include <ft2build.h>
 // #include FT_FREETYPE_H
+// #include FT_SIZES_H
 // #include FT_TRUETYPE_TABLES_H
 import (
 	"C"
@@ -257,16 +258,18 @@ func newCharMap(c C.FT_CharMap) CharMap {
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size
 type Size struct {
+	ptr C.FT_Size `deep:"-"`
 	SizeMetrics
 }
 
-func newSize(s C.FT_Size) Size {
+func newSize(s C.FT_Size) *Size {
 	if s == nil {
-		return Size{}
+		return nil
 	}
 
-	return Size{
-		SizeMetrics{
+	return &Size{
+		ptr: s,
+		SizeMetrics: SizeMetrics{
 			XPpem:      int(s.metrics.x_ppem),
 			YPpem:      int(s.metrics.y_ppem),
 			XScale:     fixed.Int16_16(s.metrics.x_scale),
@@ -277,6 +280,22 @@ func newSize(s C.FT_Size) Size {
 			MaxAdvance: fixed.Int26_6(s.metrics.max_advance),
 		},
 	}
+}
+
+// Free discards the size object.
+//
+// Note that Face.Free() automatically discards all size objects allocated with
+// Face.NewSize().
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-sizes_management.html#ft_done_size
+func (s *Size) Free() error {
+	if s == nil || s.ptr == nil {
+		return nil
+	}
+
+	err := getErr(C.FT_Done_Size(s.ptr))
+	s.ptr = nil
+	return err
 }
 
 // SizeMetrics contains the metrics of a size object.

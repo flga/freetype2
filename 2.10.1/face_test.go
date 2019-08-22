@@ -742,7 +742,11 @@ func TestFaceProps(t *testing.T) {
 			testProp("ActiveCharMap", activeOk, tt.activeOk)
 			testProp("NumFixedSizes", face.NumFixedSizes(), tt.numSizes)
 			testProp("AvailableSizes", face.AvailableSizes(), tt.avaliableSizes)
-			testProp("Size", face.Size(), Size{})
+			if face.Face == nil {
+				testProp("Size", face.Size(), (*Size)(nil))
+			} else {
+				testProp("Size", face.Size(), &Size{})
+			}
 			testProp("MaxAdvanceWidth", face.MaxAdvanceWidth(), tt.maxAdvanceWidth)
 			testProp("MaxAdvanceHeight", face.MaxAdvanceHeight(), tt.maxAdvanceHeight)
 			testProp("UnderlinePosition", face.UnderlinePosition(), tt.underlinePosition)
@@ -981,6 +985,24 @@ func TestFace_SetCharMap(t *testing.T) {
 	}
 }
 
+func TestFace_Size_free(t *testing.T) {
+	face, err := goRegular()
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
+	}
+
+	got := face.Size()
+
+	if got.ptr == nil {
+		t.Fatalf("Face.Size() ptr is nil")
+	}
+
+	face.Free()
+	if got.ptr != nil {
+		t.Fatalf("Face.Size() ptr is not nil")
+	}
+}
+
 func TestFace_SetCharSize(t *testing.T) {
 	type args struct {
 		nominalWidth  fixed.Int26_6
@@ -992,14 +1014,14 @@ func TestFace_SetCharSize(t *testing.T) {
 		name     string
 		face     func() (testface, error)
 		args     args
-		wantSize Size
+		wantSize *Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
 			face:     nilFace,
 			args:     args{},
-			wantSize: Size{},
+			wantSize: nil,
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
@@ -1011,8 +1033,8 @@ func TestFace_SetCharSize(t *testing.T) {
 				horzDPI:       72,
 				vertDPI:       72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      20,
 					YPpem:      20,
 					XScale:     40960,
@@ -1034,8 +1056,8 @@ func TestFace_SetCharSize(t *testing.T) {
 				horzDPI:       72,
 				vertDPI:       72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      20,
 					YPpem:      20,
 					XScale:     83886,
@@ -1057,8 +1079,8 @@ func TestFace_SetCharSize(t *testing.T) {
 				horzDPI:       72,
 				vertDPI:       72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      32,
 					YPpem:      32,
 					XScale:     134218,
@@ -1080,8 +1102,8 @@ func TestFace_SetCharSize(t *testing.T) {
 				horzDPI:       72,
 				vertDPI:       72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1097,8 +1119,8 @@ func TestFace_SetCharSize(t *testing.T) {
 				horzDPI:       72,
 				vertDPI:       72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1117,8 +1139,8 @@ func TestFace_SetCharSize(t *testing.T) {
 			if err := face.SetCharSize(tt.args.nominalWidth, tt.args.nominalHeight, tt.args.horzDPI, tt.args.vertDPI); err != tt.wantErr {
 				t.Errorf("Face.SetCharSize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got := face.Size(); got != tt.wantSize {
-				t.Errorf("Face.SetCharSize() %v, want %v", got, tt.wantSize)
+			if diff := diff(face.Size(), tt.wantSize); diff != nil {
+				t.Errorf("Face.SetCharSize() %v", diff)
 			}
 		})
 	}
@@ -1130,13 +1152,13 @@ func TestFace_SetPixelSizes(t *testing.T) {
 		face     func() (testface, error)
 		width    uint
 		height   uint
-		wantSize Size
+		wantSize *Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
 			face:     nilFace,
-			wantSize: Size{},
+			wantSize: nil,
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
@@ -1144,8 +1166,8 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			face:   goRegular,
 			width:  20,
 			height: 20,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      20,
 					YPpem:      20,
 					XScale:     40960,
@@ -1163,8 +1185,8 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			face:   bungeeColorMac,
 			width:  20,
 			height: 20,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      20,
 					YPpem:      20,
 					XScale:     83886,
@@ -1182,8 +1204,8 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			face:   bungeeColorMac,
 			width:  32,
 			height: 32,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      32,
 					YPpem:      32,
 					XScale:     134218,
@@ -1201,8 +1223,8 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			face:   bungeeColorMac,
 			width:  19,
 			height: 19,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1214,8 +1236,8 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			face:   bungeeColorMac,
 			width:  21,
 			height: 21,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1234,8 +1256,8 @@ func TestFace_SetPixelSizes(t *testing.T) {
 			if err := face.SetPixelSizes(tt.width, tt.height); err != tt.wantErr {
 				t.Errorf("Face.SetPixelSizes() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got := face.Size(); got != tt.wantSize {
-				t.Errorf("Face.SetPixelSizes() %v, want %v", got, tt.wantSize)
+			if diff := diff(face.Size(), tt.wantSize); diff != nil {
+				t.Errorf("Face.SetPixelSizes() %v", diff)
 			}
 		})
 	}
@@ -1268,14 +1290,14 @@ func TestFace_RequestSize(t *testing.T) {
 		name     string
 		face     func() (testface, error)
 		req      SizeRequest
-		wantSize Size
+		wantSize *Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
 			face:     nilFace,
 			req:      SizeRequest{},
-			wantSize: Size{},
+			wantSize: nil,
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
@@ -1288,8 +1310,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      20,
 					YPpem:      20,
 					XScale:     40960,
@@ -1312,8 +1334,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      17,
 					YPpem:      17,
 					XScale:     35440,
@@ -1336,8 +1358,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      16,
 					YPpem:      15,
 					XScale:     32264,
@@ -1360,8 +1382,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      17,
 					YPpem:      17,
 					XScale:     35440,
@@ -1384,8 +1406,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      1,
 					YPpem:      1,
 					XScale:     1280,
@@ -1408,8 +1430,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 1,
 				VertResolution: 1,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      0,
 					YPpem:      0,
 					XScale:     576,
@@ -1432,8 +1454,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      20,
 					YPpem:      20,
 					XScale:     83886,
@@ -1456,8 +1478,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      32,
 					YPpem:      32,
 					XScale:     134218,
@@ -1480,8 +1502,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1498,8 +1520,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1516,8 +1538,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1534,8 +1556,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1552,8 +1574,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1570,8 +1592,8 @@ func TestFace_RequestSize(t *testing.T) {
 				HoriResolution: 72,
 				VertResolution: 72,
 			},
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XScale: 1 << 16,
 					YScale: 1 << 16,
 				},
@@ -1590,8 +1612,8 @@ func TestFace_RequestSize(t *testing.T) {
 			if err := face.RequestSize(tt.req); err != tt.wantErr {
 				t.Errorf("Face.RequestSize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got := face.Size(); got != tt.wantSize {
-				t.Errorf("Face.RequestSize() %v, want %v", got, tt.wantSize)
+			if diff := diff(face.Size(), tt.wantSize); diff != nil {
+				t.Errorf("Face.RequestSize() %v", diff)
 			}
 		})
 	}
@@ -1602,36 +1624,36 @@ func TestFace_SelectSize(t *testing.T) {
 		name     string
 		face     func() (testface, error)
 		idx      int
-		wantSize Size
+		wantSize *Size
 		wantErr  error
 	}{
 		{
 			name:     "nil face",
 			face:     nilFace,
 			idx:      0,
-			wantSize: Size{},
+			wantSize: nil,
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name:     "go regular 0",
 			face:     goRegular,
 			idx:      0,
-			wantSize: Size{},
+			wantSize: &Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name:     "go regular 1",
 			face:     goRegular,
 			idx:      1,
-			wantSize: Size{},
+			wantSize: &Size{},
 			wantErr:  ErrInvalidFaceHandle,
 		},
 		{
 			name: "bungee color mac 0",
 			face: bungeeColorMac,
 			idx:  0,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      20,
 					YPpem:      20,
 					XScale:     83886,
@@ -1648,8 +1670,8 @@ func TestFace_SelectSize(t *testing.T) {
 			name: "bungee color mac 1",
 			face: bungeeColorMac,
 			idx:  1,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      32,
 					YPpem:      32,
 					XScale:     134218,
@@ -1666,8 +1688,8 @@ func TestFace_SelectSize(t *testing.T) {
 			name: "bungee color mac 2",
 			face: bungeeColorMac,
 			idx:  2,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      40,
 					YPpem:      40,
 					XScale:     167772,
@@ -1684,8 +1706,8 @@ func TestFace_SelectSize(t *testing.T) {
 			name: "bungee color mac 3",
 			face: bungeeColorMac,
 			idx:  3,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      0x48,
 					YPpem:      0x48,
 					XScale:     301990,
@@ -1702,8 +1724,8 @@ func TestFace_SelectSize(t *testing.T) {
 			name: "bungee color mac 4",
 			face: bungeeColorMac,
 			idx:  4,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      0x60,
 					YPpem:      0x60,
 					XScale:     402653,
@@ -1720,8 +1742,8 @@ func TestFace_SelectSize(t *testing.T) {
 			name: "bungee color mac 5",
 			face: bungeeColorMac,
 			idx:  5,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      0x80,
 					YPpem:      0x80,
 					XScale:     536871,
@@ -1738,8 +1760,8 @@ func TestFace_SelectSize(t *testing.T) {
 			name: "bungee color mac 6",
 			face: bungeeColorMac,
 			idx:  6,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      0x100,
 					YPpem:      0x100,
 					XScale:     1073742,
@@ -1756,8 +1778,8 @@ func TestFace_SelectSize(t *testing.T) {
 			name: "bungee color mac 7",
 			face: bungeeColorMac,
 			idx:  7,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      0x200,
 					YPpem:      0x200,
 					XScale:     2147484,
@@ -1774,8 +1796,8 @@ func TestFace_SelectSize(t *testing.T) {
 			name: "bungee color mac 8",
 			face: bungeeColorMac,
 			idx:  8,
-			wantSize: Size{
-				SizeMetrics{
+			wantSize: &Size{
+				SizeMetrics: SizeMetrics{
 					XPpem:      0x400,
 					YPpem:      0x400,
 					XScale:     4294967,
@@ -1792,7 +1814,7 @@ func TestFace_SelectSize(t *testing.T) {
 			name:     "bungee color mac 9",
 			face:     bungeeColorMac,
 			idx:      9,
-			wantSize: Size{},
+			wantSize: &Size{},
 			wantErr:  ErrInvalidArgument,
 		},
 	}
@@ -1807,8 +1829,8 @@ func TestFace_SelectSize(t *testing.T) {
 			if err := face.SelectSize(tt.idx); err != tt.wantErr {
 				t.Errorf("Face.SelectSize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if got := face.Size(); got != tt.wantSize {
-				t.Errorf("Face.SelectSize() %v, want %v", got, tt.wantSize)
+			if diff := diff(face.Size(), tt.wantSize); diff != nil {
+				t.Errorf("Face.SelectSize() %v", diff)
 			}
 		})
 	}
