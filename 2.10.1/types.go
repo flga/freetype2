@@ -531,6 +531,147 @@ func newGlyphSlot(s C.FT_GlyphSlot) *GlyphSlot {
 	}
 }
 
+// SubGlyphInfo contains info about a subglyph.
+//
+// The values of Arg1, Arg2, and Transform must be interpreted depending on the
+// flags present in Flags. See the OpenType specification for details.
+//
+// https://docs.microsoft.com/en-us/typography/opentype/spec/glyf#composite-glyph-description
+type SubGlyphInfo struct {
+	Index     GlyphIndex
+	Flags     SubGlyphFlag
+	Arg1      int
+	Arg2      int
+	Transform Matrix
+}
+
+// SubGlyphInfo retrieves a description of a given subglyph. Only use it if
+// glyph.Format is GlyphFormatComposite; an error is returned otherwise.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_subglyph_info
+func (g *GlyphSlot) SubGlyphInfo(idx int) (SubGlyphInfo, error) {
+	if g == nil || g.ptr == nil {
+		return SubGlyphInfo{}, ErrInvalidArgument
+	}
+
+	if g.Format != GlyphFormatComposite {
+		return SubGlyphInfo{}, ErrInvalidArgument
+	}
+
+	if C.uint(idx) >= g.ptr.num_subglyphs {
+		return SubGlyphInfo{}, ErrInvalidArgument
+	}
+
+	var index C.FT_Int
+	var flags C.FT_UInt
+	var arg1 C.FT_Int
+	var arg2 C.FT_Int
+	var transform C.FT_Matrix
+	if err := getErr(C.FT_Get_SubGlyph_Info(g.ptr, C.uint(idx), &index, &flags, &arg1, &arg2, &transform)); err != nil {
+		return SubGlyphInfo{}, err
+	}
+
+	return SubGlyphInfo{
+		Index: GlyphIndex(index),
+		Flags: SubGlyphFlag(flags),
+		Arg1:  int(arg1),
+		Arg2:  int(arg2),
+		Transform: Matrix{
+			Xx: fixed.Int16_16(transform.xx),
+			Xy: fixed.Int16_16(transform.xy),
+			Yx: fixed.Int16_16(transform.yx),
+			Yy: fixed.Int16_16(transform.yy),
+		},
+	}, nil
+}
+
+// RenderGlyph converts a given glyph image to a bitmap. It does so by inspecting
+// the glyph image format, finding the relevant renderer, and invoking it.
+//
+// If RenderModeNormal is used, a previous call of Face.LoadGlyph with flag
+// LoadColor makes RenderGlyph provide a default blending of colored glyph layers
+// associated with the current glyph slot (provided the font contains such layers)
+// instead of rendering the glyph slot's outline. This is an experimental feature;
+// see LoadColor for more information.
+//
+// To get meaningful results, font scaling values must be set with functions like
+// Face.SetCharSize before calling RenderGlyph.
+//
+// When FreeType outputs a bitmap of a glyph, it really outputs an alpha coverage
+// map. If a pixel is completely covered by a filled-in outline, the bitmap
+// contains 0xFF at that pixel, meaning that 0xFF/0xFF fraction of that pixel is
+// covered, meaning the pixel is 100% black (or 0% bright). If a pixel is only
+// 50% covered (value 0x80), the pixel is made 50% black (50% bright or a middle
+// shade of grey). 0% covered means 0% black (100% bright or white).
+//
+// On high-DPI screens like on smartphones and tablets, the pixels are so small
+// that their chance of being completely covered and therefore completely black
+// are fairly good. On the low-DPI screens, however, the situation is different.
+// The pixels are too large for most of the details of a glyph and shades of
+// gray are the norm rather than the exception.
+//
+// This is relevant because all our screens have a second problem: they are not
+// linear. 1 + 1 is not 2. Twice the value does not result in twice the brightness.
+// When a pixel is only 50% covered, the coverage map says 50% black, and this
+// translates to a pixel value of 128 when you use 8 bits per channel (0-255).
+// However, this does not translate to 50% brightness for that pixel on our sRGB
+// and gamma 2.2 screens. Due to their non-linearity, they dwell longer in the
+// darks and only a pixel value of about 186 results in 50% brightness -- 128
+// ends up too dark on both bright and dark backgrounds. The net result is that
+// dark text looks burnt-out, pixely and blotchy on bright background, bright
+// text too frail on dark backgrounds, and colored text on colored background
+// (for example, red on green) seems to have dark halos or ‘dirt’ around it. The
+// situation is especially ugly for diagonal stems like in ‘w’ glyph shapes where
+// the quality of FreeType's anti-aliasing depends on the correct display of
+// grays. On high-DPI screens where smaller, fully black pixels reign supreme,
+// this doesn't matter, but on our low-DPI screens with all the gray shades, it
+// does. 0% and 100% brightness are the same things in linear and non-linear
+// space, just all the shades in-between aren't.
+//
+// The blending function for placing text over a background is
+//	dst := alpha * src + (1 - alpha) * dst
+// which is known as the OVER operator.
+//
+// To correctly composite an antialiased pixel of a glyph onto a surface:
+//
+// 1 - take the foreground and background colors (e.g., in sRGB space) and apply
+// gamma to get them in a linear space
+//
+// 2 - use OVER to blend the two linear colors using the glyph pixel as the
+// alpha value (remember, the glyph bitmap is an alpha coverage bitmap)
+//
+// 3 - apply inverse gamma to the blended pixel and write it back to the image.
+//
+// Internal testing at Adobe found that a target inverse gamma of 1.8 for step 3
+// gives good results across a wide range of displays with an sRGB gamma curve or
+// a similar one.
+//
+// This process can cost performance. There is an approximation that does not
+// need to know about the background color; see https://bel.fi/alankila/lcd/ and
+// https://bel.fi/alankila/lcd/alpcor.html for details.
+//
+// ATTENTION: Linear blending is even more important when dealing with
+// subpixel-rendered glyphs to prevent color-fringing! A subpixel-rendered
+// glyph must first be filtered with a filter that gives equal weight to the
+// three color primaries and does not exceed a sum of 0x100, see section
+// ‘Subpixel Rendering’. Then the only difference to gray linear blending is that
+// subpixel-rendered linear blending is done 3 times per pixel: red foreground
+// subpixel to red background subpixel and so on for green and blue.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_render_glyph
+func (g *GlyphSlot) RenderGlyph(mode RenderMode) error {
+	if g == nil || g.ptr == nil {
+		return ErrInvalidArgument
+	}
+
+	if err := getErr(C.FT_Render_Glyph(g.ptr, C.FT_Render_Mode(mode))); err != nil {
+		return err
+	}
+
+	*g = *newGlyphSlot(g.ptr)
+	return nil
+}
+
 // GlyphMetrics models the metrics of a single glyph. The values are expressed
 // in 26.6 fractional pixel format; if the flag LoadNoScale has been used while
 // loading the glyph, values are expressed in font units instead.

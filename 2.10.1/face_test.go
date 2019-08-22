@@ -2874,10 +2874,6 @@ func TestFace_FSTypeFlags(t *testing.T) {
 	}
 }
 
-func TestFace_SubGlyphInfo(t *testing.T) {
-	t.Skip("I could not find a font with composite glyphs")
-}
-
 func TestFace_CharVariantIndex(t *testing.T) {
 	tests := []struct {
 		name            string

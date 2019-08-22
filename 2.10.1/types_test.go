@@ -189,6 +189,55 @@ func Test_newGlyphSlot(t *testing.T) {
 	}
 }
 
+func TestGlyphSlot_SubGlyphInfo(t *testing.T) {
+	face, err := bungeeColorWin()
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
+	}
+	defer face.Free()
+
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+		t.Fatalf("unable set char size: %v", err)
+	}
+
+	if err := face.LoadChar(0x3a, LoadNoRecurse); err != nil {
+		t.Fatalf("unable load char: %v", err)
+	}
+
+	slot := face.GlyphSlot()
+	want0 := SubGlyphInfo{
+		Index:     0x18,
+		Flags:     0x226,
+		Arg1:      0,
+		Arg2:      0,
+		Transform: Matrix{Xx: 65536, Xy: 0, Yx: 0, Yy: 65536},
+	}
+
+	want1 := SubGlyphInfo{
+		Index:     0x18,
+		Flags:     0x107,
+		Arg1:      0,
+		Arg2:      355,
+		Transform: Matrix{Xx: 65536, Xy: 0, Yx: 0, Yy: 65536},
+	}
+
+	got0, err := slot.SubGlyphInfo(0)
+	if err != nil {
+		t.Errorf("GlyphSlot.SubGlyphInfo() error = %v", err)
+	}
+	if diff := diff(got0, want0); diff != nil {
+		t.Errorf("GlyphSlot.SubGlyphInfo() = %v", diff)
+	}
+
+	got1, err := slot.SubGlyphInfo(1)
+	if err != nil {
+		t.Errorf("GlyphSlot.SubGlyphInfo() error = %v", err)
+	}
+	if diff := diff(got1, want1); diff != nil {
+		t.Errorf("GlyphSlot.SubGlyphInfo() = %v", diff)
+	}
+}
+
 func Test_newOutline(t *testing.T) {
 	face, err := notoSansJpReg()
 	if err != nil {
@@ -225,4 +274,135 @@ func Test_newOutline(t *testing.T) {
 	if diff := diff(got, want); diff != nil {
 		t.Errorf("newOutline() %v", diff)
 	}
+}
+
+func TestGlyphSlot_RenderGlyph(t *testing.T) {
+	var slot *GlyphSlot
+	if err := slot.RenderGlyph(0); err != ErrInvalidArgument {
+		t.Errorf("GlyphSlot.RenderGlyph() error = %v, want %v", err, ErrInvalidArgument)
+	}
+
+	face, err := goRegular()
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
+	}
+	defer face.Free()
+
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+		t.Fatalf("unable set char size: %v", err)
+	}
+
+	if err := face.LoadChar('A', LoadDefault); err != nil {
+		t.Fatalf("unable load char: %v", err)
+	}
+
+	slot = face.GlyphSlot()
+	want := &GlyphSlot{
+		GlyphIndex: 0x24,
+		Metrics: GlyphMetrics{
+			Width:        640,
+			Height:       704,
+			HoriBearingX: 0,
+			HoriBearingY: 704,
+			HoriAdvance:  576,
+			VertBearingX: -320,
+			VertBearingY: 64,
+			VertAdvance:  896,
+		},
+		LinearHoriAdvance: 611968,
+		LinearVertAdvance: 884352,
+		Advance:           Vector26_6{X: 576, Y: 0},
+		Format:            GlyphFormatOutline,
+		Bitmap: Bitmap{
+			Rows:      11,
+			Width:     10,
+			Pitch:     10,
+			Buffer:    nil,
+			NumGrays:  256,
+			PixelMode: PixelModeGray,
+		},
+		BitmapLeft: 0,
+		BitmapTop:  11,
+		Outline: Outline{
+			Points: []Vector{
+				{8, 0},
+				{254, 704},
+				{345, 704},
+				{587, 0},
+				{488, 0},
+				{421, 182},
+				{161, 182},
+				{94, 0},
+				{187, 255},
+				{396, 255},
+				{292, 565},
+			},
+			Tags:     []byte{0x95, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+			Contours: []int16{7, 10},
+			Flags:    0x130,
+		},
+		NumSubglyphs: 0,
+		LsbDelta:     0,
+		RsbDelta:     0,
+	}
+
+	if diff := diff(slot, want); diff != nil {
+		t.Error(diff)
+	}
+
+	want = &GlyphSlot{
+		GlyphIndex: 0x24,
+		Metrics: GlyphMetrics{
+			Width:        640,
+			Height:       704,
+			HoriBearingX: 0,
+			HoriBearingY: 704,
+			HoriAdvance:  576,
+			VertBearingX: -320,
+			VertBearingY: 64,
+			VertAdvance:  896,
+		},
+		LinearHoriAdvance: 611968,
+		LinearVertAdvance: 884352,
+		Advance:           Vector26_6{X: 576, Y: 0},
+		Format:            GlyphFormatBitmap,
+		Bitmap: Bitmap{
+			Rows:      11,
+			Width:     10,
+			Pitch:     10,
+			Buffer:    testGlyphSlot_RenderGlyph_data(),
+			NumGrays:  256,
+			PixelMode: PixelModeGray,
+		},
+		BitmapLeft: 0,
+		BitmapTop:  11,
+		Outline: Outline{
+			Points: []Vector{
+				{8, 0},
+				{254, 704},
+				{345, 704},
+				{587, 0},
+				{488, 0},
+				{421, 182},
+				{161, 182},
+				{94, 0},
+				{187, 255},
+				{396, 255},
+				{292, 565},
+			},
+			Tags:     []byte{0x95, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+			Contours: []int16{7, 10},
+			Flags:    0x130,
+		},
+		NumSubglyphs: 0,
+		LsbDelta:     0,
+		RsbDelta:     0,
+	}
+	if err := slot.RenderGlyph(RenderModeNormal); err != nil {
+		t.Errorf("GlyphSlot.RenderGlyph() error = %v", err)
+	}
+	if diff := diff(slot, want); diff != nil {
+		t.Error(diff)
+	}
+
 }

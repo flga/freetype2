@@ -738,8 +738,6 @@ func (f *Face) LoadChar(r rune, flags LoadFlag) error {
 	return getErr(C.FT_Load_Char(f.ptr, C.ulong(r), C.FT_Int32(flags)))
 }
 
-// TODO: FT_Render_Glyph
-
 // Kern returns the kerning vector between two glyphs of the same face.
 //
 // The return vector is either in font units, fractional pixels (26.6 format),
@@ -852,55 +850,6 @@ func (f *Face) FSTypeFlags() FSTypeFlag {
 	}
 
 	return FSTypeFlag(C.FT_Get_FSType_Flags(f.ptr))
-}
-
-// SubGlyphInfo contains info about a subglyph.
-// The values of Arg1, Arg2, and Transform must be interpreted depending on the
-// flags present in Flags. See the OpenType specification for details.
-//
-// https://docs.microsoft.com/en-us/typography/opentype/spec/glyf#composite-glyph-description
-type SubGlyphInfo struct {
-	Index     GlyphIndex
-	Flags     SubGlyphFlag
-	Arg1      int
-	Arg2      int
-	Transform Matrix
-}
-
-// SubGlyphInfo retrieves a description of a given subglyph. Only use it if
-// glyph.Format is GlyphFormatComposite; an error is returned otherwise.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_get_subglyph_info
-func (f *Face) SubGlyphInfo(idx int) (SubGlyphInfo, error) {
-	if f == nil || f.ptr == nil {
-		return SubGlyphInfo{}, ErrInvalidFaceHandle
-	}
-
-	if f.ptr.glyph == nil || C.uint(idx) >= f.ptr.glyph.num_subglyphs {
-		return SubGlyphInfo{}, ErrInvalidArgument
-	}
-
-	var index C.FT_Int
-	var flags C.FT_UInt
-	var arg1 C.FT_Int
-	var arg2 C.FT_Int
-	var transform C.FT_Matrix
-	if err := getErr(C.FT_Get_SubGlyph_Info(f.ptr.glyph, C.uint(idx), &index, &flags, &arg1, &arg2, &transform)); err != nil {
-		return SubGlyphInfo{}, err
-	}
-
-	return SubGlyphInfo{
-		Index: GlyphIndex(index),
-		Flags: SubGlyphFlag(flags),
-		Arg1:  int(arg1),
-		Arg2:  int(arg2),
-		Transform: Matrix{
-			Xx: fixed.Int16_16(transform.xx),
-			Xy: fixed.Int16_16(transform.xy),
-			Yx: fixed.Int16_16(transform.yx),
-			Yy: fixed.Int16_16(transform.yy),
-		},
-	}, nil
 }
 
 // CharVariantIndex returns the glyph index of a given character code as
