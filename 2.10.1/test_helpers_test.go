@@ -92,6 +92,12 @@ func chromacheckColr() (testface, error) {
 func nimbusMono() (testface, error) {
 	return openFace(testdata("nimbus", "NimbusMonoPS-Regular.pfa"))
 }
+func gohuBdf() (testface, error) {
+	return openFace(testdata("gohu", "gohufont-11.bdf"))
+}
+func gohuPcf() (testface, error) {
+	return openFace(testdata("gohu", "gohufont-11.pcf"))
+}
 
 type testglyph struct {
 	Glyph
