@@ -453,7 +453,7 @@ const (
 	PlatformMicrosoft PlatformID = C.TT_PLATFORM_MICROSOFT
 	// PlatformCustom is used to indicate application-specific charmaps.
 	PlatformCustom PlatformID = C.TT_PLATFORM_CUSTOM
-	//PlatformAdobe isn't part of any font format specification, but is used by FreeType to report Adobe-specific
+	// PlatformAdobe isn't part of any font format specification, but is used by FreeType to report Adobe-specific
 	// charmaps in a CharMap struct. See AdobeEncodingIDs.
 	PlatformAdobe PlatformID = C.TT_PLATFORM_ADOBE
 )
