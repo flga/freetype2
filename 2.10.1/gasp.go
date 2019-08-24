@@ -5,7 +5,7 @@ package freetype2
 // #include FT_GASP_H
 import "C"
 
-// Gasp is a list of values and/or bit-flags returned by the Face.Gasp method.
+// GaspFlag is a list of values and/or bit-flags returned by the Face.Gasp method.
 //
 // The bit-flags GaspDoGridfit and GaspDoGray are to be used for standard font
 // rasterization only. Independently of that, GaspSymmetricSmoothing and
