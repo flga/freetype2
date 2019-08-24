@@ -101,6 +101,9 @@ func gohuPcf() (testface, error) {
 func amelia() (testface, error) {
 	return openFace(testdata("amelia", "Amelia.pfr"))
 }
+func bitout() (testface, error) {
+	return openFace(testdata("bitout", "bitout.fon"))
+}
 
 type testglyph struct {
 	Glyph
