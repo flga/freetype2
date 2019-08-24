@@ -5,6 +5,15 @@ import (
 )
 
 func TestFace_WinFntHeader(t *testing.T) {
+	intsize := 32 << (^uint(0) >> 63)
+	var reserved1 [4]uint64
+	switch intsize {
+	case 32:
+		reserved1 = [4]uint64{525382, 656471, 525416, 853130}
+	case 64:
+		reserved1 = [4]uint64{2819521476297798, 3664165449761896, 0, 0}
+	}
+
 	tests := []struct {
 		name    string
 		face    func() (testface, error)
@@ -59,7 +68,7 @@ func TestFace_WinFntHeader(t *testing.T) {
 				BSpace:               0,
 				CSpace:               0,
 				ColorTableOffset:     0,
-				Reserved1:            [4]uint64{2819521476297798, 3664165449761896, 0, 0},
+				Reserved1:            reserved1,
 			},
 			wantErr: nil,
 		},
