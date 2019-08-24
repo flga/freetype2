@@ -98,6 +98,9 @@ func gohuBdf() (testface, error) {
 func gohuPcf() (testface, error) {
 	return openFace(testdata("gohu", "gohufont-11.pcf"))
 }
+func amelia() (testface, error) {
+	return openFace(testdata("amelia", "Amelia.pfr"))
+}
 
 type testglyph struct {
 	Glyph
