@@ -118,7 +118,7 @@ func (l *Library) NewFace(r io.Reader, index, namedInstanceIndex int) (*Face, er
 		return nil, err
 	}
 
-	f := &Face{ptr: face, dealloc: []func(){free}}
+	f := &Face{ptr: face, lib: l, dealloc: []func(){free}}
 	l.faces = append(l.faces, f)
 	return f, nil
 }
@@ -144,7 +144,7 @@ func (l *Library) NewFaceFromPath(path string, index, namedInstanceIndex int) (*
 		return nil, err
 	}
 
-	f := &Face{ptr: face}
+	f := &Face{ptr: face, lib: l}
 	l.faces = append(l.faces, f)
 	return f, nil
 }

@@ -104,6 +104,9 @@ func amelia() (testface, error) {
 func bitout() (testface, error) {
 	return openFace(testdata("bitout", "bitout.fon"))
 }
+func faceFromPath(p string) func() (testface, error) {
+	return func() (testface, error) { return openFace(testdata(p)) }
+}
 
 type testglyph struct {
 	Glyph

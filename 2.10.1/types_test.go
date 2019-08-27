@@ -378,7 +378,7 @@ func TestGlyphSlot_RenderGlyph(t *testing.T) {
 			Rows:      11,
 			Width:     10,
 			Pitch:     10,
-			Buffer:    testGlyphSlot_RenderGlyph_data(),
+			Buffer:    testGlyphSlotRenderGlyphdata(),
 			NumGrays:  256,
 			PixelMode: PixelModeGray,
 		},

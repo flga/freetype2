@@ -27,6 +27,7 @@ const MissingGlyph GlyphIndex = 0
 // See https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_face
 type Face struct {
 	ptr     C.FT_Face `deep:"-"`
+	lib     *Library
 	dealloc []func()
 }
 
