@@ -2337,14 +2337,12 @@ func TestFace_SetNamedInstance(t *testing.T) {
 		{name: "AdobeVFPrototype.otf", face: faceFromPath("variable/adobe-variable-font-prototype/AdobeVFPrototype.otf"), idx: 7, wantErr: nil},
 		{name: "AdobeVFPrototype.otf", face: faceFromPath("variable/adobe-variable-font-prototype/AdobeVFPrototype.otf"), idx: 8, wantErr: nil},
 		{name: "AdobeVFPrototype.otf", face: faceFromPath("variable/adobe-variable-font-prototype/AdobeVFPrototype.otf"), idx: 9, wantErr: nil},
-		//TODO: this panics, waiting on fix upstream
-		// {name: "AdobeVFPrototype.otf", face: faceFromPath("variable/adobe-variable-font-prototype/AdobeVFPrototype.otf"), idx: 10, wantErr: ErrInvalidArgument},
+		{name: "AdobeVFPrototype.otf", face: faceFromPath("variable/adobe-variable-font-prototype/AdobeVFPrototype.otf"), idx: 10, wantErr: ErrInvalidArgument},
 		{name: "BPdotsSquareVF.ttf", face: faceFromPath("variable/BPdotsSquareVF/BPdotsSquareVF.ttf"), idx: 0, wantErr: nil},
 		{name: "BPdotsSquareVF.ttf", face: faceFromPath("variable/BPdotsSquareVF/BPdotsSquareVF.ttf"), idx: 1, wantErr: nil},
 		{name: "BPdotsSquareVF.ttf", face: faceFromPath("variable/BPdotsSquareVF/BPdotsSquareVF.ttf"), idx: 2, wantErr: nil},
 		{name: "BPdotsSquareVF.ttf", face: faceFromPath("variable/BPdotsSquareVF/BPdotsSquareVF.ttf"), idx: 3, wantErr: nil},
-		//TODO: this fails, waiting on fix upstream
-		// {name: "BPdotsSquareVF.ttf", face: faceFromPath("variable/BPdotsSquareVF/BPdotsSquareVF.ttf"), idx: 4, wantErr: ErrInvalidArgument},
+		{name: "BPdotsSquareVF.ttf", face: faceFromPath("variable/BPdotsSquareVF/BPdotsSquareVF.ttf"), idx: 4, wantErr: ErrInvalidArgument},
 
 		{name: "ImposMM.pfb", face: faceFromPath("variable/impossible/ImposMM.pfb"), idx: 0, wantErr: nil},
 		{name: "ImposMM.pfb", face: faceFromPath("variable/impossible/ImposMM.pfb"), idx: -1, wantErr: nil},

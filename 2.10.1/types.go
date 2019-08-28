@@ -482,9 +482,7 @@ type GlyphSlot struct {
 	// Typically GlyphFormatBitmap, GlyphFormatOutline, or GlyphFormatComposite,
 	// but other values are possible.
 	Format GlyphFormat
-	// This field is used as a bitmap descriptor. Note that the address and
-	// content of the bitmap buffer can change between calls of LoadGlyph and a
-	// few other functions. TODO: this isnt true, Bitmap is a copy.
+	// This field is used as a bitmap descriptor.
 	Bitmap Bitmap
 	// The bitmap's left bearing expressed in integer pixels.
 	BitmapLeft int
@@ -494,7 +492,7 @@ type GlyphSlot struct {
 	BitmapTop int
 	// The outline descriptor for the current glyph image if its format is
 	// GlyphFormatOutline. Once a glyph is loaded, outline can be transformed,
-	// distorted, emboldened, etc. However, it must not be freed. TODO: not true, this is a copy.
+	// distorted, emboldened, etc.
 	//
 	// [Since 2.10.1] If LoadNoScale is set, outline coordinates of OpenType
 	// variation fonts for a selected instance are internally handled as 26.6

@@ -36,9 +36,7 @@ type SfntName struct {
 	LanguageID truetype.LanguageID
 	// An identifier for Name
 	NameID truetype.NameID
-	// The ‘name’ string. Note that its format differs depending on the
-	// (platform,encoding) pair, being either a string of bytes (without a
-	// terminating NULL byte) or containing UTF-16BE entities. TODO: can this be a string?
+	// The ‘name’ string.
 	Name string
 }
 

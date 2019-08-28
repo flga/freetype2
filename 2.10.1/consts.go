@@ -26,7 +26,7 @@ import (
 //
 // EncodingNone is always set (with a single exception) by the winfonts driver.
 // Use GetWinFNTHeader and examine the charset field of the WinFNTHeader struct to find out which encoding is really
-// present. For example, TODO: WinFNTIDs.CP1251 (204) means Windows code page 1251 (for Russian).
+// present. For example, WinFntIDCP1251 (204) means Windows code page 1251 (for Russian).
 //
 // EncodingNone is set if PlatformID is PlatformMacintosh and EncodingID is not MacEncodingRoman (otherwise it is
 // set to EncodingAppleRoman).
