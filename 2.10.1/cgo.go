@@ -51,23 +51,14 @@ var free = func(v unsafe.Pointer) {
 	C.free(v)
 }
 
-type freeBehaviour bool
-
-const (
-	actuallyFreeItAfter freeBehaviour = true
-	iWannaFreeItMyself  freeBehaviour = false
-)
-
 var mockFreeMu sync.Mutex
 
-func mockFree(fn func(v unsafe.Pointer), actuallyFreeIt freeBehaviour) (restore func()) {
+func mockFree(fn func()) (restore func()) {
 	mockFreeMu.Lock()
 	orig := free
 	free = func(v unsafe.Pointer) {
-		fn(v)
-		if actuallyFreeIt {
-			orig(v)
-		}
+		fn()
+		orig(v)
 	}
 
 	return func() {

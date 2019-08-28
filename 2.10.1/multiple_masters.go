@@ -5,7 +5,10 @@ package freetype2
 // #include FT_MULTIPLE_MASTERS_H
 import "C"
 import (
+	"sync"
 	"unsafe"
+
+	"github.com/flga/freetype2/2.10.1/truetype"
 
 	"github.com/flga/freetype2/fixed"
 )
@@ -51,16 +54,16 @@ type VarAxisTag uint
 
 const (
 	//VarAxisTagItal is used to vary between non-italic and italic
-	VarAxisTagItal VarAxisTag = 0x6974616c // (ital) - Italic
+	VarAxisTagItal VarAxisTag = 0x6974616c // ascii ital
 	// VarAxisTagOpsz is used to vary design to suit different text sizes.
-	VarAxisTagOpsz VarAxisTag = 0x6f70737a // (opsz) - Optical size
+	VarAxisTagOpsz VarAxisTag = 0x6f70737a // ascii opsz
 	// VarAxisTagSlnt is used to vary between upright and slanted text.
-	VarAxisTagSlnt VarAxisTag = 0x736c6e74 // (slnt) - Slant
+	VarAxisTagSlnt VarAxisTag = 0x736c6e74 // ascii slnt
 	// VarAxisTagWdth is used to vary width of text from narrower to wider.
-	VarAxisTagWdth VarAxisTag = 0x77647468 // (wdth) - Width
+	VarAxisTagWdth VarAxisTag = 0x77647468 // ascii wdth
 	// VarAxisTagWght is used to vary stroke thicknesses or other design details
 	// to give variation from lighter to blacker.
-	VarAxisTagWght VarAxisTag = 0x77676874 // (wght) - Weight
+	VarAxisTagWght VarAxisTag = 0x77676874 // ascii wght
 )
 
 // VarAxis models a given axis in design space for Multiple Masters, TrueType GX,
@@ -90,7 +93,7 @@ type VarAxis struct {
 	// The axis name entry in the font's ‘name’ table. This is another (and often
 	// better) version of the ‘name’ field for TrueType GX or OpenType variation
 	// fonts. Not meaningful for Adobe MM fonts.
-	Strid uint
+	Strid truetype.NameID
 	// The ‘flags’ field of an OpenType Variation Axis Record.
 	// Not meaningful for Adobe MM fonts (it's always zero).
 	Flags VarAxisFlag
@@ -107,10 +110,10 @@ type VarNamedStyle struct {
 	// for each axis.
 	Coords []fixed.Int16_16
 	// The entry in ‘name’ table identifying this instance.
-	Strid uint
+	Strid truetype.NameID
 	// The entry in ‘name’ table identifying a PostScript name for this instance.
 	// Value 0xFFFF indicates a missing entry.
-	Psid uint
+	Psid truetype.NameID
 }
 
 // MMVar models the axes and space of an Adobe MM, TrueType GX, or OpenType
@@ -161,33 +164,53 @@ func (f *Face) MultiMaster() (MultiMaster, error) {
 	ret := MultiMaster{
 		NumAxis:    uint(master.num_axis),
 		NumDesigns: uint(master.num_designs),
-		Axis:       make([]MMAxis, master.num_axis),
 	}
 
-	for i := range ret.Axis {
-		v := master.axis[i]
-		ret.Axis[i] = MMAxis{
-			Name: C.GoString(v.name),
-			Min:  int(v.minimum),
-			Max:  int(v.maximum),
+	if master.num_axis > 0 {
+		ret.Axis = make([]MMAxis, master.num_axis)
+		for i := range ret.Axis {
+			v := master.axis[i]
+			ret.Axis[i] = MMAxis{
+				Name: C.GoString(v.name),
+				Min:  int(v.minimum),
+				Max:  int(v.maximum),
+			}
 		}
 	}
 
 	return ret, nil
 }
 
+var mockDoneMMVarMu sync.Mutex
+
+func mockDoneMMVar(fn func()) (restore func()) {
+	mockDoneMMVarMu.Lock()
+	orig := doneMMVar
+	doneMMVar = func(l C.FT_Library, v *C.FT_MM_Var) error {
+		fn()
+		return orig(l, v)
+	}
+	return func() {
+		doneMMVar = orig
+		mockDoneMMVarMu.Unlock()
+	}
+}
+
+var doneMMVar = func(l C.FT_Library, v *C.FT_MM_Var) error {
+	return getErr(C.FT_Done_MM_Var(l, v))
+}
+
 // MMVar retrieves a variation descriptor for a given font.
 //
 // This function works with all supported variation formats.
-//
-// It allocates a data structure, which the user must deallocate with a call
-// to Free after use.
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-multiple_masters.html#ft_get_mm_var
 func (f *Face) MMVar() (*MMVar, error) {
 	if f == nil || f.ptr == nil {
 		return nil, ErrInvalidFaceHandle
 	}
+
+	// when Library is freed, so is the face, so this check *should* be redundant
 	if f.lib == nil || f.lib.ptr == nil {
 		return nil, ErrInvalidFaceHandle
 	}
@@ -196,7 +219,7 @@ func (f *Face) MMVar() (*MMVar, error) {
 	if err := getErr(C.FT_Get_MM_Var(f.ptr, &master)); err != nil {
 		return nil, err
 	}
-	defer C.FT_Done_MM_Var(f.lib.ptr, master)
+	defer doneMMVar(f.lib.ptr, master)
 
 	var numDesigns uint
 	if master.num_designs != ^C.uint(0) {
@@ -216,9 +239,9 @@ func (f *Face) MMVar() (*MMVar, error) {
 			var flags C.FT_UInt
 			C.FT_Get_Var_Axis_Flags(master, C.uint(i), &flags)
 
-			var strid uint
+			var strid truetype.NameID
 			if ptr[i].strid != ^C.uint(0) {
-				strid = uint(ptr[i].strid)
+				strid = truetype.NameID(ptr[i].strid)
 			}
 
 			ret.Axis[i] = VarAxis{
@@ -241,8 +264,8 @@ func (f *Face) MMVar() (*MMVar, error) {
 		for i := range ret.Namedstyle {
 			ret.Namedstyle[i] = VarNamedStyle{
 				Coords: make([]fixed.Int16_16, numCoords),
-				Strid:  uint(ptr[i].strid),
-				Psid:   uint(ptr[i].psid),
+				Strid:  truetype.NameID(ptr[i].strid),
+				Psid:   truetype.NameID(ptr[i].psid),
 			}
 
 			coordsptr := (*[(1<<31 - 1) / C.sizeof_FT_Fixed]C.FT_Fixed)(unsafe.Pointer(ptr[i].coords))[:numCoords:numCoords]
@@ -345,10 +368,6 @@ func (f *Face) VarDesignCoords() ([]fixed.Int16_16, error) {
 	}
 
 	length := master.num_axis
-	if length <= 0 {
-		return nil, nil
-	}
-
 	block := C.calloc(C.size_t(length), C.sizeof_FT_Fixed)
 	defer free(block)
 
@@ -423,10 +442,6 @@ func (f *Face) MMBlendCoords() ([]fixed.Int16_16, error) {
 	}
 
 	length := master.num_axis
-	if length <= 0 {
-		return nil, nil
-	}
-
 	block := C.calloc(C.size_t(length), C.sizeof_FT_Fixed)
 	defer free(block)
 
@@ -512,10 +527,6 @@ func (f *Face) MMWeightVector() ([]fixed.Int16_16, error) {
 	}
 
 	length := master.num_designs
-	if length <= 0 {
-		return nil, nil
-	}
-
 	block := C.calloc(C.size_t(length), C.sizeof_FT_Fixed)
 	defer free(block)
 

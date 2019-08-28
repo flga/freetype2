@@ -1907,15 +1907,66 @@ func TestFace_MMVar(t *testing.T) {
 			}
 			defer face.Free()
 
+			var freed bool
+			defer mockDoneMMVar(func() {
+				freed = true
+			})()
+
 			got, err := face.MMVar()
 			if err != tt.wantErr {
 				t.Errorf("Face.MMVar() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
+			if tt.wantErr == nil && !freed {
+				t.Errorf("Face.MMVar() doneMMVar should have been called")
+			}
+
 			if diff := diff(got, tt.want); diff != nil {
 				t.Errorf("Face.MMVar() = %v", diff)
 			}
 		})
 	}
+
+	t.Run("freed lib", func(t *testing.T) {
+		l, err := NewLibrary()
+		if err != nil {
+			t.Fatalf("unable to create lib: %v", err)
+		}
+		face, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+		if err != nil {
+			t.Fatalf("unable to load face: %v", err)
+		}
+
+		if err := l.Free(); err != nil {
+			t.Fatalf("unable to free lib: %v", err)
+		}
+
+		if _, err := face.MMVar(); err != ErrInvalidFaceHandle {
+			t.Errorf("Face.MMVar() error = %v, wantErr %v", err, ErrInvalidFaceHandle)
+		}
+	})
+
+	t.Run("invalid lib", func(t *testing.T) {
+		l, err := NewLibrary()
+		if err != nil {
+			t.Fatalf("unable to create lib: %v", err)
+		}
+		face, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+		if err != nil {
+			t.Fatalf("unable to load face: %v", err)
+		}
+
+		ptr := l.ptr
+		l.ptr = nil
+		defer func() {
+			l.ptr = ptr
+			l.Free()
+		}()
+
+		if _, err := face.MMVar(); err != ErrInvalidFaceHandle {
+			t.Errorf("Face.MMVar() error = %v, wantErr %v", err, ErrInvalidFaceHandle)
+		}
+	})
 }
 
 func TestFace_GetSetVarDesignCoords(t *testing.T) {
@@ -1989,21 +2040,40 @@ func TestFace_GetSetVarDesignCoords(t *testing.T) {
 			}
 			defer face.Free()
 
+			var setFreed bool
+			restore := mockFree(func() {
+				setFreed = true
+			})
+
 			if err := face.SetVarDesignCoords(tt.coords); err != tt.wantErr {
 				t.Errorf("Face.SetVarDesignCoords() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			restore()
+			if len(tt.coords) > 0 && !setFreed {
+				t.Errorf("Face.SetMMDesignCoords() free should have been called")
+			}
+
+			var getFreed bool
+			restore = mockFree(func() {
+				getFreed = true
+			})
 
 			got, err := face.VarDesignCoords()
+			restore()
 			if err != tt.wantErr {
-				t.Errorf("Face.SetVarDesignCoords() error = %v", err)
+				t.Errorf("Face.GetVarDesignCoords() error = %v", err)
+			}
+
+			if len(tt.coords) > 0 && !getFreed {
+				t.Errorf("Face.GetVarDesignCoords() free should have been called")
 			}
 
 			if diff := diff(got, tt.coords); diff != nil {
-				t.Errorf("Face.SetVarDesignCoords() %v", diff)
+				t.Errorf("Face.GetVarDesignCoords() %v", diff)
 			}
 
 			if got := face.Flags(); len(tt.coords) > 0 && got&FaceFlagVariation == 0 {
-				t.Errorf("Face.SetVarDesignCoords() Face should have %s, got %s", FaceFlagVariation, got)
+				t.Errorf("Face.GetSetVarDesignCoords() Face should have %s, got %s", FaceFlagVariation, got)
 			}
 		})
 	}
@@ -2032,9 +2102,18 @@ func TestFace_SetMMDesignCoords(t *testing.T) {
 			}
 			defer face.Free()
 
+			var freed bool
+			defer mockFree(func() {
+				freed = true
+			})()
+
 			if err := face.SetMMDesignCoords(tt.coords); err != tt.wantErr {
 				t.Errorf("Face.SetMMDesignCoords() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			if len(tt.coords) > 0 && !freed {
+				t.Errorf("Face.SetMMDesignCoords() free should have been called")
+			}
+
 			if tt.wantErr != nil {
 				return
 			}
@@ -2053,19 +2132,24 @@ func TestFace_SetMMDesignCoords(t *testing.T) {
 			}
 
 			if got := face.Flags(); got&FaceFlagVariation == 0 {
-				t.Errorf("Face.SetMMDesignCoords() Face should have %s, got %s", FaceFlagVariation, got)
+				t.Errorf("Face.GetSetMMDesignCoords() Face should have %s, got %s", FaceFlagVariation, got)
 			}
 		})
 	}
 }
 
 func TestFace_GetSetMMBlendCoords(t *testing.T) {
-	tests := []struct {
+	type setter func(f *Face, coords []fixed.Int16_16) error
+	type getter func(f *Face) ([]fixed.Int16_16, error)
+
+	type test struct {
 		name    string
 		face    func() (testface, error)
 		coords  []fixed.Int16_16
 		wantErr error
-	}{
+	}
+
+	tests := []test{
 		{name: "nilFace", face: nilFace, wantErr: ErrInvalidFaceHandle},
 		{name: "goRegular", face: goRegular, wantErr: ErrInvalidArgument},
 
@@ -2122,30 +2206,54 @@ func TestFace_GetSetMMBlendCoords(t *testing.T) {
 		{name: "Selawik-variable.ttf", face: faceFromPath("variable/selawik/Selawik-variable.ttf"), coords: []fixed.Int16_16{0x00001}},
 		{name: "BPdotsSquareVF.ttf", face: faceFromPath("variable/BPdotsSquareVF/BPdotsSquareVF.ttf"), coords: []fixed.Int16_16{0x00001}},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			face, err := tt.face()
-			if err != nil {
-				t.Fatalf("unable to load face: %s", err)
-			}
-			defer face.Free()
+			run := func(t *testing.T, tt test, getter getter, setter setter) {
+				face, err := tt.face()
+				if err != nil {
+					t.Fatalf("unable to load face: %s", err)
+				}
+				defer face.Free()
 
-			if err := face.SetMMBlendCoords(tt.coords); err != tt.wantErr {
-				t.Errorf("Face.SetMMBlendCoords() error = %v, wantErr %v", err, tt.wantErr)
+				var setFreed bool
+				restore := mockFree(func() {
+					setFreed = true
+				})
+
+				if err := setter(face.Face, tt.coords); err != tt.wantErr {
+					t.Errorf("Face.SetMMBlendCoords() error = %v, wantErr %v", err, tt.wantErr)
+				}
+				restore()
+				if len(tt.coords) > 0 && !setFreed {
+					t.Errorf("Face.SetMMBlendCoords() free should have been called")
+				}
+
+				var getFreed bool
+				restore = mockFree(func() {
+					getFreed = true
+				})
+
+				got, err := getter(face.Face)
+				restore()
+				if err != tt.wantErr {
+					t.Errorf("Face.MMBlendCoords() error = %v", err)
+				}
+				if len(tt.coords) > 0 && !getFreed {
+					t.Errorf("Face.MMBlendCoords() free should have been called")
+				}
+
+				if diff := diff(got, tt.coords); diff != nil {
+					t.Errorf("Face.MMBlendCoords() %v", diff)
+				}
+
+				if got := face.Flags(); len(tt.coords) > 0 && got&FaceFlagVariation == 0 {
+					t.Errorf("Face.GetSetMMBlendCoords() Face should have %s, got %s", FaceFlagVariation, got)
+				}
 			}
 
-			got, err := face.MMBlendCoords()
-			if err != tt.wantErr {
-				t.Errorf("Face.SetMMBlendCoords() error = %v", err)
-			}
-
-			if diff := diff(got, tt.coords); diff != nil {
-				t.Errorf("Face.SetMMBlendCoords() %v", diff)
-			}
-
-			if got := face.Flags(); len(tt.coords) > 0 && got&FaceFlagVariation == 0 {
-				t.Errorf("Face.SetMMBlendCoords() Face should have %s, got %s", FaceFlagVariation, got)
-			}
+			run(t, tt, (*Face).MMBlendCoords, (*Face).SetMMBlendCoords)
+			run(t, tt, (*Face).VarBlendCoords, (*Face).SetVarBlendCoords)
 		})
 	}
 }
@@ -2174,17 +2282,36 @@ func TestFace_GetSetMMWeightVector(t *testing.T) {
 			}
 			defer face.Free()
 
+			var setFreed bool
+			restore := mockFree(func() {
+				setFreed = true
+			})
+
 			if err := face.SetMMWeightVector(tt.vec); err != tt.wantErr {
 				t.Errorf("Face.SetMMWeightVector() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			restore()
+			if len(tt.vec) > 0 && !setFreed {
+				t.Errorf("Face.SetMMWeightVector() free should have been called")
+			}
+
+			var getFreed bool
+			restore = mockFree(func() {
+				getFreed = true
+			})
 
 			got, err := face.MMWeightVector()
+			restore()
 			if err != tt.wantErr {
-				t.Errorf("Face.SetMMWeightVector() error = %v", err)
+				t.Errorf("Face.MMWeightVector() error = %v", err)
+			}
+
+			if len(tt.vec) > 0 && !getFreed {
+				t.Errorf("Face.MMWeightVector() free should have been called")
 			}
 
 			if diff := diff(got, tt.vec); diff != nil {
-				t.Errorf("Face.SetMMWeightVector() %v", diff)
+				t.Errorf("Face.GetSetMMWeightVector() %v", diff)
 			}
 		})
 	}

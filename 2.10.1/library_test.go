@@ -3,7 +3,6 @@ package freetype2
 import (
 	"os"
 	"testing"
-	"unsafe"
 )
 
 func TestNewLibrary(t *testing.T) {
@@ -188,9 +187,9 @@ func TestNewFaceFreesReadDataOnError(t *testing.T) {
 	defer mockGetErr(func(_ int) error {
 		return wantErr
 	})()
-	defer mockFree(func(_ unsafe.Pointer) {
+	defer mockFree(func() {
 		freed = true
-	}, actuallyFreeItAfter)()
+	})()
 
 	_, err = l.NewFace(r, 0, 0)
 	if err != wantErr {

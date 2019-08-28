@@ -160,8 +160,8 @@ var (
 	ErrMissingEncodingField        = errors.New("`ENCODING' field missing")
 	ErrMissingBbxField             = errors.New("`BBX' field missing")
 	ErrBbxTooBig                   = errors.New("`BBX' too big")
-	ErrCorruptedFontHeader         = errors.New("Font header corrupted or missing fields")
-	ErrCorruptedFontGlyphs         = errors.New("Font glyphs corrupted or missing fields")
+	ErrCorruptedFontHeader         = errors.New("font header corrupted or missing fields")
+	ErrCorruptedFontGlyphs         = errors.New("font glyphs corrupted or missing fields")
 )
 
 var errMap = map[C.int]error{

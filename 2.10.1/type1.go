@@ -142,10 +142,7 @@ func (f *Face) HasPSGlyphNames() bool {
 	}
 
 	v := C.FT_Has_PS_Glyph_Names(f.ptr)
-	if v == 1 {
-		return true
-	}
-	return false
+	return v == 1
 }
 
 // PSFontInfo returns the PSFontInfo corresponding to a given PostScript font.

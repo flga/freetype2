@@ -5,7 +5,6 @@ import (
 	"math"
 	"reflect"
 	"testing"
-	"unsafe"
 
 	"github.com/flga/freetype2/2.10.1/truetype"
 	"github.com/flga/freetype2/fixed"
@@ -2753,9 +2752,9 @@ func TestFace_GlyphName(t *testing.T) {
 		defer face.Free()
 
 		var freed bool
-		defer mockFree(func(_ unsafe.Pointer) {
+		defer mockFree(func() {
 			freed = true
-		}, actuallyFreeItAfter)()
+		})()
 
 		if _, err := face.GlyphName(0); err != nil {
 			t.Errorf("Face.GlyphName() error = %v", err)
@@ -2774,9 +2773,9 @@ func TestFace_GlyphName(t *testing.T) {
 		defer face.Free()
 
 		var freed bool
-		defer mockFree(func(_ unsafe.Pointer) {
+		defer mockFree(func() {
 			freed = true
-		}, actuallyFreeItAfter)()
+		})()
 
 		wantErr := ErrBbxTooBig
 		defer mockGetErr(func(_ int) error {
