@@ -5,7 +5,41 @@ package freetype2
 // #include FT_GLYPH_H
 // #include FT_TRIGONOMETRY_H
 import "C"
-import "github.com/flga/freetype2/fixed"
+import (
+	"github.com/flga/freetype2/fixed"
+)
+
+// MulDiv computes (a*b)/c with maximum accuracy.
+func MulDiv(a, b, c int32) int32 {
+	return int32(int64(a) * int64(b) / int64(c))
+}
+
+// MulFix computes (a*b)/0x10000 with maximum accuracy.
+// Its main use is to multiply a given value by a 16.16 fixed-point factor.
+func MulFix(a, b int32) fixed.Int16_16 {
+	return fixed.Int16_16(MulDiv(a, b, 0x10000))
+}
+
+// DivFix computes (a*0x10000)/b with maximum accuracy.
+// Its main use is to divide a given value by a 16.16 fixed-point factor.
+func DivFix(a, b int32) fixed.Int16_16 {
+	return fixed.Int16_16(MulDiv(a, 0x10000, b))
+}
+
+// RoundFix rounds a to the nearest 16.16 fixed integer, halfway cases away from zero.
+func RoundFix(a fixed.Int16_16) fixed.Int16_16 {
+	return a.Round()
+}
+
+// CeilFix computes the smallest following integer of a 16.16 fixed number.
+func CeilFix(a fixed.Int16_16) fixed.Int16_16 {
+	return a.Ceil()
+}
+
+// FloorFix computes the largest previous integer of a 16.16 fixed number.
+func FloorFix(a fixed.Int16_16) fixed.Int16_16 {
+	return a.Floor()
+}
 
 // Transform transforms a single vector through a 2x2 matrix
 //

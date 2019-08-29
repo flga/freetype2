@@ -3,49 +3,94 @@ package fixed
 
 import (
 	"fmt"
-
-	"golang.org/x/image/math/fixed"
 )
 
-// Int26_6 is a signed 26.6 fixed-point type used for vectorial pixel coordinates.
+// Int26_6 is a signed 26.6 fixed-point number.
+//
+// The integer part ranges from -33554432 to 33554431, inclusive. The fractional
+// part has 6 bits of precision.
+// For example, the number one-and-a-quarter is Int26_6(1<<6 + 1<<4).
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_f26dot6
-type Int26_6 = fixed.Int26_6
+type Int26_6 int32
+
+const int26_6mask = Int26_6(1<<6 - 1)
+
+func (x Int26_6) String() string {
+	if x >= 0 {
+		return fmt.Sprintf("%d:%d", int32(x>>6), int32(x&int26_6mask))
+	}
+	x = -x
+	if x >= 0 {
+		return fmt.Sprintf("-%d:%d", int32(x>>6), int32(x&int26_6mask))
+	}
+	return "-33554432:00" // The minimum value is -(1<<25).
+}
+
+// Floor returns the greatest integer value less than or equal to x.
+func (x Int26_6) Floor() Int26_6 { return x &^ int26_6mask }
+
+// Round returns the nearest integer value to x. Ties are rounded away from 0.
+func (x Int26_6) Round() Int26_6 {
+	if x < 0 {
+		x--
+	}
+	return (x + 1<<5) &^ int26_6mask
+}
+
+// Ceil returns the least integer value greater than or equal to x.
+func (x Int26_6) Ceil() Int26_6 { return (x + 1<<6 - 1) &^ int26_6mask }
+
+// Mul returns x*y in 26.6 fixed-point arithmetic.
+func (x Int26_6) Mul(y Int26_6) Int26_6 {
+	return Int26_6((int64(x)*int64(y) + 1<<5) >> 6)
+}
+
+// F32 converts the underlying value to float32.
+func (x Int26_6) F32() float32 {
+	return float32(x) / float32(1<<6)
+}
+
+// F64 converts the underlying value to float64.
+func (x Int26_6) F64() float64 {
+	return float64(x) / float64(1<<6)
+}
 
 // Int16_16 is a signed 16.16 fixed-point number.
 //
-// The integer part ranges from -32768 to 32767, inclusive. The fractional part has 16 bits of precision.
+// The integer part ranges from -32768 to 32767, inclusive. The fractional part
+// has 16 bits of precision.
 // For example, the number one-and-a-quarter is Int16_16(1<<6 + 1<<14).
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_fixed
 type Int16_16 int32
 
+const int16_16mask = Int16_16(1<<16 - 1)
+
 func (x Int16_16) String() string {
-	const shift, mask = 16, 1<<16 - 1
 	if x >= 0 {
-		return fmt.Sprintf("%d:%d", int32(x>>shift), int32(x&mask))
+		return fmt.Sprintf("%d:%d", int32(x>>16), int32(x&int16_16mask))
 	}
 	x = -x
 	if x >= 0 {
-		return fmt.Sprintf("-%d:%d", int32(x>>shift), int32(x&mask))
+		return fmt.Sprintf("-%d:%d", int32(x>>16), int32(x&int16_16mask))
 	}
 	return "-32768:0" // The minimum value is -(1<<15).
 }
 
 // Floor returns the greatest integer value less than or equal to x.
-//
-// Its return type is int, not Int16_16.
-func (x Int16_16) Floor() int { return int((x) >> 16) }
+func (x Int16_16) Floor() Int16_16 { return x &^ int16_16mask }
 
-// Round returns the nearest integer value to x. Ties are rounded up.
-//
-// Its return type is int, not Int16_16.
-func (x Int16_16) Round() int { return int((x + 1<<15) >> 16) }
+// Round returns the nearest integer value to x. Ties are rounded away from 0.
+func (x Int16_16) Round() Int16_16 {
+	if x < 0 {
+		x--
+	}
+	return (x + 1<<15) &^ int16_16mask
+}
 
 // Ceil returns the least integer value greater than or equal to x.
-//
-// Its return type is int, not Int16_16.
-func (x Int16_16) Ceil() int { return int((x + 1<<16 - 1) >> 16) }
+func (x Int16_16) Ceil() Int16_16 { return (x + 1<<16 - 1) &^ int16_16mask }
 
 // Mul returns x*y in 16.16 fixed-point arithmetic.
 func (x Int16_16) Mul(y Int16_16) Int16_16 {
@@ -64,7 +109,8 @@ func (x Int16_16) F64() float64 {
 
 // Int2_14 is a signed 2.14 fixed-point number.
 //
-// The integer part ranges from -2 to 1, inclusive. The fractional part has 14 bits of precision.
+// The integer part ranges from -2 to 1, inclusive. The fractional part has 14
+// bits of precision.
 // For example, the number one-and-a-quarter is Int2_14(1<<2 + 1<<12).
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_f2dot14

@@ -1,6 +1,7 @@
 package freetype2
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -311,6 +312,75 @@ func TestVectorFromPolar(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := VectorFromPolar(tt.length, tt.angle); got != tt.want {
 				t.Errorf("VectorFromPolar() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRoundCeilFloorFix(t *testing.T) {
+	tests := []struct {
+		v                  float32
+		round, ceil, floor int
+	}{
+		{v: 0.00, round: 0, ceil: 0, floor: 0},
+		{v: 0.01, round: 0, ceil: 1, floor: 0},
+		{v: 0.49, round: 0, ceil: 1, floor: 0},
+		{v: 0.50, round: 1, ceil: 1, floor: 0},
+		{v: 0.51, round: 1, ceil: 1, floor: 0},
+		{v: 0.99, round: 1, ceil: 1, floor: 0},
+
+		{v: -0.00, round: 0, ceil: 0, floor: 0},
+		{v: -0.01, round: 0, ceil: 0, floor: -1},
+		{v: -0.49, round: 0, ceil: 0, floor: -1},
+		{v: -0.50, round: -1, ceil: 0, floor: -1},
+		{v: -0.51, round: -1, ceil: 0, floor: -1},
+		{v: -0.99, round: -1, ceil: 0, floor: -1},
+
+		{v: 1.00, round: 1, ceil: 1, floor: 1},
+		{v: 1.01, round: 1, ceil: 2, floor: 1},
+		{v: 1.49, round: 1, ceil: 2, floor: 1},
+		{v: 1.50, round: 2, ceil: 2, floor: 1},
+		{v: 1.51, round: 2, ceil: 2, floor: 1},
+		{v: 1.99, round: 2, ceil: 2, floor: 1},
+
+		{v: -1.00, round: -1, ceil: -1, floor: -1},
+		{v: -1.01, round: -1, ceil: -1, floor: -2},
+		{v: -1.49, round: -1, ceil: -1, floor: -2},
+		{v: -1.50, round: -2, ceil: -1, floor: -2},
+		{v: -1.51, round: -2, ceil: -1, floor: -2},
+		{v: -1.99, round: -2, ceil: -1, floor: -2},
+
+		{v: 2.00, round: 2, ceil: 2, floor: 2},
+		{v: 2.01, round: 2, ceil: 3, floor: 2},
+		{v: 2.49, round: 2, ceil: 3, floor: 2},
+		{v: 2.50, round: 3, ceil: 3, floor: 2},
+		{v: 2.51, round: 3, ceil: 3, floor: 2},
+		{v: 2.99, round: 3, ceil: 3, floor: 2},
+
+		{v: -2.00, round: -2, ceil: -2, floor: -2},
+		{v: -2.01, round: -2, ceil: -2, floor: -3},
+		{v: -2.49, round: -2, ceil: -2, floor: -3},
+		{v: -2.50, round: -3, ceil: -2, floor: -3},
+		{v: -2.51, round: -3, ceil: -2, floor: -3},
+		{v: -2.99, round: -3, ceil: -2, floor: -3},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%f", tt.v), func(t *testing.T) {
+			a := fixed.Int16_16(tt.v * float32(0x10000))
+
+			wantRound := fixed.Int16_16(tt.round << 16)
+			if gotRound := RoundFix(a); gotRound != wantRound {
+				t.Errorf("RoundFix(%f) = %v, want %v", tt.v, gotRound, wantRound)
+			}
+
+			wantCeil := fixed.Int16_16(tt.ceil << 16)
+			if gotCeil := CeilFix(a); gotCeil != wantCeil {
+				t.Errorf("CeilFix(%f) = %v, want %v", tt.v, gotCeil, wantCeil)
+			}
+
+			wantFloor := fixed.Int16_16(tt.floor << 16)
+			if gotFloor := FloorFix(a); gotFloor != wantFloor {
+				t.Errorf("FloorFix(%f) = %v, want %v", tt.v, gotFloor, wantFloor)
 			}
 		})
 	}
