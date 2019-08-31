@@ -104,6 +104,7 @@ type UnitVector struct {
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_bitmap
 type Bitmap struct {
+	ptr *C.FT_Bitmap `deep:"-"`
 	// The number of bitmap rows.
 	Rows int
 
@@ -137,23 +138,25 @@ type Bitmap struct {
 	PixelMode PixelMode
 }
 
-var emptyBitmap C.FT_Bitmap
-
-func newBitmap(b C.FT_Bitmap) Bitmap {
-	bitmap := Bitmap{
-		Rows:      int(b.rows),
-		Width:     int(b.width),
-		Pitch:     int(b.pitch),
-		NumGrays:  int(b.num_grays),
-		PixelMode: PixelMode(b.pixel_mode),
+func (b *Bitmap) reload() {
+	if b == nil {
+		return
 	}
 
-	if b.buffer != nil {
-		pitch := int(math.Abs(float64(bitmap.Pitch)))
-		bitmap.Buffer = C.GoBytes(unsafe.Pointer(b.buffer), C.int(pitch*bitmap.Rows))
+	if b.ptr == nil {
+		*b = Bitmap{}
 	}
 
-	return bitmap
+	b.Rows = int(b.ptr.rows)
+	b.Width = int(b.ptr.width)
+	b.Pitch = int(b.ptr.pitch)
+	b.NumGrays = int(b.ptr.num_grays)
+	b.PixelMode = PixelMode(b.ptr.pixel_mode)
+
+	if b.ptr.buffer != nil {
+		pitch := int(math.Abs(float64(b.Pitch)))
+		b.Buffer = C.GoBytes(unsafe.Pointer(b.ptr.buffer), C.int(pitch*b.Rows))
+	}
 }
 
 // BitmapSize models the metrics of a bitmap strike (i.e., a set of glyphs for a given point size and resolution) in a
@@ -483,7 +486,7 @@ type GlyphSlot struct {
 	// but other values are possible.
 	Format GlyphFormat
 	// This field is used as a bitmap descriptor.
-	Bitmap Bitmap
+	Bitmap *Bitmap
 	// The bitmap's left bearing expressed in integer pixels.
 	BitmapLeft int
 	// The bitmap's top bearing expressed in integer pixels. This is the
@@ -500,7 +503,7 @@ type GlyphSlot struct {
 	// To get unrounded font units, don't use LoadNoScale but load the glyph
 	// with LoadNoHinting and scale it, using the font's UnitsPerEM value as the
 	// ppem.
-	Outline Outline
+	Outline *Outline
 	// The number of subglyphs in a composite glyph. This field is only valid
 	// for the composite glyph format that should normally only be loaded with
 	// the LoadNoRecurse flag.
@@ -513,39 +516,50 @@ type GlyphSlot struct {
 	RsbDelta Pos
 }
 
-func newGlyphSlot(s C.FT_GlyphSlot) *GlyphSlot {
-	if s == nil {
-		return nil
+func (g *GlyphSlot) reload() {
+	if g == nil {
+		return
 	}
 
-	return &GlyphSlot{
-		ptr:        s,
-		GlyphIndex: GlyphIndex(s.glyph_index),
-		Metrics: GlyphMetrics{
-			Width:        Pos(s.metrics.width),
-			Height:       Pos(s.metrics.height),
-			HoriBearingX: Pos(s.metrics.horiBearingX),
-			HoriBearingY: Pos(s.metrics.horiBearingY),
-			HoriAdvance:  Pos(s.metrics.horiAdvance),
-			VertBearingX: Pos(s.metrics.vertBearingX),
-			VertBearingY: Pos(s.metrics.vertBearingY),
-			VertAdvance:  Pos(s.metrics.vertAdvance),
-		},
-		LinearHoriAdvance: fixed.Int16_16(s.linearHoriAdvance),
-		LinearVertAdvance: fixed.Int16_16(s.linearVertAdvance),
-		Advance: Vector26_6{
-			X: fixed.Int26_6(s.advance.x),
-			Y: fixed.Int26_6(s.advance.y),
-		},
-		Format:       GlyphFormat(s.format),
-		Bitmap:       newBitmap(s.bitmap),
-		BitmapLeft:   int(s.bitmap_left),
-		BitmapTop:    int(s.bitmap_top),
-		Outline:      newOutline(s.outline),
-		NumSubglyphs: int(s.num_subglyphs),
-		LsbDelta:     Pos(s.lsb_delta),
-		RsbDelta:     Pos(s.rsb_delta),
+	if g.ptr == nil {
+		*g = GlyphSlot{}
 	}
+
+	g.GlyphIndex = GlyphIndex(g.ptr.glyph_index)
+	g.Metrics = GlyphMetrics{
+		Width:        Pos(g.ptr.metrics.width),
+		Height:       Pos(g.ptr.metrics.height),
+		HoriBearingX: Pos(g.ptr.metrics.horiBearingX),
+		HoriBearingY: Pos(g.ptr.metrics.horiBearingY),
+		HoriAdvance:  Pos(g.ptr.metrics.horiAdvance),
+		VertBearingX: Pos(g.ptr.metrics.vertBearingX),
+		VertBearingY: Pos(g.ptr.metrics.vertBearingY),
+		VertAdvance:  Pos(g.ptr.metrics.vertAdvance),
+	}
+	g.LinearHoriAdvance = fixed.Int16_16(g.ptr.linearHoriAdvance)
+	g.LinearVertAdvance = fixed.Int16_16(g.ptr.linearVertAdvance)
+	g.Advance = Vector26_6{
+		X: fixed.Int26_6(g.ptr.advance.x),
+		Y: fixed.Int26_6(g.ptr.advance.y),
+	}
+	g.Format = GlyphFormat(g.ptr.format)
+	g.BitmapLeft = int(g.ptr.bitmap_left)
+	g.BitmapTop = int(g.ptr.bitmap_top)
+	g.NumSubglyphs = int(g.ptr.num_subglyphs)
+	g.LsbDelta = Pos(g.ptr.lsb_delta)
+	g.RsbDelta = Pos(g.ptr.rsb_delta)
+
+	if g.Bitmap == nil {
+		g.Bitmap = &Bitmap{}
+	}
+	g.Bitmap.ptr = &g.ptr.bitmap
+	g.Bitmap.reload()
+
+	if g.Outline == nil {
+		g.Outline = &Outline{}
+	}
+	g.Outline.ptr = &g.ptr.outline
+	g.Outline.reload()
 }
 
 // SubGlyphInfo contains info about a subglyph.
@@ -685,7 +699,7 @@ func (g *GlyphSlot) RenderGlyph(mode RenderMode) error {
 		return err
 	}
 
-	*g = *newGlyphSlot(g.ptr)
+	g.reload()
 	return nil
 }
 
@@ -727,75 +741,4 @@ type GlyphMetrics struct {
 	// Advance height for vertical layout. Positive values mean the glyph has a
 	// positive advance downward.
 	VertAdvance Pos
-}
-
-// Outline describes an outline to the scan-line converter.
-//
-// NOTE:
-// The B/W rasterizer only checks bit 2 in the tags array for the first point of
-// each contour. The drop-out mode as given with OutlineIgnoreDropouts,
-// OutlineSmartDropouts, and OutlineIncludeStubs in flags is then overridden.
-//
-// See https://www.freetype.org/freetype2/docs/reference/ft2-outline_processing.html#ft_outline
-type Outline struct {
-	// The outline's point coordinates.
-	Points []Vector
-	// The type of each outline point.
-	//
-	// If bit 0 is unset, the point is ‘off’ the curve, i.e., a Bezier control
-	// point, while it is ‘on’ if set.
-	//
-	// Bit 1 is meaningful for ‘off’ points only. If set, it indicates a
-	// third-order Bezier arc control point; and a second-order control point if
-	// unset.
-	//
-	// If bit 2 is set, bits 5-7 contain the drop-out mode (as defined in the
-	// OpenType specification; the value is the same as the argument to the
-	// ‘SCANMODE’ instruction).
-	//
-	// Bits 3 and 4 are reserved for internal purposes.
-	Tags []byte
-	// The end point of each contour within the outline. For example, the first
-	// contour is defined by the points ‘0’ to contours[0], the second one is
-	// defined by the points contours[0]+1 to contours[1], etc.
-	Contours []int16
-	// A set of bit flags used to characterize the outline and give hints to the
-	// scan-converter and hinter on how to convert/grid-fit it.
-	Flags OutlineFlag
-}
-
-func newOutline(v C.FT_Outline) Outline {
-	var points []Vector
-	if v.n_points > 0 {
-		points = make([]Vector, v.n_points)
-		ptr := (*[(1<<31 - 1) / C.sizeof_FT_Vector]C.FT_Vector)(unsafe.Pointer(v.points))[:v.n_points:v.n_points]
-		for i := range points {
-			points[i] = Vector{X: Pos(ptr[i].x), Y: Pos(ptr[i].y)}
-		}
-	}
-
-	var tags []byte
-	if v.n_points > 0 {
-		tags = make([]byte, v.n_points)
-		ptr := (*[(1<<31 - 1) / C.sizeof_char]C.char)(unsafe.Pointer(v.tags))[:v.n_points:v.n_points]
-		for i := range tags {
-			tags[i] = byte(ptr[i])
-		}
-	}
-
-	var contours []int16
-	if v.n_contours > 0 {
-		contours = make([]int16, v.n_contours)
-		ptr := (*[(1<<31 - 1) / C.sizeof_short]C.short)(unsafe.Pointer(v.contours))[:v.n_contours:v.n_contours]
-		for i := range contours {
-			contours[i] = int16(ptr[i])
-		}
-	}
-
-	return Outline{
-		Points:   points,
-		Tags:     tags,
-		Contours: contours,
-		Flags:    OutlineFlag(v.flags),
-	}
 }

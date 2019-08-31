@@ -159,28 +159,3 @@ func TestStyleFlag_String(t *testing.T) {
 		})
 	}
 }
-
-func TestOutlineFlag_String(t *testing.T) {
-	tests := []struct {
-		name string
-		x    OutlineFlag
-		want string
-	}{
-		{name: "0", x: 0, want: ""},
-		{name: "one", x: OutlineIgnoreDropouts, want: "IgnoreDropouts"},
-		{name: "two", x: OutlineEvenOddFill | OutlineIncludeStubs, want: "EvenOddFill|IncludeStubs"},
-		{
-			name: "all",
-			x: OutlineOwner | OutlineEvenOddFill | OutlineReverseFill | OutlineIgnoreDropouts |
-				OutlineSmartDropouts | OutlineIncludeStubs | OutlineHighPrecision | OutlineSinglePass,
-			want: "Owner|EvenOddFill|ReverseFill|IgnoreDropouts|SmartDropouts|IncludeStubs|HighPrecision|SinglePass",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.x.String(); got != tt.want {
-				t.Errorf("OutlineFlag.String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}

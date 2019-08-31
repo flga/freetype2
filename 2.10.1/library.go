@@ -28,6 +28,8 @@ func (v Version) String() string {
 type Library struct {
 	ptr   C.FT_Library `deep:"-"`
 	faces []*Face
+
+	dealloc []func()
 }
 
 // NewLibrary creates a new Library instance.
@@ -51,16 +53,19 @@ func (l *Library) Free() error {
 		return nil
 	}
 
-	if err := getErr(C.FT_Done_FreeType(l.ptr)); err != nil {
-		return err
+	for _, fn := range l.dealloc {
+		fn()
 	}
 
 	for _, f := range l.faces {
 		f.freeInternal()
-		l.faces = l.faces[1:]
 	}
 
-	l.ptr = nil
+	if err := getErr(C.FT_Done_FreeType(l.ptr)); err != nil {
+		return err
+	}
+
+	*l = Library{}
 	return nil
 }
 
@@ -119,6 +124,7 @@ func (l *Library) NewFace(r io.Reader, index, namedInstanceIndex int) (*Face, er
 	}
 
 	f := &Face{ptr: face, lib: l, dealloc: []func(){free}}
+	f.init()
 	l.faces = append(l.faces, f)
 	return f, nil
 }
@@ -145,6 +151,7 @@ func (l *Library) NewFaceFromPath(path string, index, namedInstanceIndex int) (*
 	}
 
 	f := &Face{ptr: face, lib: l}
+	f.init()
 	l.faces = append(l.faces, f)
 	return f, nil
 }

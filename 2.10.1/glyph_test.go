@@ -46,7 +46,7 @@ func TestLibrary_NewGlyph(t *testing.T) {
 				advance: Vector16_16{},
 				Left:    0,
 				Top:     0,
-				Bitmap:  Bitmap{},
+				Bitmap:  &Bitmap{},
 			},
 		},
 		{
@@ -56,7 +56,7 @@ func TestLibrary_NewGlyph(t *testing.T) {
 			want: &OutlineGlyph{
 				format:  GlyphFormatOutline,
 				advance: Vector16_16{},
-				Outline: Outline{},
+				Outline: &Outline{},
 			},
 		},
 		{
@@ -90,14 +90,98 @@ func TestGlyph_Free(t *testing.T) {
 	}
 	defer l.Free()
 
-	g, err := l.NewGlyph(GlyphFormatOutline)
+	manualGlyph, err := l.NewGlyph(GlyphFormatOutline)
 	if err != nil {
 		t.Fatalf("unable to create glyph: %v", err)
 	}
 
-	g.Free()
-	if g.getptr() != nil {
+	manualGlyph.Free()
+	if manualGlyph.getptr() != nil {
 		t.Fatalf("g.ptr is not nil")
+	}
+
+	face, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to open face: %v", err)
+	}
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+		t.Fatalf("unable to set char size: %v", err)
+	}
+	if err := face.LoadChar('A', LoadDefault); err != nil {
+		t.Fatalf("unable to load char: %v", err)
+	}
+
+	glyph, err := face.GlyphSlot().Glyph()
+	if err != nil {
+		t.Fatalf("unable to get glyph: %v", err)
+	}
+
+	outlineGlyph, ok := glyph.(*OutlineGlyph)
+	if !ok {
+		t.Fatalf("glyph is not an outline")
+	}
+
+	outlineOwner := &Outline{
+		Points: []Vector{
+			{8, 0},
+			{254, 704},
+			{345, 704},
+			{587, 0},
+			{488, 0},
+			{421, 182},
+			{161, 182},
+			{94, 0},
+			{187, 255},
+			{396, 255},
+			{292, 565},
+		},
+		Tags:     []byte{0x95, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+		Contours: []int16{7, 10},
+		Flags:    0x131,
+	}
+	slotOutline := &Outline{
+		Points: []Vector{
+			{8, 0},
+			{254, 704},
+			{345, 704},
+			{587, 0},
+			{488, 0},
+			{421, 182},
+			{161, 182},
+			{94, 0},
+			{187, 255},
+			{396, 255},
+			{292, 565},
+		},
+		Tags:     []byte{0x95, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+		Contours: []int16{7, 10},
+		Flags:    0x130,
+	}
+
+	want := &OutlineGlyph{
+		format:  GlyphFormatOutline,
+		advance: Vector16_16{X: 589824, Y: 0},
+		Outline: outlineOwner,
+	}
+
+	if diff := diff(outlineGlyph, want); diff != nil {
+		t.Fatalf("%v", diff)
+	}
+	if diff := diff(face.GlyphSlot().Outline, slotOutline); diff != nil {
+		t.Fatalf("%v", diff)
+	}
+
+	outlineCopy := outlineGlyph.Outline
+
+	outlineGlyph.Free()
+	if diff := diff(outlineGlyph, &OutlineGlyph{}); diff != nil {
+		t.Fatalf("%v", diff)
+	}
+	if diff := diff(face.GlyphSlot().Outline, slotOutline); diff != nil {
+		t.Fatalf("%v", diff)
+	}
+	if diff := diff(outlineCopy, &Outline{}); diff != nil {
+		t.Fatalf("%v", diff)
 	}
 }
 
@@ -166,7 +250,7 @@ func TestGlyphSlot_Glyph(t *testing.T) {
 			want: &OutlineGlyph{
 				format:  GlyphFormatOutline,
 				advance: Vector16_16{X: 589824, Y: 0},
-				Outline: Outline{
+				Outline: &Outline{
 					Points: []Vector{
 						{8, 0},
 						{254, 704},
@@ -195,7 +279,7 @@ func TestGlyphSlot_Glyph(t *testing.T) {
 				advance: Vector16_16{X: 917504, Y: 0},
 				Left:    0,
 				Top:     15,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:  15,
 					Width: 13,
 					Pitch: 13,
@@ -270,7 +354,7 @@ func TestGlyph_Copy(t *testing.T) {
 				advance: Vector16_16{X: 0, Y: 0},
 				Left:    0,
 				Top:     0,
-				Bitmap:  Bitmap{},
+				Bitmap:  &Bitmap{},
 			},
 			wantErr: nil,
 		},
@@ -282,7 +366,7 @@ func TestGlyph_Copy(t *testing.T) {
 				advance: Vector16_16{X: 917504, Y: 0},
 				Left:    0,
 				Top:     15,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:  15,
 					Width: 13,
 					Pitch: 13,
@@ -315,7 +399,7 @@ func TestGlyph_Copy(t *testing.T) {
 			want: &OutlineGlyph{
 				format:  GlyphFormatOutline,
 				advance: Vector16_16{X: 0, Y: 0},
-				Outline: Outline{
+				Outline: &Outline{
 					Flags: OutlineOwner,
 				},
 			},
@@ -327,7 +411,7 @@ func TestGlyph_Copy(t *testing.T) {
 			want: &OutlineGlyph{
 				format:  GlyphFormatOutline,
 				advance: Vector16_16{X: 589824, Y: 0},
-				Outline: Outline{
+				Outline: &Outline{
 					Points: []Vector{
 						{8, 0},
 						{254, 704},
@@ -413,7 +497,7 @@ func TestGlyph_Transform(t *testing.T) {
 				advance: Vector16_16{X: 917504, Y: 0},
 				Left:    0,
 				Top:     15,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:  15,
 					Width: 13,
 					Pitch: 13,
@@ -448,7 +532,7 @@ func TestGlyph_Transform(t *testing.T) {
 			want: &OutlineGlyph{
 				format:  GlyphFormatOutline,
 				advance: Vector16_16{X: 589824, Y: 0},
-				Outline: Outline{
+				Outline: &Outline{
 					Points: []Vector{
 						{8, 0},
 						{254, 704},
@@ -477,7 +561,7 @@ func TestGlyph_Transform(t *testing.T) {
 			want: &OutlineGlyph{
 				format:  GlyphFormatOutline,
 				advance: Vector16_16{X: 0, Y: 589824},
-				Outline: Outline{
+				Outline: &Outline{
 					Points: []Vector{
 						{0, 8},
 						{-704, 254},
@@ -506,7 +590,7 @@ func TestGlyph_Transform(t *testing.T) {
 			want: &OutlineGlyph{
 				format:  GlyphFormatOutline,
 				advance: Vector16_16{X: 589824, Y: 0},
-				Outline: Outline{
+				Outline: &Outline{
 					Points: []Vector{
 						{72, 64},
 						{318, 768},
@@ -535,7 +619,7 @@ func TestGlyph_Transform(t *testing.T) {
 			want: &OutlineGlyph{
 				format:  GlyphFormatOutline,
 				advance: Vector16_16{X: 0, Y: 589824},
-				Outline: Outline{
+				Outline: &Outline{
 					Points: []Vector{
 						{64, 72},
 						{-640, 318},
@@ -649,7 +733,7 @@ func TestGlyph_ToBitmap(t *testing.T) {
 				advance: Vector16_16{X: 917504, Y: 0},
 				Left:    0,
 				Top:     15,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:  15,
 					Width: 13,
 					Pitch: 13,
@@ -689,7 +773,7 @@ func TestGlyph_ToBitmap(t *testing.T) {
 				advance: Vector16_16{X: 917504, Y: 0},
 				Left:    0,
 				Top:     15,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:  15,
 					Width: 13,
 					Pitch: 13,
@@ -729,7 +813,7 @@ func TestGlyph_ToBitmap(t *testing.T) {
 				advance: Vector16_16{X: 589824, Y: 0},
 				Left:    0,
 				Top:     11,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:      11,
 					Width:     10,
 					Pitch:     10,
@@ -753,7 +837,7 @@ func TestGlyph_ToBitmap(t *testing.T) {
 				advance: Vector16_16{X: 589824, Y: 0},
 				Left:    1,
 				Top:     12,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:      11,
 					Width:     10,
 					Pitch:     10,
@@ -788,7 +872,7 @@ func TestGlyph_ToBitmap(t *testing.T) {
 		wantOriginal := &OutlineGlyph{
 			format:  GlyphFormatOutline,
 			advance: Vector16_16{X: 589824, Y: 0},
-			Outline: Outline{
+			Outline: &Outline{
 				Points: []Vector{
 					{8, 0},
 					{254, 704},
@@ -813,7 +897,7 @@ func TestGlyph_ToBitmap(t *testing.T) {
 			advance: Vector16_16{X: 589824, Y: 0},
 			Left:    0,
 			Top:     11,
-			Bitmap: Bitmap{
+			Bitmap: &Bitmap{
 				Rows:      11,
 				Width:     10,
 				Pitch:     10,
@@ -826,7 +910,7 @@ func TestGlyph_ToBitmap(t *testing.T) {
 		wantTransformed := &OutlineGlyph{
 			format:  GlyphFormatOutline,
 			advance: Vector16_16{X: 0, Y: 589824},
-			Outline: Outline{
+			Outline: &Outline{
 				Points: []Vector{
 					{0, 8},
 					{-704, 254},
@@ -1033,7 +1117,7 @@ func TestGlyph_reload(t *testing.T) {
 	wantOutline := &OutlineGlyph{
 		format:  GlyphFormatOutline,
 		advance: Vector16_16{X: 589824, Y: 0},
-		Outline: Outline{
+		Outline: &Outline{
 			Points: []Vector{
 				{8, 0},
 				{254, 704},
@@ -1058,7 +1142,7 @@ func TestGlyph_reload(t *testing.T) {
 		advance: Vector16_16{X: 917504, Y: 0},
 		Left:    0,
 		Top:     15,
-		Bitmap: Bitmap{
+		Bitmap: &Bitmap{
 			Rows:  15,
 			Width: 13,
 			Pitch: 13,

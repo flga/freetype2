@@ -162,7 +162,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -300,
 			underlineThickness: 50,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "goBold",
@@ -211,7 +211,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -300,
 			underlineThickness: 100,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "goItalic",
@@ -260,7 +260,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -300,
 			underlineThickness: 50,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "goBoldItalic",
@@ -309,7 +309,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -350,
 			underlineThickness: 100,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "goMono",
@@ -358,7 +358,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2367,
 			underlinePosition:  -300,
 			underlineThickness: 50,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "bungeeColorWin",
@@ -407,7 +407,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   1200,
 			underlinePosition:  0,
 			underlineThickness: 0,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "bungeeColorMac",
@@ -466,7 +466,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   0,
 			underlinePosition:  0,
 			underlineThickness: 0,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "bungeeLayersReg",
@@ -516,7 +516,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   1200,
 			underlinePosition:  0,
 			underlineThickness: 0,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "notoSansJpReg",
@@ -567,7 +567,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   3000,
 			underlinePosition:  -150,
 			underlineThickness: 50,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "notoSansJpBold",
@@ -618,7 +618,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   3000,
 			underlinePosition:  -150,
 			underlineThickness: 50,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 		{
 			name:              "arimoRegular",
@@ -665,7 +665,7 @@ func TestFaceProps(t *testing.T) {
 			maxAdvanceHeight:   2355,
 			underlinePosition:  -292,
 			underlineThickness: 150,
-			glyphSlot:          &GlyphSlot{},
+			glyphSlot:          &GlyphSlot{Bitmap: &Bitmap{}, Outline: &Outline{}},
 		},
 	}
 	for _, tt := range tests {
@@ -1873,7 +1873,7 @@ func TestFace_GlyphSlot(t *testing.T) {
 					Y: 0,
 				},
 				Format: GlyphFormatBitmap,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:      0xb,
 					Width:     0xa,
 					Pitch:     10,
@@ -1883,7 +1883,7 @@ func TestFace_GlyphSlot(t *testing.T) {
 				},
 				BitmapLeft: 0,
 				BitmapTop:  11,
-				Outline: Outline{
+				Outline: &Outline{
 					Points: []Vector{
 						{X: 0x00000008, Y: 0x00000000}, {X: 0x000000fe, Y: 0x000002c0}, {X: 0x00000159, Y: 0x000002c0},
 						{X: 0x0000024b, Y: 0x00000000}, {X: 0x000001e8, Y: 0x00000000}, {X: 0x000001a5, Y: 0x000000b6},
@@ -1925,7 +1925,7 @@ func TestFace_GlyphSlot(t *testing.T) {
 					Y: 0,
 				},
 				Format: GlyphFormatBitmap,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:      0xf,
 					Width:     0xd,
 					Pitch:     52,
@@ -1935,7 +1935,7 @@ func TestFace_GlyphSlot(t *testing.T) {
 				},
 				BitmapLeft:   0,
 				BitmapTop:    15,
-				Outline:      Outline{},
+				Outline:      &Outline{},
 				NumSubglyphs: 0,
 				LsbDelta:     0,
 				RsbDelta:     0,
@@ -1970,7 +1970,7 @@ func TestFace_GlyphSlot(t *testing.T) {
 					Y: 0,
 				},
 				Format: GlyphFormatBitmap,
-				Bitmap: Bitmap{
+				Bitmap: &Bitmap{
 					Rows:      0xb,
 					Width:     0x9,
 					Pitch:     9,
@@ -1980,7 +1980,7 @@ func TestFace_GlyphSlot(t *testing.T) {
 				},
 				BitmapLeft: 0,
 				BitmapTop:  11,
-				Outline: Outline{
+				Outline: &Outline{
 					Points: []Vector{
 						{X: 0x000000ab, Y: 0x00000102}, {X: 0x000000cb, Y: 0x00000178}, {X: 0x000000e2, Y: 0x000001cf},
 						{X: 0x000000f8, Y: 0x00000222}, {X: 0x0000010c, Y: 0x0000027c}, {X: 0x00000110, Y: 0x0000027c},
@@ -2081,6 +2081,78 @@ func TestFace_GlyphSlot(t *testing.T) {
 			t.Fatalf("got err %v, want %v", err, ErrInvalidSlotHandle)
 		}
 	})
+
+	t.Run("stale ref", func(t *testing.T) {
+		slotCopy := func(slot *GlyphSlot) *GlyphSlot {
+			if slot == nil {
+				return nil
+			}
+
+			ret := *slot
+
+			bitmap := *slot.Bitmap
+			if len(slot.Bitmap.Buffer) > 0 { // preserve nils
+				bitmap.Buffer = make([]byte, len(slot.Bitmap.Buffer))
+				copy(bitmap.Buffer, slot.Bitmap.Buffer)
+			}
+			ret.Bitmap = &bitmap
+
+			outline := *slot.Outline
+			if len(slot.Outline.Points) > 0 { // preserve nils
+				outline.Points = make([]Vector, len(slot.Outline.Points))
+				copy(outline.Points, slot.Outline.Points)
+			}
+			if len(slot.Outline.Tags) > 0 { // preserve nils
+				outline.Tags = make([]byte, len(slot.Outline.Tags))
+				copy(outline.Tags, slot.Outline.Tags)
+			}
+			if len(slot.Outline.Contours) > 0 { // preserve nils
+				outline.Contours = make([]int16, len(slot.Outline.Contours))
+				copy(outline.Contours, slot.Outline.Contours)
+			}
+			ret.Outline = &outline
+
+			return &ret
+		}
+
+		l, err := NewLibrary()
+		if err != nil {
+			t.Fatalf("unable to create lib: %v", err)
+		}
+		defer l.Free()
+
+		face, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+		if err != nil {
+			t.Fatalf("unable to load face: %v", err)
+		}
+		defer face.Free()
+
+		if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+			t.Fatalf("unable to set char size: %v", err)
+		}
+
+		if err := face.LoadChar('A', LoadRender); err != nil {
+			t.Fatalf("unable to load char: %v", err)
+		}
+
+		staleSlot := face.GlyphSlot()
+		staleSnapshot := slotCopy(staleSlot)
+		if diff := diff(staleSlot, staleSnapshot); diff != nil {
+			t.Errorf("Face.GlyphSlot() = copy err %v", diff)
+		}
+
+		if err := face.LoadChar('B', LoadRender); err != nil {
+			t.Fatalf("unable to load char: %v", err)
+		}
+		newSlot := face.GlyphSlot()
+
+		if diff := diff(newSlot, staleSnapshot); diff == nil {
+			t.Errorf("Face.GlyphSlot() new and staleSnapshot are equal")
+		}
+		if diff := diff(newSlot, staleSlot); diff != nil {
+			t.Errorf("Face.GlyphSlot() = %v", diff)
+		}
+	})
 }
 
 func TestFace_SetTransform(t *testing.T) {
@@ -2129,7 +2201,7 @@ func TestRotate90Deg(t *testing.T) {
 			Y: 576,
 		},
 		Format: GlyphFormatBitmap,
-		Bitmap: Bitmap{
+		Bitmap: &Bitmap{
 			Rows:      0xa,
 			Width:     0xb,
 			Pitch:     11,
@@ -2139,7 +2211,7 @@ func TestRotate90Deg(t *testing.T) {
 		},
 		BitmapLeft: -11,
 		BitmapTop:  10,
-		Outline: Outline{
+		Outline: &Outline{
 			Points: []Vector{
 				{X: 0, Y: 8}, {X: -704, Y: 254}, {X: -704, Y: 345}, {X: 0, Y: 587}, {X: 0, Y: 488}, {X: -182, Y: 421},
 				{X: -182, Y: 161}, {X: 0, Y: 94}, {X: -255, Y: 187}, {X: -255, Y: 396}, {X: -565, Y: 292},

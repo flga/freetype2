@@ -29,6 +29,8 @@ type Face struct {
 	ptr     C.FT_Face `deep:"-"`
 	lib     *Library
 	dealloc []func()
+
+	slot *GlyphSlot
 }
 
 // Free discards the face, as well as all of its child slots and sizes.
@@ -46,6 +48,15 @@ func (f *Face) Free() error {
 	return nil
 }
 
+func (f *Face) init() {
+	if f == nil || f.ptr == nil {
+		return
+	}
+
+	f.slot = &GlyphSlot{ptr: f.ptr.glyph}
+	f.slot.reload()
+}
+
 func (f *Face) freeInternal() {
 	if f == nil || f.ptr == nil {
 		return
@@ -55,7 +66,8 @@ func (f *Face) freeInternal() {
 		fn()
 	}
 
-	f.ptr = nil
+	*f.slot = GlyphSlot{}
+	*f = Face{}
 }
 
 // NumFaces returns the number of faces in the font file. Some font formats can have multiple faces in a single font file.
@@ -324,21 +336,22 @@ func (f *Face) UnderlineThickness() int {
 	return int(f.ptr.underline_thickness)
 }
 
-// GlyphSlot returns a copy of the current contents, if any, of the face's glyph slot.
+// GlyphSlot the face's glyph slot.
 func (f *Face) GlyphSlot() *GlyphSlot {
 	if f == nil || f.ptr == nil {
 		return nil
 	}
 
-	ret := newGlyphSlot(f.ptr.glyph)
-	if ret == nil {
-		return nil
-	}
+	// ret := newGlyphSlot(f.ptr.glyph)
+	// if ret == nil {
+	// 	return nil
+	// }
 
-	f.dealloc = append(f.dealloc, func() {
-		ret.ptr = nil
-	})
-	return ret
+	// f.dealloc = append(f.dealloc, func() {
+	// 	ret.ptr = nil
+	// })
+	f.slot.reload()
+	return f.slot
 }
 
 // I don't know how to test this yet
@@ -628,6 +641,7 @@ func (f *Face) LoadGlyph(idx GlyphIndex, flags LoadFlag) error {
 	if f == nil || f.ptr == nil {
 		return ErrInvalidFaceHandle
 	}
+	defer f.slot.reload()
 
 	return getErr(C.FT_Load_Glyph(f.ptr, C.FT_UInt(idx), C.FT_Int32(flags)))
 }
@@ -739,6 +753,7 @@ func (f *Face) LoadChar(r rune, flags LoadFlag) error {
 	if f == nil || f.ptr == nil {
 		return ErrInvalidFaceHandle
 	}
+	defer f.slot.reload()
 
 	return getErr(C.FT_Load_Char(f.ptr, C.ulong(r), C.FT_Int32(flags)))
 }

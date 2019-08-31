@@ -260,7 +260,7 @@ type BitmapGlyph struct {
 	// for upwards y!
 	Top int
 	// A descriptor for the bitmap.
-	Bitmap Bitmap
+	Bitmap *Bitmap
 }
 
 func (g *BitmapGlyph) getptr() C.FT_Glyph {
@@ -295,15 +295,19 @@ func (g *BitmapGlyph) reload() {
 		},
 		Left:   int(ptr.left),
 		Top:    int(ptr.top),
-		Bitmap: newBitmap(ptr.bitmap),
+		Bitmap: &Bitmap{ptr: &ptr.bitmap},
 	}
+	g.Bitmap.reload()
 }
 
 func (g *BitmapGlyph) reset() {
 	if g == nil {
 		return
 	}
-	g.ptr = nil
+	if g.Bitmap != nil {
+		*g.Bitmap = Bitmap{}
+	}
+	*g = BitmapGlyph{}
 }
 
 // Free destroys the glyph
@@ -429,7 +433,7 @@ type OutlineGlyph struct {
 	advance Vector16_16
 
 	// A descriptor for the outline.
-	Outline Outline
+	Outline *Outline
 }
 
 func (g *OutlineGlyph) getptr() C.FT_Glyph {
@@ -462,15 +466,19 @@ func (g *OutlineGlyph) reload() {
 			X: fixed.Int16_16(g.ptr.advance.x),
 			Y: fixed.Int16_16(g.ptr.advance.y),
 		},
-		Outline: newOutline(ptr.outline),
+		Outline: &Outline{ptr: &ptr.outline},
 	}
+	g.Outline.reload()
 }
 
 func (g *OutlineGlyph) reset() {
 	if g == nil {
 		return
 	}
-	g.ptr = nil
+	if g.Outline != nil {
+		*g.Outline = Outline{}
+	}
+	*g = OutlineGlyph{}
 }
 
 // Free destroys the glyph

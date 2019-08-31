@@ -8,8 +8,8 @@ import (
 )
 
 func Test_newBitmap(t *testing.T) {
-	got := newBitmap(emptyBitmap)
-	want := Bitmap{}
+	got := &Bitmap{ptr: nil}
+	want := &Bitmap{}
 	if diff := diff(got, want); diff != nil {
 		t.Errorf("newBitmap(empty) %v", diff)
 	}
@@ -28,8 +28,9 @@ func Test_newBitmap(t *testing.T) {
 		t.Fatalf("unable laod glyph: %v", err)
 	}
 
-	got = newBitmap(face.ptr.glyph.bitmap)
-	want = Bitmap{
+	got = &Bitmap{ptr: &face.ptr.glyph.bitmap}
+	got.reload()
+	want = &Bitmap{
 		Rows:      0xb,
 		Width:     0xa,
 		Pitch:     10,
@@ -126,11 +127,11 @@ func Test_newSize(t *testing.T) {
 }
 
 func Test_newGlyphSlot(t *testing.T) {
-	got := newGlyphSlot(nil)
-	var want *GlyphSlot
-	if diff := diff(got, want); diff != nil {
-		t.Errorf("newGlyphSlot(nil) = %v", diff)
-	}
+	// got := newGlyphSlot(nil)
+	// var want *GlyphSlot
+	// if diff := diff(got, want); diff != nil {
+	// 	t.Errorf("newGlyphSlot(nil) = %v", diff)
+	// }
 
 	face, err := notoSansJpReg() // noto has both horizontal and vertical modes
 	if err != nil {
@@ -146,8 +147,9 @@ func Test_newGlyphSlot(t *testing.T) {
 		t.Fatalf("unable laod glyph: %v", err)
 	}
 
-	got = newGlyphSlot(face.ptr.glyph)
-	want = &GlyphSlot{
+	got := &GlyphSlot{ptr: face.ptr.glyph}
+	got.reload()
+	want := &GlyphSlot{
 		GlyphIndex: 0x22,
 		Metrics: GlyphMetrics{
 			Width:        576,
@@ -163,10 +165,10 @@ func Test_newGlyphSlot(t *testing.T) {
 		LinearVertAdvance: 917500,
 		Advance:           Vector26_6{X: 576, Y: 0},
 		Format:            GlyphFormatBitmap,
-		Bitmap:            Bitmap{}, // separate test
+		Bitmap:            nil, // separate test
 		BitmapLeft:        0,
 		BitmapTop:         11,
-		Outline:           Outline{}, // separate test
+		Outline:           nil, // separate test
 		NumSubglyphs:      0,
 		LsbDelta:          0,
 		RsbDelta:          0,
@@ -181,8 +183,8 @@ func Test_newGlyphSlot(t *testing.T) {
 		t.Errorf("newGlyphSlot() want non-zero %T", Outline{})
 	}
 	// set to 0 for comparison
-	got.Bitmap = Bitmap{}
-	got.Outline = Outline{}
+	got.Bitmap = nil
+	got.Outline = nil
 
 	if diff := diff(got, want); diff != nil {
 		t.Errorf("newGlyphSlot() %v", diff)
@@ -246,44 +248,6 @@ func TestGlyphSlot_SubGlyphInfo(t *testing.T) {
 	}
 }
 
-func Test_newOutline(t *testing.T) {
-	face, err := notoSansJpReg()
-	if err != nil {
-		t.Fatalf("unable to load face: %v", err)
-	}
-	defer face.Free()
-
-	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
-		t.Fatalf("unable to set char size: %v", err)
-	}
-
-	if err := face.LoadGlyph(0x22, LoadRender|LoadColor); err != nil {
-		t.Fatalf("unable laod glyph: %v", err)
-	}
-
-	got := newOutline(face.ptr.glyph.outline)
-	want := Outline{
-		Points: []Vector{
-			{X: 0x000000ab, Y: 0x00000102}, {X: 0x000000cb, Y: 0x00000178}, {X: 0x000000e2, Y: 0x000001cf},
-			{X: 0x000000f8, Y: 0x00000222}, {X: 0x0000010c, Y: 0x0000027c}, {X: 0x00000110, Y: 0x0000027c},
-			{X: 0x00000126, Y: 0x00000223}, {X: 0x0000013a, Y: 0x000001cf}, {X: 0x00000152, Y: 0x00000178},
-			{X: 0x00000172, Y: 0x00000102}, {X: 0x000001c5, Y: 0x00000000}, {X: 0x0000021d, Y: 0x00000000},
-			{X: 0x0000013e, Y: 0x000002c0}, {X: 0x000000e1, Y: 0x000002c0}, {X: 0x00000002, Y: 0x00000000},
-			{X: 0x00000056, Y: 0x00000000}, {X: 0x00000096, Y: 0x000000c0}, {X: 0x00000186, Y: 0x000000c0},
-		},
-		Tags: []byte{
-			0x01, 0x01, 0x02, 0x02, 0x01, 0x01, 0x02, 0x02, 0x01,
-			0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		},
-		Contours: []int16{0x0009, 0x0011},
-		Flags:    0x00000104,
-	}
-
-	if diff := diff(got, want); diff != nil {
-		t.Errorf("newOutline() %v", diff)
-	}
-}
-
 func TestGlyphSlot_RenderGlyph(t *testing.T) {
 	var slot *GlyphSlot
 	if err := slot.RenderGlyph(0); err != ErrInvalidArgument {
@@ -321,7 +285,7 @@ func TestGlyphSlot_RenderGlyph(t *testing.T) {
 		LinearVertAdvance: 884352,
 		Advance:           Vector26_6{X: 576, Y: 0},
 		Format:            GlyphFormatOutline,
-		Bitmap: Bitmap{
+		Bitmap: &Bitmap{
 			Rows:      11,
 			Width:     10,
 			Pitch:     10,
@@ -331,7 +295,7 @@ func TestGlyphSlot_RenderGlyph(t *testing.T) {
 		},
 		BitmapLeft: 0,
 		BitmapTop:  11,
-		Outline: Outline{
+		Outline: &Outline{
 			Points: []Vector{
 				{8, 0},
 				{254, 704},
@@ -374,7 +338,7 @@ func TestGlyphSlot_RenderGlyph(t *testing.T) {
 		LinearVertAdvance: 884352,
 		Advance:           Vector26_6{X: 576, Y: 0},
 		Format:            GlyphFormatBitmap,
-		Bitmap: Bitmap{
+		Bitmap: &Bitmap{
 			Rows:      11,
 			Width:     10,
 			Pitch:     10,
@@ -384,7 +348,7 @@ func TestGlyphSlot_RenderGlyph(t *testing.T) {
 		},
 		BitmapLeft: 0,
 		BitmapTop:  11,
-		Outline: Outline{
+		Outline: &Outline{
 			Points: []Vector{
 				{8, 0},
 				{254, 704},
