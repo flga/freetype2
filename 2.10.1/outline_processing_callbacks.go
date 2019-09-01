@@ -18,7 +18,7 @@ func makeVec(v *C.FT_Vector) Vector {
 
 //export OutlineMoveToCallback
 func OutlineMoveToCallback(to *C.FT_Vector, user uintptr) C.int {
-	d := decomposers.get(user)
+	d := decomposers.valueOf(user)
 	if d == nil {
 		return 1
 	}
@@ -30,7 +30,7 @@ func OutlineMoveToCallback(to *C.FT_Vector, user uintptr) C.int {
 
 //export OutlineLineToCallback
 func OutlineLineToCallback(to *C.FT_Vector, user uintptr) C.int {
-	d := decomposers.get(user)
+	d := decomposers.valueOf(user)
 	if d == nil {
 		return 1
 	}
@@ -42,7 +42,7 @@ func OutlineLineToCallback(to *C.FT_Vector, user uintptr) C.int {
 
 //export OutlineConicToCallback
 func OutlineConicToCallback(control, to *C.FT_Vector, user uintptr) C.int {
-	d := decomposers.get(user)
+	d := decomposers.valueOf(user)
 	if d == nil {
 		return 1
 	}
@@ -54,7 +54,7 @@ func OutlineConicToCallback(control, to *C.FT_Vector, user uintptr) C.int {
 
 //export OutlineCubicToCallback
 func OutlineCubicToCallback(control1, control2, to *C.FT_Vector, user uintptr) C.int {
-	d := decomposers.get(user)
+	d := decomposers.valueOf(user)
 	if d == nil {
 		return 1
 	}

@@ -1934,7 +1934,7 @@ func TestDecomposerTable(t *testing.T) {
 		}
 
 		value := dummyDecomposer(42)
-		_, handle, err := table.alloc(value, 0, 0)
+		_, handle, err := table.acquire(value, 0, 0)
 		if err != nil {
 			t.Fatalf("err %v", err)
 		}
@@ -1943,12 +1943,12 @@ func TestDecomposerTable(t *testing.T) {
 			t.Fatalf("handle should be 0")
 		}
 
-		if got := table.get(handle); got != value {
+		if got := table.valueOf(handle); got != value {
 			t.Fatalf("got %v, want %v", got, value)
 		}
 
-		table.remove(handle)
-		if got := table.get(handle); got != nil {
+		table.release(handle)
+		if got := table.valueOf(handle); got != nil {
 			t.Fatalf("got %v, want %v", got, nil)
 		}
 	})
@@ -1960,37 +1960,37 @@ func TestDecomposerTable(t *testing.T) {
 
 		value1 := dummyDecomposer(42)
 		value2 := dummyDecomposer(420)
-		_, handle1, err := table.alloc(value1, 0, 0)
+		_, handle1, err := table.acquire(value1, 0, 0)
 		if err != nil {
 			t.Fatalf("err %v", err)
 		}
 
 		table.idx = 0 //simulate overflow
-		_, handle2, err := table.alloc(value2, 0, 0)
+		_, handle2, err := table.acquire(value2, 0, 0)
 		if err != nil {
 			t.Fatalf("err %v", err)
 		}
 
-		if got := table.get(handle1); got != value1 {
+		if got := table.valueOf(handle1); got != value1 {
 			t.Fatalf("got %v, want %v", got, value1)
 		}
-		if got := table.get(handle2); got != value2 {
+		if got := table.valueOf(handle2); got != value2 {
 			t.Fatalf("got %v, want %v", got, value2)
 		}
 
-		table.remove(handle1)
-		if got := table.get(handle1); got != nil {
+		table.release(handle1)
+		if got := table.valueOf(handle1); got != nil {
 			t.Fatalf("got %v, want %v", got, nil)
 		}
-		if got := table.get(handle2); got != value2 {
+		if got := table.valueOf(handle2); got != value2 {
 			t.Fatalf("got %v, want %v", got, value2)
 		}
 
-		table.remove(handle2)
-		if got := table.get(handle1); got != nil {
+		table.release(handle2)
+		if got := table.valueOf(handle1); got != nil {
 			t.Fatalf("got %v, want %v", got, nil)
 		}
-		if got := table.get(handle2); got != nil {
+		if got := table.valueOf(handle2); got != nil {
 			t.Fatalf("got %v, want %v", got, nil)
 		}
 	})

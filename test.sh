@@ -8,6 +8,7 @@ fi
 
 cd $VERSION
 
-CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static' "${goLDFlags[@]}" -cover
-CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static harfbuzz' "${goLDFlags[@]}" -cover
-CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static harfbuzz subset' "${goLDFlags[@]}" -cover
+GODEBUG=cgocheck=2 CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static' "${goLDFlags[@]}" -cover
+GODEBUG=cgocheck=2 CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static harfbuzz' "${goLDFlags[@]}" -cover
+GODEBUG=cgocheck=2 CGO_ENABLED=1 GOARCH=$ARCH go test -tags 'static harfbuzz subset' "${goLDFlags[@]}" -cover
+

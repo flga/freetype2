@@ -411,10 +411,18 @@ func (o *Outline) BBox() BBox {
 // FT_Outline_Render TODO
 // FT_Outline_Decompose TODO
 
+// OutlineDecomposer is used during outline decomposition in order to emit
+// segments, conic, and cubic Beziers.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-outline_processing.html#ft_outline_funcs
 type OutlineDecomposer interface {
+	// The ‘move to’ emitter.
 	MoveTo(Vector) error
+	// The segment emitter.
 	LineTo(Vector) error
+	// The second-order Bezier arc emitter.
 	ConicTo(control, to Vector) error
+	// The third-order Bezier arc emitter.
 	CubicTo(control1, control2, to Vector) error
 }
 
@@ -424,7 +432,7 @@ type decomposerTable struct {
 	table map[uintptr]OutlineDecomposer
 }
 
-func (m *decomposerTable) alloc(d OutlineDecomposer, shift int, delta Pos) (*C.FT_Outline_Funcs, uintptr, error) {
+func (m *decomposerTable) acquire(d OutlineDecomposer, shift int, delta Pos) (*C.FT_Outline_Funcs, uintptr, error) {
 	m.Lock()
 	var idx uintptr
 	start := m.idx
@@ -455,13 +463,13 @@ func (m *decomposerTable) alloc(d OutlineDecomposer, shift int, delta Pos) (*C.F
 	}, idx, nil
 }
 
-func (m *decomposerTable) get(idx uintptr) OutlineDecomposer {
+func (m *decomposerTable) valueOf(idx uintptr) OutlineDecomposer {
 	m.Lock()
 	v := m.table[idx]
 	m.Unlock()
 	return v
 }
-func (m *decomposerTable) remove(idx uintptr) {
+func (m *decomposerTable) release(idx uintptr) {
 	m.Lock()
 	m.table[idx] = nil
 	m.Unlock()
@@ -469,12 +477,41 @@ func (m *decomposerTable) remove(idx uintptr) {
 
 var decomposers = &decomposerTable{table: make(map[uintptr]OutlineDecomposer)}
 
+// Decompose walks over an outline's structure to decompose it into individual
+// segments and Bezier arcs. This function also emits ‘move to’ operations to
+// indicate the start of new contours in the outline.
+//
+// Shift is the shift that is applied to coordinates before they are sent to the
+// emitter.
+//
+// Delta is the delta that is applied to coordinates before they are sent to the
+// emitter, but after the shift.
+//
+// The point coordinates sent to the emitters are the transformed version of the
+// original coordinates (this is important for high accuracy during
+// scan-conversion). The transformation is simple:
+//
+//	x' := (x << shift) - delta
+//	y' := (y << shift) - delta
+//
+// Set the values of shift and delta to 0 to get the original point coordinates.
+//
+// A contour that contains a single point only is represented by a ‘move to’
+// operation followed by ‘line to’ to the same point. In most cases, it is best
+// to filter this out before using the outline for stroking purposes (otherwise
+// it would result in a visible dot when round caps are used).
+//
+// Similarly, the function returns success for an empty outline also (doing
+// nothing, this is, not calling any emitter); if necessary, you should filter
+// this out, too.
+//
+// See https://www.freetype.org/freetype2/docs/reference/ft2-outline_processing.html#ft_outline_decompose
 func (o *Outline) Decompose(decomposer OutlineDecomposer, shift int, delta Pos) error {
 	if o == nil || o.ptr == nil {
 		return ErrInvalidOutline
 	}
 
-	funcs, handle, err := decomposers.alloc(decomposer, shift, delta)
+	funcs, handle, err := decomposers.acquire(decomposer, shift, delta)
 	if err != nil {
 		return err
 	}
