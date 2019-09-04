@@ -6,6 +6,7 @@ package freetype2
 import (
 	"C"
 )
+import "math"
 
 // Encoding is an enumeration to specify character sets supported by charmaps.
 // Used in the SelectCharMap API function.
@@ -219,6 +220,11 @@ func (p PixelMode) BitsPerPixel() int {
 	default:
 		return 0
 	}
+}
+
+// BytesPerPixel reports the number of bytes needed for a single pixel.
+func (p PixelMode) BytesPerPixel() int {
+	return int(math.Ceil(float64(p.BitsPerPixel()) / 8.0))
 }
 
 // GlyphFormat is an enumeration type used to describe the format of a given glyph image. Note that this version of

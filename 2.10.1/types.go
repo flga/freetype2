@@ -8,7 +8,6 @@ import (
 	"C"
 )
 import (
-	"math"
 	"unsafe"
 
 	"github.com/flga/freetype2/2.10.1/truetype"
@@ -104,7 +103,10 @@ type UnitVector struct {
 //
 // See https://www.freetype.org/freetype2/docs/reference/ft2-basic_types.html#ft_bitmap
 type Bitmap struct {
-	ptr *C.FT_Bitmap `deep:"-"`
+	ptr         *C.FT_Bitmap `deep:"-"`
+	l           *Library     `deep:"-"`
+	userCreated bool
+
 	// The number of bitmap rows.
 	Rows int
 
@@ -149,13 +151,30 @@ func (b *Bitmap) reload() {
 
 	b.Rows = int(b.ptr.rows)
 	b.Width = int(b.ptr.width)
-	b.Pitch = int(b.ptr.pitch)
+	b.Pitch = int(b.ptr.pitch) //TODO: perhaps split pitch and flow?
 	b.NumGrays = int(b.ptr.num_grays)
 	b.PixelMode = PixelMode(b.ptr.pixel_mode)
 
 	if b.ptr.buffer != nil {
-		pitch := int(math.Abs(float64(b.Pitch)))
-		b.Buffer = C.GoBytes(unsafe.Pointer(b.ptr.buffer), C.int(pitch*b.Rows))
+		pitch := b.Pitch
+		if pitch < 0 {
+			pitch = -pitch
+		}
+
+		length := pitch * b.Rows
+		b.Buffer = make([]byte, length)
+
+		buf := (*[(1<<31 - 1) / C.sizeof_uchar]C.uchar)(unsafe.Pointer(b.ptr.buffer))[:length:length]
+		bpp := b.PixelMode.BytesPerPixel()
+		for i := range b.Buffer {
+			if i%pitch/bpp >= b.Width { // set padding bytes explicitly to 0
+				b.Buffer[i] = 0
+			} else {
+				b.Buffer[i] = byte(buf[i])
+			}
+		}
+	} else {
+		b.Buffer = nil
 	}
 }
 
