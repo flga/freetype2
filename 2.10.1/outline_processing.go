@@ -10,6 +10,7 @@ package freetype2
 // int OutlineLineToCallback(const FT_Vector* to, void* user);
 // int OutlineConicToCallback(const FT_Vector* control, const FT_Vector* to, void* user);
 // int OutlineCubicToCallback(const FT_Vector* control1, const FT_Vector* control2, const FT_Vector* to, void* user);
+// void OutlineRenderSpanFunc(int y, int count, const FT_Span* spans, void* user);
 import "C"
 
 import (
@@ -408,8 +409,86 @@ func (o *Outline) BBox() BBox {
 // 	return nil
 // }
 
-// FT_Outline_Render TODO
-// FT_Outline_Decompose TODO
+type spanFuncTable struct {
+	sync.Mutex
+	idx   uintptr
+	table map[uintptr]SpanFunc
+}
+
+func (m *spanFuncTable) acquire(fn SpanFunc) (uintptr, error) {
+	m.Lock()
+	var idx uintptr
+	start := m.idx
+	for { //TODO: decompose index management
+		if _, occupied := m.table[m.idx]; occupied {
+			m.idx++
+			if m.idx == start {
+				m.Unlock()
+				return 0, errors.New("overflow")
+			}
+
+			continue
+		}
+
+		idx = m.idx
+		m.table[idx] = fn
+		break
+	}
+	m.Unlock()
+
+	return idx, nil
+}
+
+func (m *spanFuncTable) valueOf(idx uintptr) SpanFunc {
+	m.Lock()
+	v := m.table[idx]
+	m.Unlock()
+	return v
+}
+
+func (m *spanFuncTable) release(idx uintptr) {
+	m.Lock()
+	m.table[idx] = nil
+	m.Unlock()
+}
+
+var spanFuncs = &spanFuncTable{table: make(map[uintptr]SpanFunc)}
+
+func (o *Outline) Render(l *Library, p RasterParams) error {
+	if o == nil || o.ptr == nil {
+		return ErrInvalidOutline
+	}
+
+	if l == nil || l.ptr == nil {
+		return ErrInvalidLibraryHandle
+	}
+
+	handle, err := spanFuncs.acquire(p.GraySpans)
+	if err != nil {
+		return err
+	}
+	defer spanFuncs.release(handle)
+
+	var target *C.FT_Bitmap
+	if p.Target != nil {
+		target = p.Target.ptr
+	}
+	params := C.FT_Raster_Params{
+		target:     target,
+		source:     unsafe.Pointer(o.ptr),
+		flags:      C.int(p.Flags),
+		gray_spans: (*[0]byte)(C.OutlineRenderSpanFunc),
+		user:       unsafe.Pointer(handle),
+		clip_box: C.FT_BBox{
+			xMin: C.FT_Pos(p.ClipBox.XMin),
+			xMax: C.FT_Pos(p.ClipBox.XMax),
+			yMin: C.FT_Pos(p.ClipBox.YMin),
+			yMax: C.FT_Pos(p.ClipBox.YMax),
+		},
+	}
+
+	return getErr(C.FT_Outline_Render(l.ptr, o.ptr, &params))
+}
 
 // OutlineDecomposer is used during outline decomposition in order to emit
 // segments, conic, and cubic Beziers.
@@ -436,7 +515,7 @@ func (m *decomposerTable) acquire(d OutlineDecomposer, shift int, delta Pos) (*C
 	m.Lock()
 	var idx uintptr
 	start := m.idx
-	for {
+	for { //TODO: decompose index management
 		if _, occupied := m.table[m.idx]; occupied {
 			m.idx++
 			if m.idx == start {
@@ -469,6 +548,7 @@ func (m *decomposerTable) valueOf(idx uintptr) OutlineDecomposer {
 	m.Unlock()
 	return v
 }
+
 func (m *decomposerTable) release(idx uintptr) {
 	m.Lock()
 	m.table[idx] = nil
@@ -515,6 +595,7 @@ func (o *Outline) Decompose(decomposer OutlineDecomposer, shift int, delta Pos) 
 	if err != nil {
 		return err
 	}
+	defer decomposers.release(handle)
 
 	return getErr(C.FT_Outline_Decompose(o.ptr, funcs, unsafe.Pointer(handle)))
 }

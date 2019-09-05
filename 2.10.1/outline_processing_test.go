@@ -1996,6 +1996,195 @@ func TestDecomposerTable(t *testing.T) {
 	})
 }
 
+type stackRendererFrame struct {
+	y     int
+	spans []Span
+}
+
+type stackRenderer struct {
+	frames []stackRendererFrame
+}
+
+func (r *stackRenderer) GraySpans(y int, spans []Span) {
+	r.frames = append(r.frames, stackRendererFrame{y, spans})
+}
+
+func TestOutlineRender(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		l, err := NewLibrary()
+		if err != nil {
+			t.Fatalf("unable to create lib: %v", err)
+		}
+		defer l.Free()
+
+		newOutline, err := l.NewOutline(10, 10)
+		if err != nil {
+			t.Fatalf("unable to create outline: %v", err)
+		}
+		defer newOutline.Free()
+
+		var nilOutline *Outline
+
+		if err := nilOutline.Render(nil, RasterParams{}); err != ErrInvalidOutline {
+			t.Errorf("Outline.Render() error = %v, want %v", err, ErrInvalidOutline)
+		}
+
+		if err := newOutline.Render(nil, RasterParams{}); err != ErrInvalidLibraryHandle {
+			t.Errorf("Outline.Render() error = %v, want %v", err, ErrInvalidLibraryHandle)
+		}
+	})
+
+	l, err := NewLibrary()
+	if err != nil {
+		t.Fatalf("unable to create lib: %v", err)
+	}
+	defer l.Free()
+
+	face, err := l.NewFaceFromPath(testdata("go", "Go-Regular.ttf"), 0, 0)
+	if err != nil {
+		t.Fatalf("unable to load face: %v", err)
+	}
+	defer face.Free()
+
+	if err := face.SetCharSize(14<<6, 14<<6, 72, 72); err != nil {
+		t.Fatalf("unable to set char size: %v", err)
+	}
+
+	if err := face.LoadChar('A', LoadDefault); err != nil {
+		t.Fatalf("unable to load char: %v", err)
+	}
+
+	want := []stackRendererFrame{
+		{
+			y: 0,
+			spans: []Span{
+				{X: 0, Len: 1, Coverage: 0xb3},
+				{X: 1, Len: 1, Coverage: 0xa7},
+				{X: 7, Len: 1, Coverage: 0x8f},
+				{X: 8, Len: 1, Coverage: 0xf4},
+				{X: 9, Len: 1, Coverage: 0x0a},
+			},
+		},
+		{
+			y: 1,
+			spans: []Span{
+				{X: 0, Len: 1, Coverage: 0x5a},
+				{X: 1, Len: 1, Coverage: 0xf6},
+				{X: 2, Len: 1, Coverage: 0x0e},
+				{X: 6, Len: 1, Coverage: 0x04},
+				{X: 7, Len: 1, Coverage: 0xe9},
+				{X: 8, Len: 1, Coverage: 0xa7},
+			},
+		},
+		{
+			y: 2,
+			spans: []Span{
+				{X: 0, Len: 1, Coverage: 0x0b},
+				{X: 1, Len: 1, Coverage: 0xf5},
+				{X: 2, Len: 1, Coverage: 0x75},
+				{X: 3, Len: 3, Coverage: 0x28},
+				{X: 6, Len: 1, Coverage: 0x61},
+				{X: 7, Len: 1, Coverage: 0xff},
+				{X: 8, Len: 1, Coverage: 0x4f},
+			},
+		},
+		{
+			y: 3,
+			spans: []Span{
+				{X: 1, Len: 1, Coverage: 0xa7},
+				{X: 2, Len: 1, Coverage: 0xff},
+				{X: 3, Len: 3, Coverage: 0xfc},
+				{X: 6, Len: 1, Coverage: 0xff},
+				{X: 7, Len: 1, Coverage: 0xf0},
+				{X: 8, Len: 1, Coverage: 0x07},
+			},
+		},
+		{
+			y: 4,
+			spans: []Span{
+				{X: 1, Len: 1, Coverage: 0x4e},
+				{X: 2, Len: 1, Coverage: 0xfd},
+				{X: 3, Len: 1, Coverage: 0x1a},
+				{X: 5, Len: 1, Coverage: 0x09},
+				{X: 6, Len: 1, Coverage: 0xf3},
+				{X: 7, Len: 1, Coverage: 0x9f},
+			},
+		},
+		{
+			y: 5,
+			spans: []Span{
+				{X: 1, Len: 1, Coverage: 0x05},
+				{X: 2, Len: 1, Coverage: 0xee},
+				{X: 3, Len: 1, Coverage: 0x6f},
+				{X: 5, Len: 1, Coverage: 0x53},
+				{X: 6, Len: 1, Coverage: 0xff},
+				{X: 7, Len: 1, Coverage: 0x47},
+			},
+		},
+		{
+			y: 6,
+			spans: []Span{
+				{X: 2, Len: 1, Coverage: 0x9b},
+				{X: 3, Len: 1, Coverage: 0xc5},
+				{X: 5, Len: 1, Coverage: 0xa8},
+				{X: 6, Len: 1, Coverage: 0xeb},
+				{X: 7, Len: 1, Coverage: 0x04},
+			},
+		},
+		{
+			y: 7,
+			spans: []Span{
+				{X: 2, Len: 1, Coverage: 0x41},
+				{X: 3, Len: 1, Coverage: 0xfe},
+				{X: 4, Len: 1, Coverage: 0x27},
+				{X: 5, Len: 1, Coverage: 0xf4},
+				{X: 6, Len: 1, Coverage: 0x97},
+			},
+		},
+		{
+			y: 8,
+			spans: []Span{
+				{X: 2, Len: 1, Coverage: 0x02},
+				{X: 3, Len: 1, Coverage: 0xe5},
+				{X: 4, Len: 1, Coverage: 0xc4},
+				{X: 5, Len: 1, Coverage: 0xff},
+				{X: 6, Len: 1, Coverage: 0x3f},
+			},
+		},
+		{
+			y: 9,
+			spans: []Span{
+				{X: 3, Len: 1, Coverage: 0x8e},
+				{X: 4, Len: 1, Coverage: 0xff},
+				{X: 5, Len: 1, Coverage: 0xe5},
+				{X: 6, Len: 1, Coverage: 0x02},
+			},
+		},
+		{
+			y: 10,
+			spans: []Span{
+				{X: 3, Len: 1, Coverage: 0x35},
+				{X: 4, Len: 1, Coverage: 0xff},
+				{X: 5, Len: 1, Coverage: 0x8f},
+			},
+		},
+	}
+
+	renderer := &stackRenderer{}
+	params := RasterParams{
+		Flags:     RasterFlagAA | RasterFlagDirect,
+		GraySpans: renderer.GraySpans,
+	}
+
+	if err := face.GlyphSlot().Outline.Render(l, params); err != nil {
+		t.Errorf("Outline.Render() error = %v", err)
+	}
+
+	if diff := diff(renderer.frames, want); diff != nil {
+		t.Errorf("Outline.Render() %v", diff)
+	}
+}
+
 type move struct{ to Vector }
 type line move
 type conic struct{ control, to Vector }
