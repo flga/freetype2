@@ -2054,120 +2054,240 @@ func TestOutlineRender(t *testing.T) {
 		t.Fatalf("unable to load char: %v", err)
 	}
 
-	want := []stackRendererFrame{
-		{
-			y: 0,
-			spans: []Span{
-				{X: 0, Len: 1, Coverage: 0xb3},
-				{X: 1, Len: 1, Coverage: 0xa7},
-				{X: 7, Len: 1, Coverage: 0x8f},
-				{X: 8, Len: 1, Coverage: 0xf4},
-				{X: 9, Len: 1, Coverage: 0x0a},
+	var want []stackRendererFrame
+	intsize := 32 << (^uint(0) >> 63)
+	if intsize == 64 {
+		want = []stackRendererFrame{
+			{
+				y: 0,
+				spans: []Span{
+					{X: 0, Len: 1, Coverage: 0xb3},
+					{X: 1, Len: 1, Coverage: 0xa7},
+					{X: 7, Len: 1, Coverage: 0x8f},
+					{X: 8, Len: 1, Coverage: 0xf4},
+					{X: 9, Len: 1, Coverage: 0x0a},
+				},
 			},
-		},
-		{
-			y: 1,
-			spans: []Span{
-				{X: 0, Len: 1, Coverage: 0x5a},
-				{X: 1, Len: 1, Coverage: 0xf6},
-				{X: 2, Len: 1, Coverage: 0x0e},
-				{X: 6, Len: 1, Coverage: 0x04},
-				{X: 7, Len: 1, Coverage: 0xe9},
-				{X: 8, Len: 1, Coverage: 0xa7},
+			{
+				y: 1,
+				spans: []Span{
+					{X: 0, Len: 1, Coverage: 0x5a},
+					{X: 1, Len: 1, Coverage: 0xf6},
+					{X: 2, Len: 1, Coverage: 0x0e},
+					{X: 6, Len: 1, Coverage: 0x04},
+					{X: 7, Len: 1, Coverage: 0xe9},
+					{X: 8, Len: 1, Coverage: 0xa7},
+				},
 			},
-		},
-		{
-			y: 2,
-			spans: []Span{
-				{X: 0, Len: 1, Coverage: 0x0b},
-				{X: 1, Len: 1, Coverage: 0xf5},
-				{X: 2, Len: 1, Coverage: 0x75},
-				{X: 3, Len: 3, Coverage: 0x28},
-				{X: 6, Len: 1, Coverage: 0x61},
-				{X: 7, Len: 1, Coverage: 0xff},
-				{X: 8, Len: 1, Coverage: 0x4f},
+			{
+				y: 2,
+				spans: []Span{
+					{X: 0, Len: 1, Coverage: 0x0b},
+					{X: 1, Len: 1, Coverage: 0xf5},
+					{X: 2, Len: 1, Coverage: 0x75},
+					{X: 3, Len: 3, Coverage: 0x28},
+					{X: 6, Len: 1, Coverage: 0x61},
+					{X: 7, Len: 1, Coverage: 0xff},
+					{X: 8, Len: 1, Coverage: 0x4f},
+				},
 			},
-		},
-		{
-			y: 3,
-			spans: []Span{
-				{X: 1, Len: 1, Coverage: 0xa7},
-				{X: 2, Len: 1, Coverage: 0xff},
-				{X: 3, Len: 3, Coverage: 0xfc},
-				{X: 6, Len: 1, Coverage: 0xff},
-				{X: 7, Len: 1, Coverage: 0xf0},
-				{X: 8, Len: 1, Coverage: 0x07},
+			{
+				y: 3,
+				spans: []Span{
+					{X: 1, Len: 1, Coverage: 0xa7},
+					{X: 2, Len: 1, Coverage: 0xff},
+					{X: 3, Len: 3, Coverage: 0xfc},
+					{X: 6, Len: 1, Coverage: 0xff},
+					{X: 7, Len: 1, Coverage: 0xf0},
+					{X: 8, Len: 1, Coverage: 0x07},
+				},
 			},
-		},
-		{
-			y: 4,
-			spans: []Span{
-				{X: 1, Len: 1, Coverage: 0x4e},
-				{X: 2, Len: 1, Coverage: 0xfd},
-				{X: 3, Len: 1, Coverage: 0x1a},
-				{X: 5, Len: 1, Coverage: 0x09},
-				{X: 6, Len: 1, Coverage: 0xf3},
-				{X: 7, Len: 1, Coverage: 0x9f},
+			{
+				y: 4,
+				spans: []Span{
+					{X: 1, Len: 1, Coverage: 0x4e},
+					{X: 2, Len: 1, Coverage: 0xfd},
+					{X: 3, Len: 1, Coverage: 0x1a},
+					{X: 5, Len: 1, Coverage: 0x09},
+					{X: 6, Len: 1, Coverage: 0xf3},
+					{X: 7, Len: 1, Coverage: 0x9f},
+				},
 			},
-		},
-		{
-			y: 5,
-			spans: []Span{
-				{X: 1, Len: 1, Coverage: 0x05},
-				{X: 2, Len: 1, Coverage: 0xee},
-				{X: 3, Len: 1, Coverage: 0x6f},
-				{X: 5, Len: 1, Coverage: 0x53},
-				{X: 6, Len: 1, Coverage: 0xff},
-				{X: 7, Len: 1, Coverage: 0x47},
+			{
+				y: 5,
+				spans: []Span{
+					{X: 1, Len: 1, Coverage: 0x05},
+					{X: 2, Len: 1, Coverage: 0xee},
+					{X: 3, Len: 1, Coverage: 0x6f},
+					{X: 5, Len: 1, Coverage: 0x53},
+					{X: 6, Len: 1, Coverage: 0xff},
+					{X: 7, Len: 1, Coverage: 0x47},
+				},
 			},
-		},
-		{
-			y: 6,
-			spans: []Span{
-				{X: 2, Len: 1, Coverage: 0x9b},
-				{X: 3, Len: 1, Coverage: 0xc5},
-				{X: 5, Len: 1, Coverage: 0xa8},
-				{X: 6, Len: 1, Coverage: 0xeb},
-				{X: 7, Len: 1, Coverage: 0x04},
+			{
+				y: 6,
+				spans: []Span{
+					{X: 2, Len: 1, Coverage: 0x9b},
+					{X: 3, Len: 1, Coverage: 0xc5},
+					{X: 5, Len: 1, Coverage: 0xa8},
+					{X: 6, Len: 1, Coverage: 0xeb},
+					{X: 7, Len: 1, Coverage: 0x04},
+				},
 			},
-		},
-		{
-			y: 7,
-			spans: []Span{
-				{X: 2, Len: 1, Coverage: 0x41},
-				{X: 3, Len: 1, Coverage: 0xfe},
-				{X: 4, Len: 1, Coverage: 0x27},
-				{X: 5, Len: 1, Coverage: 0xf4},
-				{X: 6, Len: 1, Coverage: 0x97},
+			{
+				y: 7,
+				spans: []Span{
+					{X: 2, Len: 1, Coverage: 0x41},
+					{X: 3, Len: 1, Coverage: 0xfe},
+					{X: 4, Len: 1, Coverage: 0x27},
+					{X: 5, Len: 1, Coverage: 0xf4},
+					{X: 6, Len: 1, Coverage: 0x97},
+				},
 			},
-		},
-		{
-			y: 8,
-			spans: []Span{
-				{X: 2, Len: 1, Coverage: 0x02},
-				{X: 3, Len: 1, Coverage: 0xe5},
-				{X: 4, Len: 1, Coverage: 0xc4},
-				{X: 5, Len: 1, Coverage: 0xff},
-				{X: 6, Len: 1, Coverage: 0x3f},
+			{
+				y: 8,
+				spans: []Span{
+					{X: 2, Len: 1, Coverage: 0x02},
+					{X: 3, Len: 1, Coverage: 0xe5},
+					{X: 4, Len: 1, Coverage: 0xc4},
+					{X: 5, Len: 1, Coverage: 0xff},
+					{X: 6, Len: 1, Coverage: 0x3f},
+				},
 			},
-		},
-		{
-			y: 9,
-			spans: []Span{
-				{X: 3, Len: 1, Coverage: 0x8e},
-				{X: 4, Len: 1, Coverage: 0xff},
-				{X: 5, Len: 1, Coverage: 0xe5},
-				{X: 6, Len: 1, Coverage: 0x02},
+			{
+				y: 9,
+				spans: []Span{
+					{X: 3, Len: 1, Coverage: 0x8e},
+					{X: 4, Len: 1, Coverage: 0xff},
+					{X: 5, Len: 1, Coverage: 0xe5},
+					{X: 6, Len: 1, Coverage: 0x02},
+				},
 			},
-		},
-		{
-			y: 10,
-			spans: []Span{
-				{X: 3, Len: 1, Coverage: 0x35},
-				{X: 4, Len: 1, Coverage: 0xff},
-				{X: 5, Len: 1, Coverage: 0x8f},
+			{
+				y: 10,
+				spans: []Span{
+					{X: 3, Len: 1, Coverage: 0x35},
+					{X: 4, Len: 1, Coverage: 0xff},
+					{X: 5, Len: 1, Coverage: 0x8f},
+				},
 			},
-		},
+		}
+	} else if intsize == 32 {
+		want = []stackRendererFrame{
+			{
+				y: 0,
+				spans: []Span{
+					{X: 0, Len: 1, Coverage: 0xb3},
+					{X: 1, Len: 1, Coverage: 0xa7},
+					{X: 7, Len: 1, Coverage: 0x8f},
+					{X: 8, Len: 1, Coverage: 0xf5},
+					{X: 9, Len: 1, Coverage: 0x0b},
+				},
+			},
+			{
+				y: 1,
+				spans: []Span{
+					{X: 0, Len: 1, Coverage: 0x5a},
+					{X: 1, Len: 1, Coverage: 0xf6},
+					{X: 2, Len: 1, Coverage: 0x0e},
+					{X: 6, Len: 1, Coverage: 0x04},
+					{X: 7, Len: 1, Coverage: 0xe9},
+					{X: 8, Len: 1, Coverage: 0xa8},
+				},
+			},
+			{
+				y: 2,
+				spans: []Span{
+					{X: 0, Len: 1, Coverage: 0x0b},
+					{X: 1, Len: 1, Coverage: 0xf5},
+					{X: 2, Len: 1, Coverage: 0x75},
+					{X: 3, Len: 3, Coverage: 0x28},
+					{X: 6, Len: 1, Coverage: 0x61},
+					{X: 7, Len: 1, Coverage: 0xff},
+					{X: 8, Len: 1, Coverage: 0x50},
+				},
+			},
+			{
+				y: 3,
+				spans: []Span{
+					{X: 1, Len: 1, Coverage: 0xa7},
+					{X: 2, Len: 1, Coverage: 0xff},
+					{X: 3, Len: 3, Coverage: 0xfc},
+					{X: 6, Len: 1, Coverage: 0xff},
+					{X: 7, Len: 1, Coverage: 0xf0},
+					{X: 8, Len: 1, Coverage: 0x07},
+				},
+			},
+			{
+				y: 4,
+				spans: []Span{
+					{X: 1, Len: 1, Coverage: 0x4e},
+					{X: 2, Len: 1, Coverage: 0xfd},
+					{X: 3, Len: 1, Coverage: 0x1a},
+					{X: 5, Len: 1, Coverage: 0x09},
+					{X: 6, Len: 1, Coverage: 0xf3},
+					{X: 7, Len: 1, Coverage: 0xa0},
+				},
+			},
+			{
+				y: 5,
+				spans: []Span{
+					{X: 1, Len: 1, Coverage: 0x06},
+					{X: 2, Len: 1, Coverage: 0xee},
+					{X: 3, Len: 1, Coverage: 0x6f},
+					{X: 5, Len: 1, Coverage: 0x53},
+					{X: 6, Len: 1, Coverage: 0xff},
+					{X: 7, Len: 1, Coverage: 0x48},
+				},
+			},
+			{
+				y: 6,
+				spans: []Span{
+					{X: 2, Len: 1, Coverage: 0x9b},
+					{X: 3, Len: 1, Coverage: 0xc5},
+					{X: 5, Len: 1, Coverage: 0xa8},
+					{X: 6, Len: 1, Coverage: 0xeb},
+					{X: 7, Len: 1, Coverage: 0x04},
+				},
+			},
+			{
+				y: 7,
+				spans: []Span{
+					{X: 2, Len: 1, Coverage: 0x41},
+					{X: 3, Len: 1, Coverage: 0xfe},
+					{X: 4, Len: 1, Coverage: 0x27},
+					{X: 5, Len: 1, Coverage: 0xf4},
+					{X: 6, Len: 1, Coverage: 0x98},
+				},
+			},
+			{
+				y: 8,
+				spans: []Span{
+					{X: 2, Len: 1, Coverage: 0x02},
+					{X: 3, Len: 1, Coverage: 0xe5},
+					{X: 4, Len: 1, Coverage: 0xc4},
+					{X: 5, Len: 1, Coverage: 0xff},
+					{X: 6, Len: 1, Coverage: 0x40},
+				},
+			},
+			{
+				y: 9,
+				spans: []Span{
+					{X: 3, Len: 1, Coverage: 0x8e},
+					{X: 4, Len: 1, Coverage: 0xff},
+					{X: 5, Len: 1, Coverage: 0xe5},
+					{X: 6, Len: 1, Coverage: 0x02},
+				},
+			},
+			{
+				y: 10,
+				spans: []Span{
+					{X: 3, Len: 1, Coverage: 0x35},
+					{X: 4, Len: 1, Coverage: 0xff},
+					{X: 5, Len: 1, Coverage: 0x90},
+				},
+			},
+		}
 	}
 
 	renderer := &stackRenderer{}
